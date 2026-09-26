@@ -1,0 +1,21 @@
+.venv/
+.venv-win/
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.coverage
+htmlcov/
+build/
+dist/
+.idea/
+.vscode/
+data/*
+!data/.gitkeep
+samples/**/*
+!samples/**/
+!samples/**/.gitkeep
+# Local tooling and user-provided audio examples
+.agents/
+.codex/
+exemples/

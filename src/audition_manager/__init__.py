@@ -1,0 +1,1 @@
+"""Audition Manager application package."""

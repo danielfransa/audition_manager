@@ -1,0 +1,31 @@
+[build-system]
+requires = ["setuptools>=77"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "audition-manager"
+version = "0.1.0"
+description = "Desktop application for auditioning guitar impulse responses and amp captures."
+readme = "README.md"
+requires-python = ">=3.12"
+license = "MIT"
+license-files = ["LICENSE"]
+dependencies = [
+    "PySide6>=6.7,<7",
+    "numpy>=1.26,<3",
+    "scipy>=1.12,<2",
+    "soundfile>=0.12,<1",
+    "sounddevice>=0.5,<1",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8.2,<10"]
+
+[project.scripts]
+audition-manager = "audition_manager.main:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
