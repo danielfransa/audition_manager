@@ -1,7 +1,7 @@
 import logging
 from pathlib import Path
 
-from PySide6.QtCore import QThread, QTimer, Signal, Slot
+from PySide6.QtCore import QSignalBlocker, QThread, QTimer, Signal, Slot
 from PySide6.QtGui import QCloseEvent, QKeySequence, QShortcut
 from PySide6.QtWidgets import (
     QCheckBox,
@@ -22,6 +22,8 @@ from audition_manager.audio.output import AudioOutput
 from audition_manager.audio.render_cache import RenderCache
 from audition_manager.audio.transport import PlaybackState
 from audition_manager.library.scanner import scan_wavs
+from audition_manager.library.repository import ImpulseResponseRepository
+from audition_manager.library.scanner import inspect_wavs
 
 logger = logging.getLogger(__name__)
 
@@ -52,9 +54,12 @@ class RenderWorker(QThread):
 
 
 class MainWindow(QMainWindow):
-    def __init__(self, output: AudioOutput) -> None:
+    def __init__(
+        self, output: AudioOutput, repository: ImpulseResponseRepository
+    ) -> None:
         super().__init__()
         self.output = output
+        self.repository = repository
         self.di_path: Path | None = None
         self.ir_paths: list[Path] = []
         self.worker: RenderWorker | None = None
@@ -80,6 +85,9 @@ class MainWindow(QMainWindow):
         self.progress.setRange(0, 1000)
         self.progress.setTextVisible(False)
         self.active_ir = QLabel("IR em reprodução: nenhum")
+        self.favorite = QCheckBox("Favorito (F)")
+        self.favorite.setEnabled(False)
+        self.rating = QLabel("Avaliação: ☆☆☆☆☆")
         self.status = QLabel("Abra uma DI e selecione um IR.")
         self.status.setWordWrap(True)
 
@@ -88,7 +96,8 @@ class MainWindow(QMainWindow):
         for widget in (
             self.di_label, self.di_button, self.folder_button, self.ir_list,
             self.loop, self.bypass, self.play_button, self.stop_button,
-            self.position_label, self.progress, self.active_ir, self.status,
+            self.position_label, self.progress, self.active_ir,
+            self.favorite, self.rating, self.status,
         ):
             layout.addWidget(widget)
         self.setCentralWidget(container)
@@ -99,6 +108,7 @@ class MainWindow(QMainWindow):
         self.stop_button.clicked.connect(self.stop)
         self.loop.toggled.connect(self.output.set_loop)
         self.bypass.toggled.connect(self.selection_changed)
+        self.favorite.toggled.connect(self.set_favorite)
         self.timer = QTimer(self)
         self.timer.setInterval(100)
         self.timer.timeout.connect(self.refresh_playback)
@@ -112,6 +122,15 @@ class MainWindow(QMainWindow):
             shortcut = QShortcut(QKeySequence(key), self)
             shortcut.setAutoRepeat(False)
             shortcut.activated.connect(action)
+            self.shortcuts.append(shortcut)
+        favorite_shortcut = QShortcut(QKeySequence("F"), self)
+        favorite_shortcut.setAutoRepeat(False)
+        favorite_shortcut.activated.connect(self.toggle_favorite)
+        self.shortcuts.append(favorite_shortcut)
+        for value in range(1, 6):
+            shortcut = QShortcut(QKeySequence(str(value)), self)
+            shortcut.setAutoRepeat(False)
+            shortcut.activated.connect(lambda value=value: self.set_rating(value))
             self.shortcuts.append(shortcut)
 
     @Slot()
@@ -130,7 +149,10 @@ class MainWindow(QMainWindow):
             return
         try:
             root = Path(directory)
-            paths = scan_wavs(root)
+            candidates = scan_wavs(root)
+            metadata, errors = inspect_wavs(candidates)
+            self.repository.upsert_many(metadata)
+            paths = [item.path for item in metadata]
         except (OSError, ValueError) as error:
             self.show_error(str(error))
             return
@@ -138,7 +160,10 @@ class MainWindow(QMainWindow):
         self.ir_list.clear()
         self.ir_paths = paths
         self.ir_list.addItems([str(path.relative_to(root)) for path in paths])
-        self.status.setText(f"{len(paths)} arquivos WAV encontrados; selecione um IR.")
+        skipped = f"; {len(errors)} inválidos ignorados" if errors else ""
+        self.status.setText(
+            f"{len(paths)} IRs válidos encontrados{skipped}; selecione um IR."
+        )
 
     def reset_audio(self) -> None:
         self.cache = RenderCache()
@@ -158,8 +183,51 @@ class MainWindow(QMainWindow):
         if self.ir_list.currentRow() < 0 and not self.bypass.isChecked():
             self.reset_audio()
         self.start_render()
+        self.refresh_metadata()
         self.refresh_playback()
         self.update_play_button()
+
+    def selected_ir_path(self) -> Path | None:
+        row = self.ir_list.currentRow()
+        return self.ir_paths[row] if 0 <= row < len(self.ir_paths) else None
+
+    def refresh_metadata(self) -> None:
+        path = self.selected_ir_path()
+        item = self.repository.get(path) if path else None
+        blocker = QSignalBlocker(self.favorite)
+        self.favorite.setChecked(item.favorite if item else False)
+        del blocker
+        self.favorite.setEnabled(item is not None)
+        rating = item.rating if item else 0
+        self.rating.setText(f"Avaliação: {'★' * rating}{'☆' * (5 - rating)}")
+
+    @Slot()
+    def toggle_favorite(self) -> None:
+        if self.favorite.isEnabled():
+            self.favorite.toggle()
+
+    @Slot(bool)
+    def set_favorite(self, favorite: bool) -> None:
+        path = self.selected_ir_path()
+        if path is None:
+            return
+        try:
+            self.repository.set_favorite(path, favorite)
+            self.status.setText("Favorito atualizado.")
+        except (KeyError, OSError) as error:
+            self.show_error(str(error))
+        self.refresh_metadata()
+
+    def set_rating(self, rating: int) -> None:
+        path = self.selected_ir_path()
+        if path is None:
+            return
+        try:
+            self.repository.set_rating(path, rating)
+            self.status.setText(f"Avaliação definida como {rating}/5.")
+        except (KeyError, OSError, ValueError) as error:
+            self.show_error(str(error))
+        self.refresh_metadata()
 
     @Slot()
     def refresh_playback(self) -> None:
@@ -292,5 +360,6 @@ class MainWindow(QMainWindow):
             self.show_error(str(error))
             event.ignore()
             return
+        self.repository.close()
         self.timer.stop()
         event.accept()

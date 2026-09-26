@@ -6,7 +6,7 @@ import soundfile as sf
 
 from audition_manager.audio.files import AudioBuffer, load_wav
 from audition_manager.audio.ir_processor import convolve_ir, render_files
-from audition_manager.library.scanner import scan_wavs
+from audition_manager.library.scanner import inspect_wavs, scan_wavs
 
 
 def buffer(values: list[list[float]], rate: int = 48000) -> AudioBuffer:
@@ -71,3 +71,15 @@ def test_recursive_scan_is_case_insensitive_and_sorted(tmp_path: Path) -> None:
     first.touch()
     second.touch()
     assert scan_wavs(tmp_path) == [first, second]
+
+
+def test_inspection_returns_metadata_and_separates_invalid_wavs(tmp_path: Path) -> None:
+    valid = tmp_path / "cab.wav"
+    invalid = tmp_path / "broken.wav"
+    sf.write(valid, np.zeros((8, 2), dtype=np.float32), 44100)
+    invalid.write_text("not audio")
+    items, errors = inspect_wavs([valid, invalid])
+    assert len(items) == 1
+    assert items[0].path == valid.resolve()
+    assert (items[0].sample_rate, items[0].channels) == (44100, 2)
+    assert errors[0][0] == invalid

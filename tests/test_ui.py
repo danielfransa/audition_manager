@@ -12,6 +12,7 @@ QApplication = qt_widgets.QApplication
 
 from audition_manager.audio.files import AudioBuffer
 from audition_manager.audio.transport import PlaybackTransport, PlaybackState
+from audition_manager.library.repository import ImpulseResponseRepository
 from audition_manager.ui.main_window import MainWindow
 
 
@@ -60,7 +61,7 @@ class FakeOutput:
 def test_select_render_play_and_stop(tmp_path: Path, monkeypatch) -> None:
     app = QApplication.instance() or QApplication([])
     output = FakeOutput()
-    window = MainWindow(output)
+    window = MainWindow(output, ImpulseResponseRepository(tmp_path / "library.sqlite3"))
     di = tmp_path / "di.wav"
     ir_folder = tmp_path / "irs"
     ir_folder.mkdir()
@@ -118,7 +119,7 @@ def test_latest_selection_wins_and_stop_during_render_does_not_autoplay(monkeypa
 
     app = QApplication.instance() or QApplication([])
     output = FakeOutput()
-    window = MainWindow(output)
+    window = MainWindow(output, ImpulseResponseRepository(tmp_path / "library.sqlite3"))
     entered, release = Event(), Event()
     calls = []
 
@@ -170,7 +171,7 @@ def test_bypass_preserves_pause_and_shortcuts_control_player(tmp_path, monkeypat
 
     app = QApplication.instance() or QApplication([])
     output = FakeOutput()
-    window = MainWindow(output)
+    window = MainWindow(output, ImpulseResponseRepository(tmp_path / "library.sqlite3"))
     di, ir = tmp_path / "di.wav", tmp_path / "ir.wav"
     sf.write(di, np.full(4800, 0.1), 48000, subtype="FLOAT")
     sf.write(ir, [0.5], 48000, subtype="FLOAT")
@@ -220,3 +221,41 @@ def test_bypass_preserves_pause_and_shortcuts_control_player(tmp_path, monkeypat
             window.worker.wait()
             app.processEvents()
         window.close()
+
+
+def test_favorite_and_rating_shortcuts_persist_after_rescan(tmp_path, monkeypatch) -> None:
+    from PySide6.QtCore import Qt
+    from PySide6.QtTest import QTest
+
+    app = QApplication.instance() or QApplication([])
+    database = tmp_path / "library.sqlite3"
+    folder = tmp_path / "irs"
+    folder.mkdir()
+    ir = folder / "cab.wav"
+    sf.write(ir, [1.0], 48000, subtype="FLOAT")
+    monkeypatch.setattr(
+        "audition_manager.ui.main_window.QFileDialog.getExistingDirectory",
+        lambda *args: str(folder),
+    )
+
+    first = MainWindow(FakeOutput(), ImpulseResponseRepository(database))
+    first.show()
+    first.activateWindow()
+    app.processEvents()
+    first.choose_folder()
+    first.ir_list.setCurrentRow(0)
+    app.processEvents()
+    QTest.keyClick(first, Qt.Key.Key_F)
+    QTest.keyClick(first, Qt.Key.Key_4)
+    assert first.favorite.isChecked()
+    assert first.rating.text() == "Avaliação: ★★★★☆"
+    first.close()
+
+    second = MainWindow(FakeOutput(), ImpulseResponseRepository(database))
+    try:
+        second.choose_folder()
+        second.ir_list.setCurrentRow(0)
+        assert second.favorite.isChecked()
+        assert second.rating.text() == "Avaliação: ★★★★☆"
+    finally:
+        second.close()

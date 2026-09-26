@@ -154,3 +154,22 @@ Roteiro:
 5. Alternar B e selecionar IR rapidamente; conferir que a última escolha prevalece.
 6. Usar Stop durante preparação de bypass: não deve começar a tocar ao terminar.
 7. Abrir somente uma DI e ativar Bypass; deve funcionar sem pasta/IR.
+
+## Biblioteca SQLite, favoritos e avaliação
+
+- `python -m pytest -q`: **34 passed** após este incremento.
+- Migração e reabertura do banco, preservação de campos do usuário no rescan,
+  validação de rating, WAV inválido e atalhos Qt F/4 foram cobertos.
+- O teste de interface fecha e reabre duas janelas sobre o mesmo banco e confirma
+  favorito e quatro estrelas após novo scan.
+
+Roteiro manual:
+
+1. Abra uma pasta de IRs, selecione um item, pressione F e depois 1..5.
+2. Confira checkbox de favorito e estrelas; navegue e retorne ao item.
+3. Feche e reabra a aplicação, escaneie a mesma pasta e confirme persistência.
+4. Altere favorito pelo checkbox e confirme que F acompanha o novo estado.
+5. Coloque um `.wav` corrompido na pasta: ele deve ser ignorado e contado, sem
+   impedir os demais IRs de aparecerem.
+6. Verifique o banco no diretório documentado no README. Ele deve conter somente
+   metadados e caminhos, sem blobs de áudio.

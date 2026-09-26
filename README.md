@@ -33,9 +33,13 @@ incluindo bypass. Voltar a um IR reutiliza o resultado se os arquivos não
 mudaram. Trocar DI ou pasta limpa o cache. Esse limite não inclui buffers ativos
 e temporários do processamento.
 
-Esta entrega ainda não é o MVP completo: favoritos, classificação
-e SQLite estão planejados em incrementos próprios. NAM, ANN, A2, entrada ao vivo
-e envio à Blackbox não estão implementados.
+Use **F** para alternar favorito e **1..5** para avaliar o IR selecionado. Esses
+dados persistem em SQLite e reaparecem após fechar, abrir ou reescanear a pasta.
+O banco armazena caminhos e metadados; os arquivos de áudio não são copiados.
+
+Esta entrega ainda não é o MVP completo: filtros, editor de notas e seleção de
+dispositivo estão planejados em incrementos próprios. NAM, ANN, A2, entrada ao
+vivo e envio à Blackbox não estão implementados.
 
 ## Desenvolvimento no WSL com mise e venv
 
@@ -129,8 +133,7 @@ py -3.12 -m venv .venv-win
 
 Abra uma DI de até 5 minutos e uma pasta com IRs WAV de até 2 segundos.
 Selecione um IR para processar e reproduzir automaticamente. Teste Pause, Stop e Loop.
-Arquivos inválidos apresentam uma mensagem de erro. A lista contém candidatos
-WAV; a decodificação e validação acontecem no processamento.
+Arquivos inválidos são ignorados e contabilizados após a leitura do cabeçalho.
 
 ## Arquitetura e dependências
 
@@ -139,13 +142,15 @@ WAV; a decodificação e validação acontecem no processamento.
 - `audio/render_cache.py`: cache LRU limitado e preparação do bypass.
 - `audio/transport.py`: estados, cursor e preenchimento de blocos de reprodução.
 - `audio/output.py`: stream próprio sounddevice/PortAudio, pausa e liberação.
-- `library/scanner.py`: descoberta de arquivos, sem persistência.
+- `library/scanner.py`: descoberta e leitura de metadados WAV.
+- `library/repository.py`: migração e persistência SQLite de metadados do IR.
+- `config/settings.py`: caminho do banco conforme Windows/Linux.
 - `ui/main_window.py`: janela e coordenação da tarefa de processamento.
 - `main.py`: composição da aplicação e logging.
 
 PySide6 fornece a GUI; NumPy representa as amostras; SciPy faz convolução FFT e
 reamostragem; soundfile lê WAV; sounddevice reproduz áudio; pytest valida o
-núcleo. SQLite será usado via biblioteca padrão quando houver persistência.
+núcleo. SQLite da biblioteca padrão persiste a biblioteca local.
 Princípios SOLID e Clean Code orientam responsabilidades pequenas, nomes claros,
 tipos e dependências isoladas. Interfaces adicionais serão introduzidas quando
 houver uma necessidade concreta, sem criar engines fictícias.
@@ -161,6 +166,14 @@ reamostragem, headroom, descoberta e rejeição de arquivos inválidos. O teste 
 interface usa Qt offscreen e saída falsa, sem acessar o dispositivo; é marcado
 como ignorado se as bibliotecas nativas do Qt não estiverem disponíveis.
 Veja o [roteiro manual por plataforma](docs/validacao.md).
+
+O banco fica em `%LOCALAPPDATA%\Audition Manager\library.sqlite3` no Windows e
+em `$XDG_DATA_HOME/audition-manager/library.sqlite3` no Linux (ou
+`~/.local/share/audition-manager/library.sqlite3`). Para testes isolados, defina
+`AUDITION_MANAGER_DATA_DIR` antes de iniciar. O scan é síncrono nesta etapa;
+pastas muito grandes podem deixar a janela ocupada enquanto os cabeçalhos são
+lidos. Arquivos removidos permanecem no banco para preservar a classificação,
+mas não aparecem na lista quando não estão presentes na pasta escaneada.
 
 O processamento carrega DI, IR e resultado na memória. São aceitos mono/estéreo
 até 192 kHz, DI até 300 s e IR até 2 s. O IR é reamostrado para a taxa da DI;
@@ -187,6 +200,7 @@ para uma etapa própria.
 - [Player com posição e pausa](docs/decisions/0004-player.md)
 - [Troca automática e Git](docs/decisions/0005-troca-ir-git.md)
 - [Bypass, atalhos e cache](docs/decisions/0006-bypass-cache.md)
+- [Biblioteca SQLite](docs/decisions/0007-biblioteca-sqlite.md)
 - [Validação](docs/validacao.md)
 
 Cada incremento deve registrar decisões, testes e limitações em `docs/`, e

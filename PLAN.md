@@ -34,6 +34,9 @@ Windows e Linux são alvos; WSL/WSLg é ambiente de testes rápidos da aplicaç�
    entre buffers e política para mudanças de canais, sem bloquear o MVP.**
 3. Biblioteca SQLite: metadados e caminhos, migrações, favorito, rating 1–5,
    notas; atalhos F e 1–5. Sem copiar áudio para o banco.
+   **Metadados, migração, favorito, rating e atalhos implementados para
+   auditoria. O campo de notas existe no esquema; editor e filtros permanecem
+   para incrementos próprios.**
 4. Seleção de dispositivo, ganho, mensagens de erro e validação Windows/Linux/WSLg.
 
 Cada item acima é uma rodada com revisão própria. Critério do MVP completo:
