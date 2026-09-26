@@ -32,13 +32,26 @@ class PlaybackTransport:
             rate = self._audio.sample_rate
             return self._state, self._position / rate, len(self._audio.samples) / rate
 
-    def load(self, audio: AudioBuffer) -> None:
+    def load(
+        self, audio: AudioBuffer, *, position: float = 0,
+        state: PlaybackState = PlaybackState.STOPPED,
+    ) -> None:
         if len(audio.samples) == 0 or audio.sample_rate <= 0:
             raise ValueError("O áudio deve conter amostras e uma taxa válida.")
         with self._lock:
             self._audio = audio
-            self._position = 0
-            self._state = PlaybackState.STOPPED
+            self._position = min(int(position * audio.sample_rate), len(audio.samples))
+            self._state = state
+
+    def replace(self, audio: AudioBuffer) -> None:
+        """Swap a rendered track atomically while retaining its playback cursor."""
+        with self._lock:
+            if self._audio is None or audio.sample_rate != self._audio.sample_rate:
+                raise ValueError("A troca contínua requer a mesma taxa de amostragem.")
+            if len(audio.samples) == 0:
+                raise ValueError("O áudio deve conter amostras.")
+            self._audio = audio
+            self._position = min(self._position, len(audio.samples))
 
     def clear(self) -> None:
         with self._lock:

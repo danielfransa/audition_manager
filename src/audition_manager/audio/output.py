@@ -38,18 +38,7 @@ class AudioOutput:
             raise RuntimeError(f"{message}\n\nDetalhe técnico: {error}") from error
 
         if audio is not None:
-            self.close()
-            self.transport.load(audio)
-            try:
-                self._stream = sd.OutputStream(
-                    samplerate=audio.sample_rate,
-                    channels=audio.samples.shape[1],
-                    dtype="float32",
-                    callback=self._callback,
-                )
-            except Exception:
-                self.transport.clear()
-                raise
+            self.load(audio)
         if self._stream is None:
             raise ValueError("Carregue um áudio antes de reproduzir.")
         if loop is not None:
@@ -63,6 +52,40 @@ class AudioOutput:
         except Exception:
             self.transport.pause()
             raise
+
+    def load(self, audio: AudioBuffer) -> None:
+        import sounddevice as sd
+
+        self.close()
+        self.transport.load(audio)
+        try:
+            self._stream = sd.OutputStream(
+                samplerate=audio.sample_rate, channels=audio.samples.shape[1],
+                dtype="float32", callback=self._callback,
+            )
+        except Exception:
+            self.transport.clear()
+            raise
+
+    def replace(self, audio: AudioBuffer) -> None:
+        if self._stream is None:
+            self.load(audio)
+            return
+        if (self._stream.channels == audio.samples.shape[1]
+                and self._stream.samplerate == audio.sample_rate):
+            self.transport.replace(audio)
+            return
+        # A different channel layout needs a new device stream.
+        self._stream.stop()
+        state, position, _ = self.transport.snapshot()
+        self.load(audio)
+        self.transport.load(audio, position=position, state=state)
+        if state == PlaybackState.PLAYING:
+            try:
+                self._stream.start()
+            except Exception:
+                self.transport.pause()
+                raise
 
     def _callback(
         self, outdata: NDArray[np.float32], frames: int, time: object, status: object

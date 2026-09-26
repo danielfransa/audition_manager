@@ -32,6 +32,16 @@ class FakeOutput:
         self.transport.set_loop(loop)
         self.transport.play()
 
+    def load(self, audio: AudioBuffer) -> None:
+        self.audio = audio
+        self.transport.load(audio)
+        self.loads += 1
+
+    def replace(self, audio: AudioBuffer) -> None:
+        self.audio = audio
+        self.transport.replace(audio)
+        self.loads += 1
+
     def pause(self) -> None:
         self.transport.pause()
 
@@ -70,8 +80,6 @@ def test_select_render_play_and_stop(tmp_path: Path, monkeypatch) -> None:
         window.choose_folder()
         assert window.ir_list.count() == 1
         window.ir_list.setCurrentRow(0)
-        assert window.play_button.isEnabled()
-        window.render()
         assert not window.play_button.isEnabled()
         deadline = monotonic() + 10
         while window.worker is not None and monotonic() < deadline:
@@ -97,6 +105,51 @@ def test_select_render_play_and_stop(tmp_path: Path, monkeypatch) -> None:
         assert not window.has_rendered_audio
         assert output.transport.snapshot()[0] == PlaybackState.EMPTY
     finally:
+        if window.worker is not None:
+            window.worker.wait()
+            app.processEvents()
+        window.close()
+
+
+def test_latest_selection_wins_and_stop_during_render_does_not_autoplay(monkeypatch) -> None:
+    from threading import Event
+    import numpy as np
+
+    app = QApplication.instance() or QApplication([])
+    output = FakeOutput()
+    window = MainWindow(output)
+    entered, release = Event(), Event()
+    calls = []
+
+    def render(di, ir):
+        calls.append(ir.name)
+        if len(calls) == 1:
+            entered.set()
+            assert release.wait(5)
+        return AudioBuffer(np.full((10, 1), 0.3, dtype=np.float32), 48000)
+
+    monkeypatch.setattr("audition_manager.ui.main_window.render_files", render)
+    window.di_path = Path("di.wav")
+    window.ir_paths = [Path(name) for name in ("first.wav", "middle.wav", "last.wav")]
+    window.ir_list.addItems([path.name for path in window.ir_paths])
+    try:
+        window.ir_list.setCurrentRow(0)
+        assert entered.wait(2)
+        window.move_ir(1)
+        window.move_ir(1)
+        window.stop()
+        release.set()
+        deadline = monotonic() + 5
+        while window.worker is not None and monotonic() < deadline:
+            app.processEvents()
+            sleep(0.01)
+        assert window.worker is None
+        assert calls == ["first.wav", "last.wav"]
+        assert output.loads == 1
+        assert output.transport.snapshot()[0] == PlaybackState.STOPPED
+        assert "last.wav" in window.active_ir.text()
+    finally:
+        release.set()
         if window.worker is not None:
             window.worker.wait()
             app.processEvents()

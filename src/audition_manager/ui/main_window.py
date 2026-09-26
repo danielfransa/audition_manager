@@ -2,7 +2,7 @@ import logging
 from pathlib import Path
 
 from PySide6.QtCore import QThread, QTimer, Signal, Slot
-from PySide6.QtGui import QCloseEvent
+from PySide6.QtGui import QCloseEvent, QKeySequence, QShortcut
 from PySide6.QtWidgets import (
     QCheckBox,
     QFileDialog,
@@ -55,6 +55,9 @@ class MainWindow(QMainWindow):
         self.ir_paths: list[Path] = []
         self.worker: RenderWorker | None = None
         self.has_rendered_audio = False
+        self.selection_version = 0
+        self.worker_version = -1
+        self.autoplay = True
         self.setWindowTitle("Audition Manager")
         self.resize(720, 520)
         self.di_label = QLabel("Nenhuma DI selecionada")
@@ -70,6 +73,7 @@ class MainWindow(QMainWindow):
         self.progress = QProgressBar()
         self.progress.setRange(0, 1000)
         self.progress.setTextVisible(False)
+        self.active_ir = QLabel("IR em reprodução: nenhum")
         self.status = QLabel("Abra uma DI e selecione um IR.")
         self.status.setWordWrap(True)
 
@@ -78,7 +82,7 @@ class MainWindow(QMainWindow):
         for widget in (
             self.di_label, self.di_button, self.folder_button, self.ir_list,
             self.loop, self.play_button, self.stop_button,
-            self.position_label, self.progress, self.status,
+            self.position_label, self.progress, self.active_ir, self.status,
         ):
             layout.addWidget(widget)
         self.setCentralWidget(container)
@@ -92,11 +96,17 @@ class MainWindow(QMainWindow):
         self.timer.setInterval(100)
         self.timer.timeout.connect(self.refresh_playback)
         self.timer.start()
+        self.shortcuts = []
+        for key, step in (("Left", -1), ("Right", 1)):
+            shortcut = QShortcut(QKeySequence(key), self)
+            shortcut.activated.connect(lambda step=step: self.move_ir(step))
+            self.shortcuts.append(shortcut)
 
     @Slot()
     def choose_di(self) -> None:
         filename, _ = QFileDialog.getOpenFileName(self, "Abrir DI", "", "WAV (*.wav *.WAV)")
         if filename:
+            self.reset_audio()
             self.di_path = Path(filename)
             self.di_label.setText(f"DI: {self.di_path.name}")
             self.selection_changed()
@@ -112,19 +122,27 @@ class MainWindow(QMainWindow):
         except (OSError, ValueError) as error:
             self.show_error(str(error))
             return
+        self.reset_audio()
         self.ir_list.clear()
         self.ir_paths = paths
         self.ir_list.addItems([str(path.relative_to(root)) for path in paths])
         self.status.setText(f"{len(paths)} arquivos WAV encontrados; selecione um IR.")
 
+    def reset_audio(self) -> None:
+        self.output.close()
+        self.has_rendered_audio = False
+        self.autoplay = True
+        self.active_ir.setText("IR em reprodução: nenhum")
+
+    def move_ir(self, step: int) -> None:
+        row = self.ir_list.currentRow() + step
+        if 0 <= row < self.ir_list.count():
+            self.ir_list.setCurrentRow(row)
+
     @Slot()
     def selection_changed(self) -> None:
-        try:
-            self.output.close()
-        except Exception as error:
-            logger.exception("Unable to release audio output")
-            self.show_error(str(error))
-        self.has_rendered_audio = False
+        self.selection_version += 1
+        self.start_render()
         self.refresh_playback()
         self.update_play_button()
 
@@ -140,22 +158,23 @@ class MainWindow(QMainWindow):
             f"{format_time(position)} / {format_time(duration)} — {labels[state]}"
         )
         self.progress.setValue(round(1000 * position / duration) if duration else 0)
-        if self.worker is None:
-            self.play_button.setText(
-                "Pause" if state == PlaybackState.PLAYING else
-                "Play" if self.has_rendered_audio else "Processar e reproduzir"
-            )
+        self.play_button.setText(
+            "Pause" if state == PlaybackState.PLAYING else
+            "Play" if self.has_rendered_audio else "Processar e reproduzir"
+        )
 
     @Slot()
     def update_play_button(self) -> None:
         self.play_button.setEnabled(
-            self.worker is None and self.di_path is not None and self.ir_list.currentRow() >= 0
+            self.has_rendered_audio or (
+                self.worker is None and self.di_path is not None and self.ir_list.currentRow() >= 0
+            )
         )
 
     @Slot()
     def render(self) -> None:
         row = self.ir_list.currentRow()
-        if self.worker is not None or self.di_path is None or row < 0:
+        if self.di_path is None or row < 0:
             return
         if self.has_rendered_audio:
             try:
@@ -170,9 +189,17 @@ class MainWindow(QMainWindow):
                 logger.exception("Unable to control playback")
                 self.show_error(str(error))
             return
+        self.autoplay = True
+        self.start_render()
+
+    def start_render(self) -> None:
+        row = self.ir_list.currentRow()
+        if self.worker is not None or self.di_path is None or row < 0:
+            return
+        self.worker_version = self.selection_version
         self.worker = RenderWorker(self.di_path, self.ir_paths[row], self)
         self.worker.rendered.connect(self.play_rendered)
-        self.worker.failed.connect(self.show_error)
+        self.worker.failed.connect(self.render_failed)
         self.worker.finished.connect(self.render_finished)
         self.set_busy(True)
         self.status.setText("Processando DI + IR…")
@@ -180,14 +207,28 @@ class MainWindow(QMainWindow):
 
     @Slot(object)
     def play_rendered(self, audio: AudioBuffer) -> None:
+        if self.worker_version != self.selection_version:
+            return
         try:
-            self.output.play(audio, loop=self.loop.isChecked())
+            if self.has_rendered_audio:
+                self.output.replace(audio)
+            elif self.autoplay:
+                self.output.play(audio, loop=self.loop.isChecked())
+            else:
+                self.output.load(audio)
+                self.output.set_loop(self.loop.isChecked())
         except Exception as error:
             logger.exception("Unable to open audio output")
             self.show_error(str(error))
             return
         self.has_rendered_audio = True
+        self.active_ir.setText(f"IR ativo: {self.worker.ir_path.name}")
         self.status.setText("Pause mantém a posição; Stop volta ao início.")
+
+    @Slot(str)
+    def render_failed(self, message: str) -> None:
+        if self.worker_version == self.selection_version:
+            self.show_error(message)
 
     @Slot()
     def render_finished(self) -> None:
@@ -196,14 +237,17 @@ class MainWindow(QMainWindow):
         self.worker = None
         self.set_busy(False)
         self.refresh_playback()
+        if self.worker_version != self.selection_version:
+            self.start_render()
 
     def set_busy(self, busy: bool) -> None:
-        for widget in (self.di_button, self.folder_button, self.ir_list, self.loop, self.stop_button):
+        for widget in (self.di_button, self.folder_button):
             widget.setEnabled(not busy)
         self.update_play_button()
 
     @Slot()
     def stop(self) -> None:
+        self.autoplay = False
         try:
             self.output.stop()
             self.status.setText("Reprodução parada.")

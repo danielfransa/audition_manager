@@ -107,3 +107,27 @@ sonora; a auditoria audível do novo player continua pendente.
 
 Repetir no Windows e Linux nativo quando disponíveis. A barra ainda não permite
 arrastar a posição; troca contínua e crossfade pertencem ao próximo incremento.
+
+## Troca automática de IR e Git
+
+O usuário validou o player anterior e solicitou troca automática ao selecionar
+IR e versionamento. O comportamento de seleção descrito nos roteiros anteriores
+foi substituído: a seleção agora processa automaticamente.
+
+Auditoria deste incremento:
+
+1. Abrir DI/pasta; clicar no primeiro IR inicia reprodução automaticamente.
+2. Com Loop ativo, clicar em outro IR: contador continua, rótulo IR ativo muda
+   após o processamento. Repetir com ↑/↓ na lista e ←/→ na janela.
+3. Navegar rapidamente por vários IRs: a seleção mais recente deve prevalecer.
+4. Pausar e selecionar outro IR: deve permanecer pausado, na mesma posição.
+5. Durante processamento, usar Stop: deve permanecer parado ao concluir.
+6. Selecionar WAV inválido: mostrar erro e manter o áudio anterior identificado.
+7. Trocar entre IRs mono/estéreo: preservar posição, admitindo breve interrupção
+   se o formato de saída exigir reabrir o stream. Não há crossfade nesta entrega.
+
+Testes automatizados cobrem reutilização de stream, cursor/pausa, mudança de
+canais e descarte de solicitação antiga com Stop durante processamento.
+
+Resultado desta implementação: `python -m pytest -q` — **23 passed**;
+`git diff --check` sem erros. Validação audível da troca pelo usuário pendente.

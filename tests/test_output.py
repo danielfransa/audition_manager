@@ -13,6 +13,8 @@ from audition_manager.audio.transport import PlaybackState
 class FakeStream:
     def __init__(self, **kwargs) -> None:
         self.options = kwargs
+        self.channels = kwargs.get("channels", 1)
+        self.samplerate = kwargs.get("samplerate", 48000)
         self.active = False
         self.closed = False
 
@@ -93,3 +95,36 @@ def test_start_failure_leaves_retriable_paused_state(backend) -> None:
     output.close()
     assert stream.closed
 
+
+
+def test_replace_same_format_keeps_stream_cursor_and_pause(backend) -> None:
+    output = AudioOutput()
+    original = AudioBuffer(np.full((10, 1), 0.1, dtype=np.float32), 48000)
+    replacement = AudioBuffer(np.full((10, 1), 0.5, dtype=np.float32), 48000)
+    output.play(original)
+    stream = output._stream
+    block = np.empty((2, 1), dtype=np.float32)
+    stream.options["callback"](block, 2, None, None)
+    output.pause()
+    before = output.transport.snapshot()
+    output.replace(replacement)
+    assert output.transport.snapshot() == before
+    assert output._stream is stream
+    output.play()
+    stream.options["callback"](block, 2, None, None)
+    np.testing.assert_allclose(block, 0.5)
+    assert backend.OutputStream.call_count == 1
+
+
+def test_channel_change_preserves_paused_position(backend) -> None:
+    output = AudioOutput()
+    output.play(AudioBuffer(np.zeros((10, 1), dtype=np.float32), 48000))
+    old = output._stream
+    old.options["callback"](np.zeros((2, 1), dtype=np.float32), 2, None, None)
+    output.pause()
+    before = output.transport.snapshot()
+    output.replace(AudioBuffer(np.zeros((10, 2), dtype=np.float32), 48000))
+    assert output.transport.snapshot() == before
+    assert old.closed
+    assert not output._stream.active
+    assert output._stream.channels == 2

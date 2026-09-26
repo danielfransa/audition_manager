@@ -25,9 +25,12 @@ Windows e Linux são alvos; WSL/WSLg é ambiente de testes rápidos da aplicaç�
 
 1. Player com posição, Play/Pause/Stop/Loop; saída desacoplada de conveniências
    globais do sounddevice. Testes de transições e término da faixa.
-   **Implementado; aguardando auditoria deste incremento.**
+   **Validado pelo usuário; avanço autorizado.**
 2. Troca de IR preservando posição e reprodução; cache limitado e descarte de
    resultados obsoletos. Bypass, LEFT/RIGHT, SPACE e B. Avaliar crossfade.
+   **Troca automática, posição preservada, descarte de resultados obsoletos e
+   LEFT/RIGHT implementados para auditoria. Cache, bypass, SPACE/B e crossfade
+   permanecem pendentes; não fazem parte desta correção.**
 3. Biblioteca SQLite: metadados e caminhos, migrações, favorito, rating 1–5,
    notas; atalhos F e 1–5. Sem copiar áudio para o banco.
 4. Seleção de dispositivo, ganho, mensagens de erro e validação Windows/Linux/WSLg.

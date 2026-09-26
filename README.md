@@ -8,18 +8,22 @@ Os alvos são **Windows e Linux**. O WSL com WSLg também é um ambiente para
 executar a interface e fazer testes rápidos de reprodução. A validação de áudio
 e latência é feita separadamente em cada ambiente.
 
-## Estado atual — player com posição e pausa
+## Estado atual — player com troca automática de IR
 
-Abra uma DI WAV, selecione uma pasta de IRs, escolha um IR e clique em
-**Processar e reproduzir**. A busca é recursiva. A reprodução usa o dispositivo
+Abra uma DI WAV, selecione uma pasta de IRs e escolha um IR: o processamento
+e a primeira reprodução começam automaticamente. Clique em outro IR ou use
+↑/↓ na lista e ←/→ na janela para trocar. A busca é recursiva. A reprodução usa o dispositivo
 padrão do sistema. Após processar, o botão alterna entre Play e Pause.
 Pause preserva a posição, Stop volta ao início e Loop pode ser alterado durante
 a reprodução. O contador e a barra mostram a posição no resultado processado.
 A convolução roda em uma thread de trabalho para manter a janela responsiva.
 
-Esta entrega ainda não é o MVP completo: trocar o IR e clicar em reproduzir
-reinicia a faixa. Selecionar outra DI ou IR encerra o áudio atual e requer novo
-processamento. Bypass, atalhos, troca contínua, favoritos, classificação
+Ao trocar o IR, o áudio anterior continua durante o processamento. A nova
+seleção assume a posição atual e preserva Pause/Stop. Navegação rápida aplica
+apenas a última seleção. O rótulo IR ativo identifica o áudio realmente aplicado.
+Trocar a DI ou pasta encerra o áudio atual.
+
+Esta entrega ainda não é o MVP completo: bypass, demais atalhos, favoritos, classificação
 e SQLite estão planejados em incrementos próprios. NAM, ANN, A2, entrada ao vivo
 e envio à Blackbox não estão implementados.
 
@@ -114,7 +118,7 @@ py -3.12 -m venv .venv-win
 ```
 
 Abra uma DI de até 5 minutos e uma pasta com IRs WAV de até 2 segundos.
-Selecione um IR e clique em **Processar e reproduzir**. Teste Stop e Loop.
+Selecione um IR para processar e reproduzir automaticamente. Teste Pause, Stop e Loop.
 Arquivos inválidos apresentam uma mensagem de erro. A lista contém candidatos
 WAV; a decodificação e validação acontecem no processamento.
 
@@ -170,6 +174,7 @@ para uma etapa própria.
 - [Decisões iniciais](docs/decisions/0001-fundacao.md)
 - [Linux, WSL e fontes](docs/decisions/0002-linux-wsl-fontes.md)
 - [Player com posição e pausa](docs/decisions/0004-player.md)
+- [Troca automática e Git](docs/decisions/0005-troca-ir-git.md)
 - [Validação](docs/validacao.md)
 
 Cada incremento deve registrar decisões, testes e limitações em `docs/`, e
@@ -180,3 +185,15 @@ terminar em um ponto de revisão antes de iniciar o próximo incremento.
 O código do projeto é distribuído sob a [licença MIT](LICENSE).
 Dependências, capturas e arquivos de áudio mantêm suas próprias licenças;
 nenhum conteúdo de terceiros está incluído em `samples/`.
+
+## Versionamento
+
+Repositório Git local na branch `main`. Os commits registram incrementos
+revisáveis; não há remoto configurado nem publicação automática. `.venv`, dados
+locais e os áudios de `exemples/` ficam fora do histórico. Os arquivos originais
+continuam na pasta para testes locais.
+
+```bash
+git log --oneline
+git status
+```
