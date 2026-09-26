@@ -26,11 +26,18 @@ def convolve_ir(source: AudioBuffer, impulse: AudioBuffer) -> AudioBuffer:
     result = fftconvolve(signal, kernel, mode="full", axes=0)
     if not np.isfinite(result).all():
         raise ValueError("O processamento produziu amostras inválidas.")
-    # Attenuate only when required, retaining headroom for playback.
-    peak = float(np.max(np.abs(result)))
-    if peak > 0.95:
-        result *= 0.95 / peak
-    return AudioBuffer(np.ascontiguousarray(result, dtype=np.float32), source.sample_rate)
+    return limit_peak(AudioBuffer(np.ascontiguousarray(result, dtype=np.float32), source.sample_rate))
+
+
+def limit_peak(audio: AudioBuffer) -> AudioBuffer:
+    """Attenuate only when required; never amplify quiet material."""
+    peak = float(np.max(np.abs(audio.samples)))
+    if peak <= 0.95:
+        return audio
+    return AudioBuffer(
+        np.ascontiguousarray(audio.samples * (0.95 / peak), dtype=np.float32),
+        audio.sample_rate,
+    )
 
 
 def render_files(di_path: Path, ir_path: Path) -> AudioBuffer:

@@ -19,6 +19,7 @@ from PySide6.QtWidgets import (
 from audition_manager.audio.files import AudioBuffer
 from audition_manager.audio.ir_processor import render_files
 from audition_manager.audio.output import AudioOutput
+from audition_manager.audio.render_cache import RenderCache
 from audition_manager.audio.transport import PlaybackState
 from audition_manager.library.scanner import scan_wavs
 
@@ -34,14 +35,17 @@ class RenderWorker(QThread):
     rendered = Signal(object)
     failed = Signal(str)
 
-    def __init__(self, di_path: Path, ir_path: Path, parent: QWidget) -> None:
+    def __init__(
+        self, di_path: Path, ir_path: Path | None, cache: RenderCache, parent: QWidget
+    ) -> None:
         super().__init__(parent)
         self.di_path = di_path
         self.ir_path = ir_path
+        self.cache = cache
 
     def run(self) -> None:
         try:
-            self.rendered.emit(render_files(self.di_path, self.ir_path))
+            self.rendered.emit(self.cache.render(self.di_path, self.ir_path, render_files))
         except Exception as error:
             logger.exception("Unable to render audio")
             self.failed.emit(str(error))
@@ -54,6 +58,7 @@ class MainWindow(QMainWindow):
         self.di_path: Path | None = None
         self.ir_paths: list[Path] = []
         self.worker: RenderWorker | None = None
+        self.cache = RenderCache()
         self.has_rendered_audio = False
         self.selection_version = 0
         self.worker_version = -1
@@ -64,6 +69,7 @@ class MainWindow(QMainWindow):
         self.di_button = QPushButton("Abrir DI WAV")
         self.folder_button = QPushButton("Selecionar pasta de IRs")
         self.ir_list = QListWidget()
+        self.bypass = QCheckBox("Bypass IR (B)")
         self.loop = QCheckBox("Loop")
         self.loop.setChecked(True)
         self.play_button = QPushButton("Processar e reproduzir")
@@ -81,7 +87,7 @@ class MainWindow(QMainWindow):
         layout = QVBoxLayout(container)
         for widget in (
             self.di_label, self.di_button, self.folder_button, self.ir_list,
-            self.loop, self.play_button, self.stop_button,
+            self.loop, self.bypass, self.play_button, self.stop_button,
             self.position_label, self.progress, self.active_ir, self.status,
         ):
             layout.addWidget(widget)
@@ -92,6 +98,7 @@ class MainWindow(QMainWindow):
         self.play_button.clicked.connect(self.render)
         self.stop_button.clicked.connect(self.stop)
         self.loop.toggled.connect(self.output.set_loop)
+        self.bypass.toggled.connect(self.selection_changed)
         self.timer = QTimer(self)
         self.timer.setInterval(100)
         self.timer.timeout.connect(self.refresh_playback)
@@ -100,6 +107,11 @@ class MainWindow(QMainWindow):
         for key, step in (("Left", -1), ("Right", 1)):
             shortcut = QShortcut(QKeySequence(key), self)
             shortcut.activated.connect(lambda step=step: self.move_ir(step))
+            self.shortcuts.append(shortcut)
+        for key, action in (("Space", self.render), ("B", self.bypass.toggle)):
+            shortcut = QShortcut(QKeySequence(key), self)
+            shortcut.setAutoRepeat(False)
+            shortcut.activated.connect(action)
             self.shortcuts.append(shortcut)
 
     @Slot()
@@ -129,6 +141,7 @@ class MainWindow(QMainWindow):
         self.status.setText(f"{len(paths)} arquivos WAV encontrados; selecione um IR.")
 
     def reset_audio(self) -> None:
+        self.cache = RenderCache()
         self.output.close()
         self.has_rendered_audio = False
         self.autoplay = True
@@ -142,6 +155,8 @@ class MainWindow(QMainWindow):
     @Slot()
     def selection_changed(self) -> None:
         self.selection_version += 1
+        if self.ir_list.currentRow() < 0 and not self.bypass.isChecked():
+            self.reset_audio()
         self.start_render()
         self.refresh_playback()
         self.update_play_button()
@@ -167,14 +182,15 @@ class MainWindow(QMainWindow):
     def update_play_button(self) -> None:
         self.play_button.setEnabled(
             self.has_rendered_audio or (
-                self.worker is None and self.di_path is not None and self.ir_list.currentRow() >= 0
+                self.worker is None and self.di_path is not None
+                and (self.ir_list.currentRow() >= 0 or self.bypass.isChecked())
             )
         )
 
     @Slot()
     def render(self) -> None:
         row = self.ir_list.currentRow()
-        if self.di_path is None or row < 0:
+        if self.di_path is None or (row < 0 and not self.bypass.isChecked()):
             return
         if self.has_rendered_audio:
             try:
@@ -194,15 +210,16 @@ class MainWindow(QMainWindow):
 
     def start_render(self) -> None:
         row = self.ir_list.currentRow()
-        if self.worker is not None or self.di_path is None or row < 0:
+        if self.worker is not None or self.di_path is None or (row < 0 and not self.bypass.isChecked()):
             return
         self.worker_version = self.selection_version
-        self.worker = RenderWorker(self.di_path, self.ir_paths[row], self)
+        ir_path = None if self.bypass.isChecked() else self.ir_paths[row]
+        self.worker = RenderWorker(self.di_path, ir_path, self.cache, self)
         self.worker.rendered.connect(self.play_rendered)
         self.worker.failed.connect(self.render_failed)
         self.worker.finished.connect(self.render_finished)
         self.set_busy(True)
-        self.status.setText("Processando DI + IR…")
+        self.status.setText("Preparando DI…" if ir_path is None else "Processando DI + IR…")
         self.worker.start()
 
     @Slot(object)
@@ -222,7 +239,9 @@ class MainWindow(QMainWindow):
             self.show_error(str(error))
             return
         self.has_rendered_audio = True
-        self.active_ir.setText(f"IR ativo: {self.worker.ir_path.name}")
+        self.active_ir.setText(
+            f"IR ativo: {self.worker.ir_path.name}" if self.worker.ir_path else "Bypass ativo: DI sem IR"
+        )
         self.status.setText("Pause mantém a posição; Stop volta ao início.")
 
     @Slot(str)

@@ -23,7 +23,17 @@ seleção assume a posição atual e preserva Pause/Stop. Navegação rápida ap
 apenas a última seleção. O rótulo IR ativo identifica o áudio realmente aplicado.
 Trocar a DI ou pasta encerra o áudio atual.
 
-Esta entrega ainda não é o MVP completo: bypass, demais atalhos, favoritos, classificação
+Use **B** ou a opção **Bypass IR** para ouvir a DI sem IR; **Espaço** alterna
+Play/Pause. Bypass também funciona sem selecionar um IR. A volta ao IR mantém
+a posição e o estado do player. A DI sem IR mantém sua duração original, sem
+a cauda da convolução, e recebe a mesma proteção de pico (0,95).
+
+Um cache de sessão retém até 4 resultados ou 128 MiB (o que atingir primeiro),
+incluindo bypass. Voltar a um IR reutiliza o resultado se os arquivos não
+mudaram. Trocar DI ou pasta limpa o cache. Esse limite não inclui buffers ativos
+e temporários do processamento.
+
+Esta entrega ainda não é o MVP completo: favoritos, classificação
 e SQLite estão planejados em incrementos próprios. NAM, ANN, A2, entrada ao vivo
 e envio à Blackbox não estão implementados.
 
@@ -126,6 +136,7 @@ WAV; a decodificação e validação acontecem no processamento.
 
 - `audio/files.py`: carregamento e validação de WAV; `AudioBuffer` padroniza dados.
 - `audio/ir_processor.py`: convolução offline e reamostragem de IR.
+- `audio/render_cache.py`: cache LRU limitado e preparação do bypass.
 - `audio/transport.py`: estados, cursor e preenchimento de blocos de reprodução.
 - `audio/output.py`: stream próprio sounddevice/PortAudio, pausa e liberação.
 - `library/scanner.py`: descoberta de arquivos, sem persistência.
@@ -175,6 +186,7 @@ para uma etapa própria.
 - [Linux, WSL e fontes](docs/decisions/0002-linux-wsl-fontes.md)
 - [Player com posição e pausa](docs/decisions/0004-player.md)
 - [Troca automática e Git](docs/decisions/0005-troca-ir-git.md)
+- [Bypass, atalhos e cache](docs/decisions/0006-bypass-cache.md)
 - [Validação](docs/validacao.md)
 
 Cada incremento deve registrar decisões, testes e limitações em `docs/`, e

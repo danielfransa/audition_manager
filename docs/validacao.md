@@ -131,3 +131,26 @@ canais e descarte de solicitação antiga com Stop durante processamento.
 
 Resultado desta implementação: `python -m pytest -q` — **23 passed**;
 `git diff --check` sem erros. Validação audível da troca pelo usuário pendente.
+
+## Bypass, atalhos e cache de sessão
+
+- `python -m pytest -q`: **29 passed**. Inclui eventos de teclado reais no Qt
+  offscreen para B/Espaço, preservação de pausa/posição, bypass durante tarefa
+  antiga, Stop durante preparação, invalidação por mudança de arquivo,
+  descarte LRU, limite de memória e resultado maior que o cache.
+- `git diff --check`: sem erros.
+- Teste local com `clean_guitar.wav` e `2x12 ML FNDR Ox.wav`: primeira renderização
+  cerca de 0,073 s nesta execução; nova consulta retornou o mesmo buffer sem
+  processar. Cache de DI seca e resultado reteve 12.119.928 bytes. Ambos mantêm
+  estéreo a 44,1 kHz; duração seca não contém a cauda do IR.
+- Validação audível deste incremento ainda depende de auditoria do usuário.
+
+Roteiro:
+
+1. Reproduzir uma DI com IR; usar Espaço para pausar e retomar.
+2. Usar B: conferir rótulo Bypass ativo, continuidade e áudio sem IR.
+3. Pausar, alternar B duas vezes e conferir que permanece pausado na mesma posição.
+4. Navegar entre IRs, voltar ao anterior e comparar a rapidez da aplicação.
+5. Alternar B e selecionar IR rapidamente; conferir que a última escolha prevalece.
+6. Usar Stop durante preparação de bypass: não deve começar a tocar ao terminar.
+7. Abrir somente uma DI e ativar Bypass; deve funcionar sem pasta/IR.
