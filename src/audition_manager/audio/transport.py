@@ -1,5 +1,6 @@
 """Playback cursor and transitions, independent of Qt and PortAudio."""
 
+from dataclasses import dataclass
 from enum import StrEnum
 from threading import Lock
 
@@ -17,6 +18,14 @@ class PlaybackState(StrEnum):
     FINISHED = "finished"
 
 
+@dataclass(frozen=True)
+class PlaybackCheckpoint:
+    audio: AudioBuffer
+    state: PlaybackState
+    position: float
+    loop: bool
+
+
 class PlaybackTransport:
     def __init__(self) -> None:
         self._lock = Lock()
@@ -31,6 +40,15 @@ class PlaybackTransport:
                 return self._state, 0.0, 0.0
             rate = self._audio.sample_rate
             return self._state, self._position / rate, len(self._audio.samples) / rate
+
+    def checkpoint(self) -> PlaybackCheckpoint | None:
+        with self._lock:
+            if self._audio is None:
+                return None
+            return PlaybackCheckpoint(
+                self._audio, self._state,
+                self._position / self._audio.sample_rate, self._loop,
+            )
 
     def load(
         self, audio: AudioBuffer, *, position: float = 0,

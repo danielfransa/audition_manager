@@ -2,6 +2,8 @@
 
 import os
 import sys
+from dataclasses import dataclass
+from math import pow
 from typing import TYPE_CHECKING
 
 import numpy as np
@@ -14,16 +16,69 @@ if TYPE_CHECKING:
     import sounddevice as sd
 
 
+@dataclass(frozen=True)
+class OutputDevice:
+    index: int
+    name: str
+    host_api: str
+
+
 class AudioOutput:
     def __init__(self) -> None:
         self.transport = PlaybackTransport()
         self._stream: "sd.OutputStream | None" = None
+        self._device: int | None = None
+        self._gain_linear = 1.0
+
+    def list_devices(self) -> list[OutputDevice]:
+        import sounddevice as sd
+
+        devices = []
+        for index, info in enumerate(sd.query_devices()):
+            if info["max_output_channels"] <= 0:
+                continue
+            host_api = sd.query_hostapis(info["hostapi"])["name"]
+            devices.append(OutputDevice(index, info["name"], host_api))
+        return devices
+
+    @property
+    def device(self) -> int | None:
+        return self._device
+
+    def set_gain_db(self, gain_db: float) -> None:
+        if not -24 <= gain_db <= 0:
+            raise ValueError("O ganho deve estar entre -24 e 0 dB.")
+        self._gain_linear = pow(10, gain_db / 20)
+
+    def set_device(self, device: int | None) -> None:
+        if device == self._device:
+            return
+        checkpoint = self.transport.checkpoint()
+        self._close_stream()
+        self._device = device
+        if checkpoint is None:
+            return
+        try:
+            self._open_stream(checkpoint.audio)
+            self.transport.load(
+                checkpoint.audio, position=checkpoint.position, state=checkpoint.state
+            )
+            self.transport.set_loop(checkpoint.loop)
+            if checkpoint.state == PlaybackState.PLAYING:
+                self._stream.start()
+        except Exception:
+            self.transport.load(
+                checkpoint.audio, position=checkpoint.position,
+                state=PlaybackState.PAUSED,
+            )
+            self.transport.set_loop(checkpoint.loop)
+            raise
 
     def play(self, audio: AudioBuffer | None = None, *, loop: bool | None = None) -> None:
         import sounddevice as sd
 
         try:
-            sd.query_devices(kind="output")
+            sd.query_devices(self._device, kind="output")
         except sd.PortAudioError as error:
             message = (
                 "Não foi possível acessar uma saída de áudio padrão. "
@@ -54,18 +109,21 @@ class AudioOutput:
             raise
 
     def load(self, audio: AudioBuffer) -> None:
-        import sounddevice as sd
-
         self.close()
         self.transport.load(audio)
         try:
-            self._stream = sd.OutputStream(
-                samplerate=audio.sample_rate, channels=audio.samples.shape[1],
-                dtype="float32", callback=self._callback,
-            )
+            self._open_stream(audio)
         except Exception:
             self.transport.clear()
             raise
+
+    def _open_stream(self, audio: AudioBuffer) -> None:
+        import sounddevice as sd
+
+        self._stream = sd.OutputStream(
+            samplerate=audio.sample_rate, channels=audio.samples.shape[1],
+            dtype="float32", callback=self._callback, device=self._device,
+        )
 
     def replace(self, audio: AudioBuffer) -> None:
         if self._stream is None:
@@ -92,7 +150,9 @@ class AudioOutput:
     ) -> None:
         import sounddevice as sd
 
-        if self.transport.fill(outdata):
+        finished = self.transport.fill(outdata)
+        np.multiply(outdata, self._gain_linear, out=outdata)
+        if finished:
             raise sd.CallbackStop
 
     def pause(self) -> None:
@@ -109,7 +169,10 @@ class AudioOutput:
         self.transport.stop()
 
     def close(self) -> None:
+        self._close_stream()
+        self.transport.clear()
+
+    def _close_stream(self) -> None:
         if self._stream is not None:
             self._stream.close()
             self._stream = None
-        self.transport.clear()

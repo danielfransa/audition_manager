@@ -35,7 +35,8 @@ class FakeStream:
 def backend(monkeypatch):
     backend = SimpleNamespace(
         PortAudioError=OSError, CallbackStop=StopIteration,
-        query_devices=Mock(), OutputStream=Mock(side_effect=FakeStream),
+        query_devices=Mock(), query_hostapis=Mock(),
+        OutputStream=Mock(side_effect=FakeStream),
     )
     monkeypatch.setitem(sys.modules, "sounddevice", backend)
     return backend
@@ -128,3 +129,44 @@ def test_channel_change_preserves_paused_position(backend) -> None:
     assert old.closed
     assert not output._stream.active
     assert output._stream.channels == 2
+
+
+def test_lists_only_output_devices_with_host_api(backend) -> None:
+    backend.query_devices.return_value = [
+        {"name": "Input", "max_output_channels": 0, "hostapi": 0},
+        {"name": "Speakers", "max_output_channels": 2, "hostapi": 1},
+    ]
+    backend.query_hostapis.return_value = {"name": "WASAPI"}
+    devices = AudioOutput().list_devices()
+    assert [(item.index, item.name, item.host_api) for item in devices] == [
+        (1, "Speakers", "WASAPI")
+    ]
+    backend.query_hostapis.assert_called_once_with(1)
+
+
+def test_gain_attenuates_callback_without_changing_transport_audio(backend) -> None:
+    output = AudioOutput()
+    audio = AudioBuffer(np.full((4, 1), 0.8, dtype=np.float32), 48000)
+    output.play(audio, loop=True)
+    output.set_gain_db(-6)
+    block = np.empty((2, 1), dtype=np.float32)
+    output._stream.options["callback"](block, 2, None, None)
+    np.testing.assert_allclose(block, 0.8 * 10 ** (-6 / 20), rtol=1e-6)
+    np.testing.assert_allclose(audio.samples, 0.8)
+    with pytest.raises(ValueError):
+        output.set_gain_db(1)
+
+
+def test_device_change_reopens_stream_and_preserves_playing_cursor(backend) -> None:
+    output = AudioOutput()
+    audio = AudioBuffer(np.full((20, 1), 0.2, dtype=np.float32), 48000)
+    output.play(audio, loop=True)
+    old = output._stream
+    old.options["callback"](np.empty((4, 1), dtype=np.float32), 4, None, None)
+    before = output.transport.snapshot()
+    output.set_device(7)
+    assert old.closed
+    assert output.device == 7
+    assert output._stream.options["device"] == 7
+    assert output._stream.active
+    assert output.transport.snapshot() == before

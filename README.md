@@ -18,6 +18,11 @@ Pause preserva a posição, Stop volta ao início e Loop pode ser alterado duran
 a reprodução. O contador e a barra mostram a posição no resultado processado.
 A convolução roda em uma thread de trabalho para manter a janela responsiva.
 
+O seletor de saída lista os dispositivos fornecidos pelo PortAudio. A opção
+inicial acompanha a saída padrão do sistema. Trocar o dispositivo preserva a
+posição e o estado do player, com uma breve interrupção enquanto o stream é
+reaberto. O ganho de saída vai de -24 a 0 dB e não altera o áudio em cache.
+
 Ao trocar o IR, o áudio anterior continua durante o processamento. A nova
 seleção assume a posição atual e preserva Pause/Stop. Navegação rápida aplica
 apenas a última seleção. O rótulo IR ativo identifica o áudio realmente aplicado.
@@ -186,6 +191,9 @@ já enviados terminarem; pode haver um pequeno atraso. Picos acima de
 entre alguns IRs. Não há normalização de volume perceptual, crossfade ou
 promessa de baixa latência. O dispositivo precisa aceitar a taxa da DI.
 O fechamento aguarda o usuário tentar novamente após um processamento ativo.
+Dispositivo e ganho ainda não são persistidos: cada execução começa na saída
+padrão e em 0 dB. Dispositivos desconectados durante a reprodução podem exigir
+selecionar outra saída ou reiniciar o aplicativo.
 
 As dependências usam faixas de versões em `pyproject.toml`; ainda não há lockfile
 multiplataforma. Empacotamento e auditoria de licenças de distribuição ficam
@@ -201,6 +209,7 @@ para uma etapa própria.
 - [Troca automática e Git](docs/decisions/0005-troca-ir-git.md)
 - [Bypass, atalhos e cache](docs/decisions/0006-bypass-cache.md)
 - [Biblioteca SQLite](docs/decisions/0007-biblioteca-sqlite.md)
+- [Dispositivo e ganho](docs/decisions/0008-dispositivo-ganho.md)
 - [Validação](docs/validacao.md)
 
 Cada incremento deve registrar decisões, testes e limitações em `docs/`, e

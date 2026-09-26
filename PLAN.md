@@ -38,6 +38,9 @@ Windows e Linux são alvos; WSL/WSLg é ambiente de testes rápidos da aplicaç�
    auditoria. O campo de notas existe no esquema; editor e filtros permanecem
    para incrementos próprios.**
 4. Seleção de dispositivo, ganho, mensagens de erro e validação Windows/Linux/WSLg.
+   **Seleção de saída e ganho de -24 a 0 dB implementados para auditoria;
+   validação automática e stream real no WSLg concluídos. Windows e Linux
+   nativo permanecem nos roteiros manuais por plataforma.**
 
 Cada item acima é uma rodada com revisão própria. Critério do MVP completo:
 DI em loop, navegação contínua entre IRs e metadados persistentes.

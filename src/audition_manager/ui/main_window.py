@@ -1,10 +1,11 @@
 import logging
 from pathlib import Path
 
-from PySide6.QtCore import QSignalBlocker, QThread, QTimer, Signal, Slot
+from PySide6.QtCore import QSignalBlocker, Qt, QThread, QTimer, Signal, Slot
 from PySide6.QtGui import QCloseEvent, QKeySequence, QShortcut
 from PySide6.QtWidgets import (
     QCheckBox,
+    QComboBox,
     QFileDialog,
     QLabel,
     QListWidget,
@@ -12,6 +13,7 @@ from PySide6.QtWidgets import (
     QMessageBox,
     QPushButton,
     QProgressBar,
+    QSlider,
     QVBoxLayout,
     QWidget,
 )
@@ -74,6 +76,12 @@ class MainWindow(QMainWindow):
         self.di_button = QPushButton("Abrir DI WAV")
         self.folder_button = QPushButton("Selecionar pasta de IRs")
         self.ir_list = QListWidget()
+        self.device = QComboBox()
+        self.device.setToolTip("Dispositivo de saída")
+        self.gain = QSlider(Qt.Orientation.Horizontal)
+        self.gain.setRange(-24, 0)
+        self.gain.setValue(0)
+        self.gain_label = QLabel("Ganho de saída: 0 dB")
         self.bypass = QCheckBox("Bypass IR (B)")
         self.loop = QCheckBox("Loop")
         self.loop.setChecked(True)
@@ -94,7 +102,8 @@ class MainWindow(QMainWindow):
         container = QWidget()
         layout = QVBoxLayout(container)
         for widget in (
-            self.di_label, self.di_button, self.folder_button, self.ir_list,
+            self.di_label, self.di_button, self.folder_button,
+            self.device, self.gain_label, self.gain, self.ir_list,
             self.loop, self.bypass, self.play_button, self.stop_button,
             self.position_label, self.progress, self.active_ir,
             self.favorite, self.rating, self.status,
@@ -103,6 +112,8 @@ class MainWindow(QMainWindow):
         self.setCentralWidget(container)
         self.di_button.clicked.connect(self.choose_di)
         self.folder_button.clicked.connect(self.choose_folder)
+        self.device.currentIndexChanged.connect(self.change_device)
+        self.gain.valueChanged.connect(self.change_gain)
         self.ir_list.currentRowChanged.connect(self.selection_changed)
         self.play_button.clicked.connect(self.render)
         self.stop_button.clicked.connect(self.stop)
@@ -118,6 +129,7 @@ class MainWindow(QMainWindow):
             shortcut = QShortcut(QKeySequence(key), self)
             shortcut.activated.connect(lambda step=step: self.move_ir(step))
             self.shortcuts.append(shortcut)
+        self.refresh_devices()
         for key, action in (("Space", self.render), ("B", self.bypass.toggle)):
             shortcut = QShortcut(QKeySequence(key), self)
             shortcut.setAutoRepeat(False)
@@ -176,6 +188,39 @@ class MainWindow(QMainWindow):
         row = self.ir_list.currentRow() + step
         if 0 <= row < self.ir_list.count():
             self.ir_list.setCurrentRow(row)
+
+    def refresh_devices(self) -> None:
+        blocker = QSignalBlocker(self.device)
+        self.device.clear()
+        self.device.addItem("Saída padrão do sistema", None)
+        try:
+            for device in self.output.list_devices():
+                self.device.addItem(
+                    f"{device.name} — {device.host_api}", device.index
+                )
+        except Exception as error:
+            logger.exception("Unable to enumerate output devices")
+            self.status.setText(f"Não foi possível listar saídas de áudio: {error}")
+        del blocker
+
+    @Slot(int)
+    def change_device(self, index: int) -> None:
+        device = self.device.itemData(index)
+        try:
+            self.output.set_device(device)
+            self.status.setText(f"Saída: {self.device.currentText()}.")
+        except Exception as error:
+            logger.exception("Unable to change output device")
+            self.show_error(str(error))
+        self.refresh_playback()
+
+    @Slot(int)
+    def change_gain(self, gain_db: int) -> None:
+        try:
+            self.output.set_gain_db(gain_db)
+            self.gain_label.setText(f"Ganho de saída: {gain_db} dB")
+        except ValueError as error:
+            self.show_error(str(error))
 
     @Slot()
     def selection_changed(self) -> None:

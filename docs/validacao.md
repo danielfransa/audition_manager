@@ -173,3 +173,22 @@ Roteiro manual:
    impedir os demais IRs de aparecerem.
 6. Verifique o banco no diretório documentado no README. Ele deve conter somente
    metadados e caminhos, sem blobs de áudio.
+
+## Dispositivo e ganho de saída
+
+- `python -m pytest -q`: **37 passed** após este incremento.
+- Os testes cobrem enumeração apenas de saídas, API do host, dispositivo passado
+  ao stream, preservação de cursor/estado na troca e atenuação sem alterar cache.
+- No WSLg real foram listadas `pulse` e `default` via ALSA. A saída `pulse` foi
+  aberta explicitamente em estéreo a 44,1 kHz, com -12 dB, e recebeu 250 ms de
+  silêncio sem erros.
+
+Roteiro manual:
+
+1. Inicie a reprodução e escolha cada saída disponível. Confirme que o contador
+   e o estado continuam após a breve reabertura do stream.
+2. Pause, troque a saída e confirme que permanece pausado na mesma posição.
+3. Mova o ganho de 0 para -12 e -24 dB e confirme redução progressiva de volume.
+4. Volte a 0 dB e confira que o nível original retorna sem novo processamento.
+5. Desconecte uma saída, se seguro, e confirme mensagem de erro; selecione uma
+   saída válida e retome. Repetir no Windows/WASAPI e no Linux nativo.

@@ -11,6 +11,7 @@ qt_widgets = pytest.importorskip("PySide6.QtWidgets", exc_type=ImportError)
 QApplication = qt_widgets.QApplication
 
 from audition_manager.audio.files import AudioBuffer
+from audition_manager.audio.output import OutputDevice
 from audition_manager.audio.transport import PlaybackTransport, PlaybackState
 from audition_manager.library.repository import ImpulseResponseRepository
 from audition_manager.ui.main_window import MainWindow
@@ -23,6 +24,17 @@ class FakeOutput:
         self.stopped = False
         self.transport = PlaybackTransport()
         self.loads = 0
+        self.device = None
+        self.gain_db = 0
+
+    def list_devices(self) -> list[OutputDevice]:
+        return [OutputDevice(3, "Test Output", "Test API")]
+
+    def set_device(self, device: int | None) -> None:
+        self.device = device
+
+    def set_gain_db(self, gain_db: float) -> None:
+        self.gain_db = gain_db
 
     def play(self, audio: AudioBuffer | None = None, *, loop: bool = False) -> None:
         if audio is not None:
@@ -77,6 +89,12 @@ def test_select_render_play_and_stop(tmp_path: Path, monkeypatch) -> None:
     )
     try:
         assert not window.play_button.isEnabled()
+        assert window.device.count() == 2
+        window.device.setCurrentIndex(1)
+        assert output.device == 3
+        window.gain.setValue(-12)
+        assert output.gain_db == -12
+        assert window.gain_label.text() == "Ganho de saída: -12 dB"
         window.choose_di()
         window.choose_folder()
         assert window.ir_list.count() == 1
