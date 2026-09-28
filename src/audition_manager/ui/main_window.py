@@ -8,12 +8,15 @@ from PySide6.QtWidgets import (
     QComboBox,
     QFileDialog,
     QLabel,
+    QLineEdit,
     QListWidget,
     QMainWindow,
     QMessageBox,
     QPushButton,
     QProgressBar,
+    QPlainTextEdit,
     QSlider,
+    QHBoxLayout,
     QVBoxLayout,
     QWidget,
 )
@@ -63,6 +66,8 @@ class MainWindow(QMainWindow):
         self.output = output
         self.repository = repository
         self.di_path: Path | None = None
+        self.ir_root: Path | None = None
+        self.all_ir_paths: list[Path] = []
         self.ir_paths: list[Path] = []
         self.worker: RenderWorker | None = None
         self.cache = RenderCache()
@@ -71,10 +76,17 @@ class MainWindow(QMainWindow):
         self.worker_version = -1
         self.autoplay = True
         self.setWindowTitle("Audition Manager")
-        self.resize(720, 520)
+        self.resize(820, 700)
         self.di_label = QLabel("Nenhuma DI selecionada")
         self.di_button = QPushButton("Abrir DI WAV")
         self.folder_button = QPushButton("Selecionar pasta de IRs")
+        self.search = QLineEdit()
+        self.search.setPlaceholderText("Buscar IR por nome ou caminho…")
+        self.favorites_only = QCheckBox("Somente favoritos")
+        self.minimum_rating = QComboBox()
+        self.minimum_rating.addItem("Todas as avaliações", 0)
+        for value in range(1, 6):
+            self.minimum_rating.addItem(f"{value}+ estrelas", value)
         self.ir_list = QListWidget()
         self.device = QComboBox()
         self.device.setToolTip("Dispositivo de saída")
@@ -96,30 +108,65 @@ class MainWindow(QMainWindow):
         self.favorite = QCheckBox("Favorito (F)")
         self.favorite.setEnabled(False)
         self.rating = QLabel("Avaliação: ☆☆☆☆☆")
+        self.notes = QPlainTextEdit()
+        self.notes.setPlaceholderText("Notas sobre o IR selecionado…")
+        self.notes.setMaximumHeight(90)
+        self.notes.setEnabled(False)
+        self.save_notes_button = QPushButton("Salvar notas")
+        self.save_notes_button.setEnabled(False)
         self.status = QLabel("Abra uma DI e selecione um IR.")
         self.status.setWordWrap(True)
 
         container = QWidget()
         layout = QVBoxLayout(container)
-        for widget in (
-            self.di_label, self.di_button, self.folder_button,
-            self.device, self.gain_label, self.gain, self.ir_list,
-            self.loop, self.bypass, self.play_button, self.stop_button,
-            self.position_label, self.progress, self.active_ir,
-            self.favorite, self.rating, self.status,
-        ):
-            layout.addWidget(widget)
+        layout.addWidget(self.di_label)
+        file_buttons = QHBoxLayout()
+        file_buttons.addWidget(self.di_button)
+        file_buttons.addWidget(self.folder_button)
+        layout.addLayout(file_buttons)
+        layout.addWidget(self.device)
+        gain_row = QHBoxLayout()
+        gain_row.addWidget(self.gain_label)
+        gain_row.addWidget(self.gain, 1)
+        layout.addLayout(gain_row)
+        filters = QHBoxLayout()
+        filters.addWidget(self.search, 1)
+        filters.addWidget(self.favorites_only)
+        filters.addWidget(self.minimum_rating)
+        layout.addLayout(filters)
+        layout.addWidget(self.ir_list, 1)
+        transport = QHBoxLayout()
+        transport.addWidget(self.loop)
+        transport.addWidget(self.bypass)
+        transport.addWidget(self.play_button, 1)
+        transport.addWidget(self.stop_button)
+        layout.addLayout(transport)
+        layout.addWidget(self.position_label)
+        layout.addWidget(self.progress)
+        layout.addWidget(self.active_ir)
+        metadata = QHBoxLayout()
+        metadata.addWidget(self.favorite)
+        metadata.addWidget(self.rating)
+        metadata.addStretch(1)
+        layout.addLayout(metadata)
+        layout.addWidget(self.notes)
+        layout.addWidget(self.save_notes_button)
+        layout.addWidget(self.status)
         self.setCentralWidget(container)
         self.di_button.clicked.connect(self.choose_di)
         self.folder_button.clicked.connect(self.choose_folder)
         self.device.currentIndexChanged.connect(self.change_device)
         self.gain.valueChanged.connect(self.change_gain)
+        self.search.textChanged.connect(self.apply_filters)
+        self.favorites_only.toggled.connect(self.apply_filters)
+        self.minimum_rating.currentIndexChanged.connect(self.apply_filters)
         self.ir_list.currentRowChanged.connect(self.selection_changed)
         self.play_button.clicked.connect(self.render)
         self.stop_button.clicked.connect(self.stop)
         self.loop.toggled.connect(self.output.set_loop)
         self.bypass.toggled.connect(self.selection_changed)
         self.favorite.toggled.connect(self.set_favorite)
+        self.save_notes_button.clicked.connect(self.save_notes)
         self.timer = QTimer(self)
         self.timer.setInterval(100)
         self.timer.timeout.connect(self.refresh_playback)
@@ -130,7 +177,10 @@ class MainWindow(QMainWindow):
             shortcut.activated.connect(lambda step=step: self.move_ir(step))
             self.shortcuts.append(shortcut)
         self.refresh_devices()
-        for key, action in (("Space", self.render), ("B", self.bypass.toggle)):
+        for key, action in (
+            ("Space", self.toggle_playback_shortcut),
+            ("B", self.toggle_bypass_shortcut),
+        ):
             shortcut = QShortcut(QKeySequence(key), self)
             shortcut.setAutoRepeat(False)
             shortcut.activated.connect(action)
@@ -139,7 +189,7 @@ class MainWindow(QMainWindow):
         favorite_shortcut.setAutoRepeat(False)
         favorite_shortcut.activated.connect(self.toggle_favorite)
         self.shortcuts.append(favorite_shortcut)
-        for value in range(1, 6):
+        for value in range(0, 6):
             shortcut = QShortcut(QKeySequence(str(value)), self)
             shortcut.setAutoRepeat(False)
             shortcut.activated.connect(lambda value=value: self.set_rating(value))
@@ -169,9 +219,9 @@ class MainWindow(QMainWindow):
             self.show_error(str(error))
             return
         self.reset_audio()
-        self.ir_list.clear()
-        self.ir_paths = paths
-        self.ir_list.addItems([str(path.relative_to(root)) for path in paths])
+        self.ir_root = root.resolve()
+        self.all_ir_paths = paths
+        self.apply_filters()
         skipped = f"; {len(errors)} inválidos ignorados" if errors else ""
         self.status.setText(
             f"{len(paths)} IRs válidos encontrados{skipped}; selecione um IR."
@@ -185,9 +235,56 @@ class MainWindow(QMainWindow):
         self.active_ir.setText("IR em reprodução: nenhum")
 
     def move_ir(self, step: int) -> None:
+        if self.notes.hasFocus():
+            return
         row = self.ir_list.currentRow() + step
         if 0 <= row < self.ir_list.count():
             self.ir_list.setCurrentRow(row)
+
+    def toggle_playback_shortcut(self) -> None:
+        if not self.notes.hasFocus():
+            self.render()
+
+    def toggle_bypass_shortcut(self) -> None:
+        if not self.notes.hasFocus():
+            self.bypass.toggle()
+
+    def item_text(self, path: Path) -> str:
+        item = self.repository.get(path)
+        relative = str(path.relative_to(self.ir_root)) if self.ir_root else path.name
+        if item is None:
+            return relative
+        favorite = "★ " if item.favorite else ""
+        rating = f" [{'★' * item.rating}{'☆' * (5 - item.rating)}]"
+        return f"{favorite}{relative}{rating}"
+
+    @Slot()
+    def apply_filters(self) -> None:
+        selected = self.selected_ir_path()
+        query = self.search.text().strip().casefold()
+        minimum = self.minimum_rating.currentData() or 0
+        visible: list[Path] = []
+        for path in self.all_ir_paths:
+            item = self.repository.get(path)
+            if item is None:
+                continue
+            relative = str(path.relative_to(self.ir_root)) if self.ir_root else path.name
+            if query and query not in relative.casefold():
+                continue
+            if self.favorites_only.isChecked() and not item.favorite:
+                continue
+            if item.rating < minimum:
+                continue
+            visible.append(path)
+        blocker = QSignalBlocker(self.ir_list)
+        self.ir_list.clear()
+        self.ir_paths = visible
+        self.ir_list.addItems([self.item_text(path) for path in visible])
+        if selected in visible:
+            self.ir_list.setCurrentRow(visible.index(selected))
+        del blocker
+        self.refresh_metadata()
+        self.update_play_button()
 
     def refresh_devices(self) -> None:
         blocker = QSignalBlocker(self.device)
@@ -245,10 +342,15 @@ class MainWindow(QMainWindow):
         self.favorite.setEnabled(item is not None)
         rating = item.rating if item else 0
         self.rating.setText(f"Avaliação: {'★' * rating}{'☆' * (5 - rating)}")
+        notes_blocker = QSignalBlocker(self.notes)
+        self.notes.setPlainText(item.notes if item else "")
+        del notes_blocker
+        self.notes.setEnabled(item is not None)
+        self.save_notes_button.setEnabled(item is not None)
 
     @Slot()
     def toggle_favorite(self) -> None:
-        if self.favorite.isEnabled():
+        if not self.notes.hasFocus() and self.favorite.isEnabled():
             self.favorite.toggle()
 
     @Slot(bool)
@@ -261,9 +363,11 @@ class MainWindow(QMainWindow):
             self.status.setText("Favorito atualizado.")
         except (KeyError, OSError) as error:
             self.show_error(str(error))
-        self.refresh_metadata()
+        self.apply_filters()
 
     def set_rating(self, rating: int) -> None:
+        if self.notes.hasFocus():
+            return
         path = self.selected_ir_path()
         if path is None:
             return
@@ -272,7 +376,18 @@ class MainWindow(QMainWindow):
             self.status.setText(f"Avaliação definida como {rating}/5.")
         except (KeyError, OSError, ValueError) as error:
             self.show_error(str(error))
-        self.refresh_metadata()
+        self.apply_filters()
+
+    @Slot()
+    def save_notes(self) -> None:
+        path = self.selected_ir_path()
+        if path is None:
+            return
+        try:
+            self.repository.set_notes(path, self.notes.toPlainText())
+            self.status.setText("Notas salvas.")
+        except (KeyError, OSError) as error:
+            self.show_error(str(error))
 
     @Slot()
     def refresh_playback(self) -> None:

@@ -41,10 +41,19 @@ e temporários do processamento.
 Use **F** para alternar favorito e **1..5** para avaliar o IR selecionado. Esses
 dados persistem em SQLite e reaparecem após fechar, abrir ou reescanear a pasta.
 O banco armazena caminhos e metadados; os arquivos de áudio não são copiados.
+Use **0** para limpar a avaliação. A lista mostra favorito e estrelas ao lado
+do caminho relativo.
 
-Esta entrega ainda não é o MVP completo: filtros, editor de notas e seleção de
-dispositivo estão planejados em incrementos próprios. NAM, ANN, A2, entrada ao
-vivo e envio à Blackbox não estão implementados.
+A busca filtra por nome ou caminho dentro da pasta aberta. Também é possível
+mostrar somente favoritos e exigir uma avaliação mínima. Aplicar um filtro não
+interrompe nem troca o áudio atual. As notas são salvas pelo botão **Salvar
+notas**; mudar de item sem salvar descarta a edição ainda não gravada. Enquanto
+o editor está em foco, F, B, Espaço, setas e números são texto normal.
+
+Esta entrega fecha as funções planejadas da biblioteca do MVP. O próximo passo,
+após validação prática, é o polimento técnico: scan assíncrono, persistência de
+preferências e decisão sobre crossfade. NAM, ANN, A2, entrada ao vivo e envio à
+Blackbox não estão implementados.
 
 ## Desenvolvimento no WSL com mise e venv
 
@@ -210,6 +219,7 @@ para uma etapa própria.
 - [Bypass, atalhos e cache](docs/decisions/0006-bypass-cache.md)
 - [Biblioteca SQLite](docs/decisions/0007-biblioteca-sqlite.md)
 - [Dispositivo e ganho](docs/decisions/0008-dispositivo-ganho.md)
+- [Filtros e notas](docs/decisions/0009-filtros-notas.md)
 - [Validação](docs/validacao.md)
 
 Cada incremento deve registrar decisões, testes e limitações em `docs/`, e

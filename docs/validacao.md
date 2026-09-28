@@ -192,3 +192,25 @@ Roteiro manual:
 4. Volte a 0 dB e confira que o nível original retorna sem novo processamento.
 5. Desconecte uma saída, se seguro, e confirme mensagem de erro; selecione uma
    saída válida e retome. Repetir no Windows/WASAPI e no Linux nativo.
+
+## Filtros e notas
+
+- `python -m pytest -q`: **39 passed** após este incremento.
+- Os testes cobrem busca parcial, favorito, avaliação mínima, combinação dos
+  metadados na lista, preservação da seleção de reprodução e notas no SQLite.
+- Um teste Qt digita `F B 12345` e espaço no editor e confirma que favorito,
+  bypass e rating não são acionados; depois salva e recarrega a nota.
+
+Roteiro prático para aprovação antes do polimento:
+
+1. Abra uma pasta com subpastas e confirme caminho, favorito e cinco estrelas
+   em cada linha. Use 1..5 e 0 para definir e limpar avaliações.
+2. Busque partes do nome, da pasta e misture maiúsculas/minúsculas.
+3. Combine busca, Somente favoritos e avaliação mínima; limpe os filtros e
+   confirme que todos os IRs válidos reaparecem.
+4. Com áudio tocando, aplique filtros que ocultem o IR ativo. O áudio e o rótulo
+   IR ativo devem continuar; selecionar outro item deve fazer a troca normal.
+5. Escreva notas contendo letras F/B, números, espaços e setas. Confirme que o
+   player não reage. Salve, navegue para outro IR e volte para conferir o texto.
+6. Edite sem salvar e navegue: a edição deve ser descartada, conforme indicado
+   no README. Feche/reabra após salvar para confirmar persistência.

@@ -277,3 +277,92 @@ def test_favorite_and_rating_shortcuts_persist_after_rescan(tmp_path, monkeypatc
         assert second.rating.text() == "Avaliação: ★★★★☆"
     finally:
         second.close()
+
+
+def test_library_filters_decorate_list_and_do_not_change_playback_selection(
+    tmp_path, monkeypatch
+) -> None:
+    app = QApplication.instance() or QApplication([])
+    folder = tmp_path / "irs"
+    (folder / "Mesa").mkdir(parents=True)
+    (folder / "Marshall").mkdir()
+    paths = [
+        folder / "Mesa" / "V30.wav",
+        folder / "Marshall" / "Greenback.wav",
+        folder / "Clean.wav",
+    ]
+    for path in paths:
+        sf.write(path, [1.0], 48000, subtype="FLOAT")
+    monkeypatch.setattr(
+        "audition_manager.ui.main_window.QFileDialog.getExistingDirectory",
+        lambda *args: str(folder),
+    )
+    repository = ImpulseResponseRepository(tmp_path / "library.sqlite3")
+    window = MainWindow(FakeOutput(), repository)
+    try:
+        window.choose_folder()
+        assert window.ir_list.count() == 3
+        mesa_row = window.ir_paths.index(paths[0].resolve())
+        window.ir_list.setCurrentRow(mesa_row)
+        repository.set_favorite(paths[0], True)
+        repository.set_rating(paths[0], 5)
+        repository.set_rating(paths[1], 3)
+        version = window.selection_version
+        window.apply_filters()
+        assert window.selection_version == version
+        assert "★ " in window.ir_list.currentItem().text()
+        assert "★★★★★" in window.ir_list.currentItem().text()
+
+        window.search.setText("green")
+        assert window.ir_list.count() == 1
+        assert "Greenback.wav" in window.ir_list.item(0).text()
+        window.search.clear()
+        window.favorites_only.setChecked(True)
+        assert window.ir_list.count() == 1
+        assert "V30.wav" in window.ir_list.item(0).text()
+        window.favorites_only.setChecked(False)
+        window.minimum_rating.setCurrentIndex(4)
+        assert window.ir_list.count() == 1
+        assert "V30.wav" in window.ir_list.item(0).text()
+        assert window.selection_version == version
+    finally:
+        window.close()
+
+
+def test_notes_persist_and_typing_does_not_trigger_global_shortcuts(
+    tmp_path, monkeypatch
+) -> None:
+    from PySide6.QtCore import Qt
+    from PySide6.QtTest import QTest
+
+    app = QApplication.instance() or QApplication([])
+    folder = tmp_path / "irs"
+    folder.mkdir()
+    ir = folder / "cab.wav"
+    sf.write(ir, [1.0], 48000, subtype="FLOAT")
+    monkeypatch.setattr(
+        "audition_manager.ui.main_window.QFileDialog.getExistingDirectory",
+        lambda *args: str(folder),
+    )
+    repository = ImpulseResponseRepository(tmp_path / "library.sqlite3")
+    window = MainWindow(FakeOutput(), repository)
+    try:
+        window.show()
+        window.activateWindow()
+        window.choose_folder()
+        window.ir_list.setCurrentRow(0)
+        app.processEvents()
+        window.notes.setFocus()
+        QTest.keyClicks(window.notes, "F B 12345 favorite test")
+        QTest.keyClick(window.notes, Qt.Key.Key_Space)
+        assert not window.favorite.isChecked()
+        assert not window.bypass.isChecked()
+        assert repository.get(ir).rating == 0
+        window.save_notes_button.click()
+        assert repository.get(ir).notes == "F B 12345 favorite test "
+        window.notes.clear()
+        window.refresh_metadata()
+        assert window.notes.toPlainText() == "F B 12345 favorite test "
+        assert window.status.text() == "Notas salvas."
+    finally:
+        window.close()

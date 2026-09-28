@@ -17,6 +17,7 @@ def test_migration_upsert_and_metadata_survive_reopen(tmp_path: Path) -> None:
     repository.upsert_many([impulse(path)])
     repository.set_favorite(path, True)
     repository.set_rating(path, 4)
+    repository.set_notes(path, "Bright cabinet; good with neck pickup")
     repository.close()
 
     reopened = ImpulseResponseRepository(database)
@@ -24,6 +25,7 @@ def test_migration_upsert_and_metadata_survive_reopen(tmp_path: Path) -> None:
     assert item is not None
     assert item.favorite
     assert item.rating == 4
+    assert item.notes == "Bright cabinet; good with neck pickup"
     assert item.sample_rate == 48000
     reopened.close()
 
@@ -34,11 +36,13 @@ def test_rescan_updates_audio_metadata_without_losing_user_fields(tmp_path: Path
     repository.upsert_many([impulse(path)])
     repository.set_favorite(path, True)
     repository.set_rating(path, 5)
+    repository.set_notes(path, "Keep this note")
     repository.upsert_many([impulse(path, rate=44100, channels=2)])
     item = repository.get(path)
     assert item is not None
     assert (item.sample_rate, item.channels) == (44100, 2)
     assert (item.favorite, item.rating) == (True, 5)
+    assert item.notes == "Keep this note"
     repository.close()
 
 

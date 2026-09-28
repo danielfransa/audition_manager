@@ -89,6 +89,9 @@ class ImpulseResponseRepository:
             raise ValueError("A avaliação deve estar entre 0 e 5.")
         self._update(path, "rating", rating)
 
+    def set_notes(self, path: Path, notes: str) -> None:
+        self._update(path, "notes", notes)
+
     def _update(self, path: Path, column: str, value: object) -> None:
         with self._connection:
             cursor = self._connection.execute(
@@ -101,4 +104,3 @@ class ImpulseResponseRepository:
 
     def close(self) -> None:
         self._connection.close()
-
