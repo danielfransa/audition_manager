@@ -214,3 +214,24 @@ Roteiro prático para aprovação antes do polimento:
    player não reage. Salve, navegue para outro IR e volte para conferir o texto.
 6. Edite sem salvar e navegue: a edição deve ser descartada, conforme indicado
    no README. Feche/reabra após salvar para confirmar persistência.
+
+## Exportação dos favoritos
+
+- `python -m pytest -q`: **55 passed** após este incremento.
+- Testes cobrem subpastas, conteúdo copiado, contagem/tamanho, exportação apesar
+  de filtro visual, nomes inválidos no Windows, destino existente, arquivo fora
+  da raiz e rejeição de destino dentro da biblioteca.
+- A exportação usa staging temporário e os testes confirmam que ele é removido.
+
+Roteiro prático:
+
+1. Marque favoritos em diferentes subpastas da biblioteca aberta.
+2. Aplique um filtro que mostre apenas um deles e clique Exportar favoritos.
+3. Escolha uma pasta fora da biblioteca e informe um nome novo. Confirme que
+   todos os favoritos foram copiados, preservando as subpastas.
+4. Compare tamanho/conteúdo dos WAVs originais e exportados e teste a pasta no
+   software de transferência da sua pedaleira.
+5. Repita usando o mesmo nome: a aplicação deve recusar sem alterar a primeira
+   exportação. Cancele cada diálogo e confirme que nenhuma pasta é criada.
+6. Tente escolher a própria pasta de IRs como destino: deve ser recusado para
+   evitar duplicatas. Os favoritos e arquivos originais devem permanecer intactos.

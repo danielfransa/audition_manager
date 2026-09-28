@@ -45,6 +45,11 @@ Windows e Linux são alvos; WSL/WSLg é ambiente de testes rápidos da aplicaç�
 Cada item acima é uma rodada com revisão própria. Critério do MVP completo:
 DI em loop, navegação contínua entre IRs e metadados persistentes.
 
+5. Exportar os IRs favoritos da pasta aberta para uma nova pasta escolhida pelo
+   usuário, preservando subpastas e sem sobrescrever exportações existentes.
+   **Implementado para auditoria. Exportação de capturas será adicionada quando
+   a biblioteca de capturas existir.**
+
 ## 2 — Capturas NAM
 
 Pesquisar runtime oficial/open source, manutenção, licença e viabilidade no
@@ -59,15 +64,17 @@ migrar DSP. Meta exploratória: 48 kHz, 64/128 amostras; não é compromisso des
 fase. Callbacks não devem fazer I/O, carregar modelos ou alocar grandes buffers.
 Convolução por blocos e eventual backend C++/JUCE exigem contrato próprio.
 
-## 4 — ANN / A2 / Blackbox
+## 4 — ANN / A2 / Blackbox / IR-Box
 
 Pesquisar separadamente formatos e ferramentas; classificação por extensão
 não comprova compatibilidade. Não inventar parsers ou conversores proprietários.
 Investigar exportação e USB/MIDI/SysEx somente com evidências/documentação.
+Tratar Blackbox e IR-Box como destinos independentes: pesquisar protocolos,
+limites, formatos e ferramentas de cada equipamento antes de transferência direta.
 
 ## 5 — Biblioteca e distribuição
 
-Filtros, comparação de centenas de capturas/IRs, exportação, instalador Windows,
+Comparação de centenas de capturas/IRs, instalador Windows,
 reprodutibilidade das dependências e revisão das licenças redistribuídas.
 
 ## Riscos técnicos

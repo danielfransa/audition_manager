@@ -366,3 +366,51 @@ def test_notes_persist_and_typing_does_not_trigger_global_shortcuts(
         assert window.status.text() == "Notas salvas."
     finally:
         window.close()
+
+
+def test_exports_all_favorites_from_current_root_regardless_of_filters(
+    tmp_path, monkeypatch
+) -> None:
+    app = QApplication.instance() or QApplication([])
+    source = tmp_path / "irs"
+    nested = source / "Mesa"
+    nested.mkdir(parents=True)
+    favorites = [nested / "V30.wav", source / "Clean.wav"]
+    other = source / "Other.wav"
+    for path in [*favorites, other]:
+        sf.write(path, [1.0], 48000, subtype="FLOAT")
+    destination = tmp_path / "exports"
+    destination.mkdir()
+    directories = iter([str(source), str(destination)])
+    monkeypatch.setattr(
+        "audition_manager.ui.main_window.QFileDialog.getExistingDirectory",
+        lambda *args: next(directories),
+    )
+    monkeypatch.setattr(
+        "audition_manager.ui.main_window.QInputDialog.getText",
+        lambda *args, **kwargs: ("My Pedal IRs", True),
+    )
+    messages = []
+    monkeypatch.setattr(
+        "audition_manager.ui.main_window.QMessageBox.information",
+        lambda *args: messages.append(args[-1]),
+    )
+    repository = ImpulseResponseRepository(tmp_path / "library.sqlite3")
+    window = MainWindow(FakeOutput(), repository)
+    try:
+        window.choose_folder()
+        for path in favorites:
+            repository.set_favorite(path, True)
+        window.apply_filters()
+        assert window.export_button.isEnabled()
+        window.search.setText("V30")
+        assert window.ir_list.count() == 1
+        window.export_button.click()
+        exported = destination / "My Pedal IRs"
+        assert (exported / "Mesa" / "V30.wav").exists()
+        assert (exported / "Clean.wav").exists()
+        assert not (exported / "Other.wav").exists()
+        assert "2 favoritos exportados" in window.status.text()
+        assert messages == [window.status.text()]
+    finally:
+        window.close()

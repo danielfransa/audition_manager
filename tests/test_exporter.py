@@ -1,0 +1,74 @@
+from pathlib import Path
+
+import pytest
+
+from audition_manager.library.exporter import export_files, validate_folder_name
+
+
+def test_exports_files_preserving_relative_directories_and_metadata(tmp_path: Path) -> None:
+    source = tmp_path / "library"
+    destination = tmp_path / "exports"
+    nested = source / "Mesa"
+    nested.mkdir(parents=True)
+    destination.mkdir()
+    first = nested / "V30.wav"
+    second = source / "Greenback.wav"
+    first.write_bytes(b"first impulse")
+    second.write_bytes(b"second impulse")
+
+    result = export_files(source, [first, second], destination, "Pedal Favorites")
+
+    assert result.directory == destination / "Pedal Favorites"
+    assert result.file_count == 2
+    assert result.total_bytes == len(b"first impulse") + len(b"second impulse")
+    assert (result.directory / "Mesa" / "V30.wav").read_bytes() == b"first impulse"
+    assert (result.directory / "Greenback.wav").read_bytes() == b"second impulse"
+    assert list(destination.glob(".audition-manager-export-*")) == []
+
+
+@pytest.mark.parametrize(
+    "name", [
+        "", " ", ".", "..", " favorites", "favorites ", "a/b", "bad?name",
+        "bad.", "CON", "com1.files",
+    ]
+)
+def test_rejects_invalid_cross_platform_folder_names(name: str) -> None:
+    with pytest.raises(ValueError):
+        validate_folder_name(name)
+
+
+def test_refuses_existing_destination_without_changing_it(tmp_path: Path) -> None:
+    source = tmp_path / "source"
+    source.mkdir()
+    favorite = source / "cab.wav"
+    favorite.write_bytes(b"audio")
+    target = tmp_path / "Favorites"
+    target.mkdir()
+    marker = target / "keep.txt"
+    marker.write_text("untouched")
+    with pytest.raises(FileExistsError):
+        export_files(source, [favorite], tmp_path, "Favorites")
+    assert marker.read_text() == "untouched"
+
+
+def test_refuses_files_outside_source_root_and_empty_exports(tmp_path: Path) -> None:
+    root = tmp_path / "source"
+    root.mkdir()
+    outside = tmp_path / "outside.wav"
+    outside.write_bytes(b"audio")
+    with pytest.raises(ValueError, match="Nenhum IR favorito"):
+        export_files(root, [], tmp_path, "Empty")
+    with pytest.raises(ValueError, match="fora da pasta"):
+        export_files(root, [outside], tmp_path, "Outside")
+    assert not (tmp_path / "Empty").exists()
+    assert not (tmp_path / "Outside").exists()
+
+
+def test_refuses_destination_inside_scanned_library(tmp_path: Path) -> None:
+    root = tmp_path / "source"
+    root.mkdir()
+    favorite = root / "cab.wav"
+    favorite.write_bytes(b"audio")
+    with pytest.raises(ValueError, match="fora da pasta de IRs"):
+        export_files(root, [favorite], root, "Favorites")
+    assert not (root / "Favorites").exists()

@@ -17,6 +17,7 @@ from PySide6.QtWidgets import (
     QPlainTextEdit,
     QSlider,
     QHBoxLayout,
+    QInputDialog,
     QVBoxLayout,
     QWidget,
 )
@@ -29,6 +30,7 @@ from audition_manager.audio.transport import PlaybackState
 from audition_manager.library.scanner import scan_wavs
 from audition_manager.library.repository import ImpulseResponseRepository
 from audition_manager.library.scanner import inspect_wavs
+from audition_manager.library.exporter import export_files
 
 logger = logging.getLogger(__name__)
 
@@ -80,6 +82,8 @@ class MainWindow(QMainWindow):
         self.di_label = QLabel("Nenhuma DI selecionada")
         self.di_button = QPushButton("Abrir DI WAV")
         self.folder_button = QPushButton("Selecionar pasta de IRs")
+        self.export_button = QPushButton("Exportar favoritos…")
+        self.export_button.setEnabled(False)
         self.search = QLineEdit()
         self.search.setPlaceholderText("Buscar IR por nome ou caminho…")
         self.favorites_only = QCheckBox("Somente favoritos")
@@ -123,6 +127,7 @@ class MainWindow(QMainWindow):
         file_buttons = QHBoxLayout()
         file_buttons.addWidget(self.di_button)
         file_buttons.addWidget(self.folder_button)
+        file_buttons.addWidget(self.export_button)
         layout.addLayout(file_buttons)
         layout.addWidget(self.device)
         gain_row = QHBoxLayout()
@@ -155,6 +160,7 @@ class MainWindow(QMainWindow):
         self.setCentralWidget(container)
         self.di_button.clicked.connect(self.choose_di)
         self.folder_button.clicked.connect(self.choose_folder)
+        self.export_button.clicked.connect(self.export_favorites)
         self.device.currentIndexChanged.connect(self.change_device)
         self.gain.valueChanged.connect(self.change_gain)
         self.search.textChanged.connect(self.apply_filters)
@@ -284,7 +290,43 @@ class MainWindow(QMainWindow):
             self.ir_list.setCurrentRow(visible.index(selected))
         del blocker
         self.refresh_metadata()
+        self.export_button.setEnabled(bool(self.favorite_paths()))
         self.update_play_button()
+
+    def favorite_paths(self) -> list[Path]:
+        return [
+            path for path in self.all_ir_paths
+            if (item := self.repository.get(path)) is not None and item.favorite
+        ]
+
+    @Slot()
+    def export_favorites(self) -> None:
+        if self.ir_root is None:
+            self.status.setText("Selecione uma pasta de IRs antes de exportar.")
+            return
+        favorites = self.favorite_paths()
+        if not favorites:
+            self.status.setText("Marque ao menos um IR como favorito.")
+            return
+        parent = QFileDialog.getExistingDirectory(
+            self, "Local para criar a pasta de favoritos"
+        )
+        if not parent:
+            return
+        name, accepted = QInputDialog.getText(
+            self, "Nome da pasta", "Nome da nova pasta:",
+            text="Audition Manager Favorites",
+        )
+        if not accepted:
+            return
+        try:
+            result = export_files(self.ir_root, favorites, Path(parent), name)
+        except (OSError, ValueError) as error:
+            self.show_error(str(error))
+            return
+        message = f"{result.file_count} favoritos exportados para {result.directory}"
+        self.status.setText(message)
+        QMessageBox.information(self, "Exportação concluída", message)
 
     def refresh_devices(self) -> None:
         blocker = QSignalBlocker(self.device)

@@ -50,10 +50,17 @@ interrompe nem troca o áudio atual. As notas são salvas pelo botão **Salvar
 notas**; mudar de item sem salvar descarta a edição ainda não gravada. Enquanto
 o editor está em foco, F, B, Espaço, setas e números são texto normal.
 
+**Exportar favoritos…** copia todos os IRs favoritos da pasta escaneada para
+uma nova pasta escolhida por você, mesmo que filtros estejam ocultando itens.
+Informe a pasta pai e o nome da nova pasta. As subpastas relativas são mantidas,
+facilitando copiar o resultado para uma pedaleira. A aplicação recusa sobrescrever
+uma pasta existente e também impede exportar para dentro da própria biblioteca,
+o que criaria duplicatas no próximo scan.
+
 Esta entrega fecha as funções planejadas da biblioteca do MVP. O próximo passo,
 após validação prática, é o polimento técnico: scan assíncrono, persistência de
 preferências e decisão sobre crossfade. NAM, ANN, A2, entrada ao vivo e envio à
-Blackbox não estão implementados.
+Blackbox e IR-Box não estão implementados.
 
 ## Desenvolvimento no WSL com mise e venv
 
@@ -158,6 +165,7 @@ Arquivos inválidos são ignorados e contabilizados após a leitura do cabeçalh
 - `audio/output.py`: stream próprio sounddevice/PortAudio, pausa e liberação.
 - `library/scanner.py`: descoberta e leitura de metadados WAV.
 - `library/repository.py`: migração e persistência SQLite de metadados do IR.
+- `library/exporter.py`: cópia transacional dos favoritos para uma nova pasta.
 - `config/settings.py`: caminho do banco conforme Windows/Linux.
 - `ui/main_window.py`: janela e coordenação da tarefa de processamento.
 - `main.py`: composição da aplicação e logging.
@@ -220,6 +228,7 @@ para uma etapa própria.
 - [Biblioteca SQLite](docs/decisions/0007-biblioteca-sqlite.md)
 - [Dispositivo e ganho](docs/decisions/0008-dispositivo-ganho.md)
 - [Filtros e notas](docs/decisions/0009-filtros-notas.md)
+- [Exportação de favoritos](docs/decisions/0010-exportacao-favoritos.md)
 - [Validação](docs/validacao.md)
 
 Cada incremento deve registrar decisões, testes e limitações em `docs/`, e
