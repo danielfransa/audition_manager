@@ -13,6 +13,7 @@ QApplication = qt_widgets.QApplication
 from audition_manager.audio.files import AudioBuffer
 from audition_manager.audio.output import OutputDevice
 from audition_manager.audio.transport import PlaybackTransport, PlaybackState
+from audition_manager.config.preferences import PreferencesStore, UserPreferences
 from audition_manager.library.repository import ImpulseResponseRepository
 from audition_manager.library.models import ImpulseResponse
 from audition_manager.ui.main_window import MainWindow
@@ -79,10 +80,91 @@ def wait_for_scan(window: MainWindow, app: QApplication, timeout: float = 5) -> 
     assert window.scan_worker is None
 
 
+def test_restores_and_updates_application_preferences(tmp_path: Path) -> None:
+    app = QApplication.instance() or QApplication([])
+    di = tmp_path / "di.wav"
+    ir_folder = tmp_path / "irs"
+    export_folder = tmp_path / "exports"
+    ir_folder.mkdir()
+    export_folder.mkdir()
+    sf.write(di, [0.1], 48000)
+    sf.write(ir_folder / "cab.wav", [1.0], 48000, subtype="FLOAT")
+    store = PreferencesStore(tmp_path / "preferences.json")
+    store.save(
+        UserPreferences(
+            last_di_file=di,
+            last_ir_directory=ir_folder,
+            last_export_directory=export_folder,
+            output_device_name="Test Output",
+            output_host_api="Test API",
+            output_gain_db=-9,
+            loop_enabled=False,
+        )
+    )
+    output = FakeOutput()
+    window = MainWindow(
+        output, ImpulseResponseRepository(tmp_path / "library.sqlite3"), store
+    )
+    try:
+        wait_for_scan(window, app)
+        assert window.di_path == di.resolve()
+        assert window.ir_root == ir_folder.resolve()
+        assert window.ir_list.count() == 1
+        assert window.device.currentIndex() == 1
+        assert output.device == 3
+        assert window.gain.value() == -9
+        assert output.gain_db == -9
+        assert not window.loop.isChecked()
+        assert not output.loop
+        window.gain.setValue(-15)
+        window.loop.setChecked(True)
+        window.device.setCurrentIndex(0)
+    finally:
+        window.close()
+    saved = store.load()
+    assert saved.output_gain_db == -15
+    assert saved.loop_enabled
+    assert saved.output_device_name is None
+    assert saved.last_export_directory == export_folder
+
+
+def test_missing_saved_resources_fall_back_without_blocking_startup(
+    tmp_path: Path,
+) -> None:
+    app = QApplication.instance() or QApplication([])
+    store = PreferencesStore(tmp_path / "preferences.json")
+    store.save(
+        UserPreferences(
+            last_di_file=tmp_path / "missing.wav",
+            last_ir_directory=tmp_path / "missing-irs",
+            last_export_directory=tmp_path / "missing-exports",
+            output_device_name="Disconnected",
+            output_host_api="Test API",
+        )
+    )
+    output = FakeOutput()
+    window = MainWindow(
+        output, ImpulseResponseRepository(tmp_path / "library.sqlite3"), store
+    )
+    try:
+        app.processEvents()
+        assert window.di_path is None
+        assert window.scan_worker is None
+        assert window.device.currentIndex() == 0
+        assert output.device is None
+        assert store.load() == UserPreferences()
+    finally:
+        window.close()
+
+
 def test_select_render_play_and_stop(tmp_path: Path, monkeypatch) -> None:
     app = QApplication.instance() or QApplication([])
     output = FakeOutput()
-    window = MainWindow(output, ImpulseResponseRepository(tmp_path / "library.sqlite3"))
+    window = MainWindow(
+        output,
+        ImpulseResponseRepository(tmp_path / "library.sqlite3"),
+        PreferencesStore(tmp_path / "preferences.json"),
+    )
     di = tmp_path / "di.wav"
     ir_folder = tmp_path / "irs"
     ir_folder.mkdir()
@@ -147,7 +229,11 @@ def test_latest_selection_wins_and_stop_during_render_does_not_autoplay(monkeypa
 
     app = QApplication.instance() or QApplication([])
     output = FakeOutput()
-    window = MainWindow(output, ImpulseResponseRepository(tmp_path / "library.sqlite3"))
+    window = MainWindow(
+        output,
+        ImpulseResponseRepository(tmp_path / "library.sqlite3"),
+        PreferencesStore(tmp_path / "preferences.json"),
+    )
     entered, release = Event(), Event()
     calls = []
 
@@ -199,7 +285,11 @@ def test_bypass_preserves_pause_and_shortcuts_control_player(tmp_path, monkeypat
 
     app = QApplication.instance() or QApplication([])
     output = FakeOutput()
-    window = MainWindow(output, ImpulseResponseRepository(tmp_path / "library.sqlite3"))
+    window = MainWindow(
+        output,
+        ImpulseResponseRepository(tmp_path / "library.sqlite3"),
+        PreferencesStore(tmp_path / "preferences.json"),
+    )
     di, ir = tmp_path / "di.wav", tmp_path / "ir.wav"
     sf.write(di, np.full(4800, 0.1), 48000, subtype="FLOAT")
     sf.write(ir, [0.5], 48000, subtype="FLOAT")
@@ -266,7 +356,8 @@ def test_favorite_and_rating_shortcuts_persist_after_rescan(tmp_path, monkeypatc
         lambda *args: str(folder),
     )
 
-    first = MainWindow(FakeOutput(), ImpulseResponseRepository(database))
+    preferences = PreferencesStore(tmp_path / "preferences.json")
+    first = MainWindow(FakeOutput(), ImpulseResponseRepository(database), preferences)
     first.show()
     first.activateWindow()
     app.processEvents()
@@ -280,9 +371,8 @@ def test_favorite_and_rating_shortcuts_persist_after_rescan(tmp_path, monkeypatc
     assert first.rating.text() == "Avaliação: ★★★★☆"
     first.close()
 
-    second = MainWindow(FakeOutput(), ImpulseResponseRepository(database))
+    second = MainWindow(FakeOutput(), ImpulseResponseRepository(database), preferences)
     try:
-        second.choose_folder()
         wait_for_scan(second, app)
         second.ir_list.setCurrentRow(0)
         assert second.favorite.isChecked()
@@ -310,7 +400,9 @@ def test_library_filters_decorate_list_and_do_not_change_playback_selection(
         lambda *args: str(folder),
     )
     repository = ImpulseResponseRepository(tmp_path / "library.sqlite3")
-    window = MainWindow(FakeOutput(), repository)
+    window = MainWindow(
+        FakeOutput(), repository, PreferencesStore(tmp_path / "preferences.json")
+    )
     try:
         window.choose_folder()
         wait_for_scan(window, app)
@@ -358,7 +450,9 @@ def test_notes_persist_and_typing_does_not_trigger_global_shortcuts(
         lambda *args: str(folder),
     )
     repository = ImpulseResponseRepository(tmp_path / "library.sqlite3")
-    window = MainWindow(FakeOutput(), repository)
+    window = MainWindow(
+        FakeOutput(), repository, PreferencesStore(tmp_path / "preferences.json")
+    )
     try:
         window.show()
         window.activateWindow()
@@ -410,7 +504,9 @@ def test_exports_all_favorites_from_current_root_regardless_of_filters(
         lambda *args: messages.append(args[-1]),
     )
     repository = ImpulseResponseRepository(tmp_path / "library.sqlite3")
-    window = MainWindow(FakeOutput(), repository)
+    window = MainWindow(
+        FakeOutput(), repository, PreferencesStore(tmp_path / "preferences.json")
+    )
     try:
         window.choose_folder()
         wait_for_scan(window, app)
@@ -447,7 +543,9 @@ def test_newest_async_scan_wins_and_old_library_remains_visible(
     repository.upsert_many([
         ImpulseResponse((original / "original.wav").resolve(), "original.wav", 48000, 1)
     ])
-    window = MainWindow(FakeOutput(), repository)
+    window = MainWindow(
+        FakeOutput(), repository, PreferencesStore(tmp_path / "preferences.json")
+    )
     window.ir_root = original.resolve()
     window.all_ir_paths = [(original / "original.wav").resolve()]
     window.apply_filters()
@@ -501,7 +599,9 @@ def test_cancel_scan_keeps_previous_library(tmp_path, monkeypatch) -> None:
     new_path.touch()
     repository = ImpulseResponseRepository(tmp_path / "library.sqlite3")
     repository.upsert_many([ImpulseResponse(old_path.resolve(), old_path.name, 48000, 1)])
-    window = MainWindow(FakeOutput(), repository)
+    window = MainWindow(
+        FakeOutput(), repository, PreferencesStore(tmp_path / "preferences.json")
+    )
     window.ir_root = original.resolve()
     window.all_ir_paths = [old_path.resolve()]
     window.apply_filters()

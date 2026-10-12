@@ -4,7 +4,8 @@ import sys
 from PySide6.QtWidgets import QApplication
 
 from audition_manager.audio.output import AudioOutput
-from audition_manager.config.settings import database_path
+from audition_manager.config.preferences import PreferencesStore
+from audition_manager.config.settings import database_path, preferences_path
 from audition_manager.library.repository import ImpulseResponseRepository
 from audition_manager.ui.fonts import configure_font
 from audition_manager.ui.main_window import MainWindow
@@ -19,6 +20,10 @@ def main() -> int:
     except RuntimeError as error:
         logging.getLogger(__name__).error("%s", error)
         return 1
-    window = MainWindow(AudioOutput(), ImpulseResponseRepository(database_path()))
+    window = MainWindow(
+        AudioOutput(),
+        ImpulseResponseRepository(database_path()),
+        PreferencesStore(preferences_path()),
+    )
     window.show()
     return app.exec()

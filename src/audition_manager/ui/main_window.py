@@ -24,9 +24,10 @@ from PySide6.QtWidgets import (
 
 from audition_manager.audio.files import AudioBuffer
 from audition_manager.audio.ir_processor import render_files
-from audition_manager.audio.output import AudioOutput
+from audition_manager.audio.output import AudioOutput, OutputDevice
 from audition_manager.audio.render_cache import RenderCache
 from audition_manager.audio.transport import PlaybackState
+from audition_manager.config.preferences import PreferencesStore
 from audition_manager.library.scanner import inspect_wav, scan_wavs
 from audition_manager.library.repository import ImpulseResponseRepository
 from audition_manager.library.exporter import export_files
@@ -96,11 +97,16 @@ class ScanWorker(QThread):
 
 class MainWindow(QMainWindow):
     def __init__(
-        self, output: AudioOutput, repository: ImpulseResponseRepository
+        self,
+        output: AudioOutput,
+        repository: ImpulseResponseRepository,
+        preferences_store: PreferencesStore,
     ) -> None:
         super().__init__()
         self.output = output
         self.repository = repository
+        self.preferences_store = preferences_store
+        self.preferences = preferences_store.load()
         self.di_path: Path | None = None
         self.ir_root: Path | None = None
         self.all_ir_paths: list[Path] = []
@@ -138,11 +144,13 @@ class MainWindow(QMainWindow):
         self.device.setToolTip("Dispositivo de saída")
         self.gain = QSlider(Qt.Orientation.Horizontal)
         self.gain.setRange(-24, 0)
-        self.gain.setValue(0)
-        self.gain_label = QLabel("Ganho de saída: 0 dB")
+        self.gain.setValue(self.preferences.output_gain_db)
+        self.gain_label = QLabel(
+            f"Ganho de saída: {self.preferences.output_gain_db} dB"
+        )
         self.bypass = QCheckBox("Bypass IR (B)")
         self.loop = QCheckBox("Loop")
-        self.loop.setChecked(True)
+        self.loop.setChecked(self.preferences.loop_enabled)
         self.play_button = QPushButton("Processar e reproduzir")
         self.play_button.setEnabled(False)
         self.stop_button = QPushButton("Stop")
@@ -214,7 +222,7 @@ class MainWindow(QMainWindow):
         self.ir_list.currentRowChanged.connect(self.selection_changed)
         self.play_button.clicked.connect(self.render)
         self.stop_button.clicked.connect(self.stop)
-        self.loop.toggled.connect(self.output.set_loop)
+        self.loop.toggled.connect(self.change_loop)
         self.bypass.toggled.connect(self.selection_changed)
         self.favorite.toggled.connect(self.set_favorite)
         self.save_notes_button.clicked.connect(self.save_notes)
@@ -228,6 +236,8 @@ class MainWindow(QMainWindow):
             shortcut.activated.connect(lambda step=step: self.move_ir(step))
             self.shortcuts.append(shortcut)
         self.refresh_devices()
+        self.output.set_gain_db(self.gain.value())
+        self.output.set_loop(self.loop.isChecked())
         for key, action in (
             ("Space", self.toggle_playback_shortcut),
             ("B", self.toggle_bypass_shortcut),
@@ -245,19 +255,26 @@ class MainWindow(QMainWindow):
             shortcut.setAutoRepeat(False)
             shortcut.activated.connect(lambda value=value: self.set_rating(value))
             self.shortcuts.append(shortcut)
+        self.restore_paths()
 
     @Slot()
     def choose_di(self) -> None:
-        filename, _ = QFileDialog.getOpenFileName(self, "Abrir DI", "", "WAV (*.wav *.WAV)")
+        initial = str(self.di_path.parent) if self.di_path else ""
+        filename, _ = QFileDialog.getOpenFileName(
+            self, "Abrir DI", initial, "WAV (*.wav *.WAV)"
+        )
         if filename:
             self.reset_audio()
             self.di_path = Path(filename)
             self.di_label.setText(f"DI: {self.di_path.name}")
+            self.preferences.last_di_file = self.di_path.resolve()
+            self.save_preferences()
             self.selection_changed()
 
     @Slot()
     def choose_folder(self) -> None:
-        directory = QFileDialog.getExistingDirectory(self, "Pasta de IRs")
+        initial = str(self.ir_root or self.preferences.last_ir_directory or "")
+        directory = QFileDialog.getExistingDirectory(self, "Pasta de IRs", initial)
         if not directory:
             return
         self.begin_scan(Path(directory))
@@ -312,6 +329,8 @@ class MainWindow(QMainWindow):
         self.ir_root = root
         self.all_ir_paths = [item.path for item in metadata]
         self.applied_scan_root = root
+        self.preferences.last_ir_directory = root
+        self.save_preferences()
         self.apply_filters()
         skipped = f"; {len(errors)} inválidos ignorados" if errors else ""
         self.status.setText(
@@ -429,7 +448,9 @@ class MainWindow(QMainWindow):
             self.status.setText("Marque ao menos um IR como favorito.")
             return
         parent = QFileDialog.getExistingDirectory(
-            self, "Local para criar a pasta de favoritos"
+            self,
+            "Local para criar a pasta de favoritos",
+            str(self.preferences.last_export_directory or ""),
         )
         if not parent:
             return
@@ -445,6 +466,8 @@ class MainWindow(QMainWindow):
             self.show_error(str(error))
             return
         message = f"{result.file_count} favoritos exportados para {result.directory}"
+        self.preferences.last_export_directory = Path(parent).resolve()
+        self.save_preferences()
         self.status.setText(message)
         QMessageBox.information(self, "Exportação concluída", message)
 
@@ -452,22 +475,41 @@ class MainWindow(QMainWindow):
         blocker = QSignalBlocker(self.device)
         self.device.clear()
         self.device.addItem("Saída padrão do sistema", None)
+        selected_index = 0
         try:
             for device in self.output.list_devices():
                 self.device.addItem(
-                    f"{device.name} — {device.host_api}", device.index
+                    f"{device.name} — {device.host_api}", device
                 )
+                if (
+                    device.name == self.preferences.output_device_name
+                    and device.host_api == self.preferences.output_host_api
+                ):
+                    selected_index = self.device.count() - 1
         except Exception as error:
             logger.exception("Unable to enumerate output devices")
             self.status.setText(f"Não foi possível listar saídas de áudio: {error}")
+        self.device.setCurrentIndex(selected_index)
         del blocker
+        if selected_index == 0 and self.preferences.output_device_name is not None:
+            self.preferences.output_device_name = None
+            self.preferences.output_host_api = None
+            self.save_preferences()
+        self.apply_device(save=False)
 
     @Slot(int)
-    def change_device(self, index: int) -> None:
-        device = self.device.itemData(index)
+    def change_device(self, _index: int) -> None:
+        self.apply_device(save=True)
+
+    def apply_device(self, *, save: bool) -> None:
+        device: OutputDevice | None = self.device.currentData()
         try:
-            self.output.set_device(device)
+            self.output.set_device(device.index if device else None)
             self.status.setText(f"Saída: {self.device.currentText()}.")
+            if save:
+                self.preferences.output_device_name = device.name if device else None
+                self.preferences.output_host_api = device.host_api if device else None
+                self.save_preferences()
         except Exception as error:
             logger.exception("Unable to change output device")
             self.show_error(str(error))
@@ -478,8 +520,45 @@ class MainWindow(QMainWindow):
         try:
             self.output.set_gain_db(gain_db)
             self.gain_label.setText(f"Ganho de saída: {gain_db} dB")
+            self.preferences.output_gain_db = gain_db
+            self.save_preferences()
         except ValueError as error:
             self.show_error(str(error))
+
+    @Slot(bool)
+    def change_loop(self, enabled: bool) -> None:
+        self.output.set_loop(enabled)
+        self.preferences.loop_enabled = enabled
+        self.save_preferences()
+
+    def restore_paths(self) -> None:
+        changed = False
+        di_path = self.preferences.last_di_file
+        if di_path is not None and di_path.is_file():
+            self.di_path = di_path.resolve()
+            self.di_label.setText(f"DI: {self.di_path.name}")
+        elif di_path is not None:
+            self.preferences.last_di_file = None
+            changed = True
+        ir_directory = self.preferences.last_ir_directory
+        if ir_directory is not None and ir_directory.is_dir():
+            self.begin_scan(ir_directory)
+        elif ir_directory is not None:
+            self.preferences.last_ir_directory = None
+            changed = True
+        export_directory = self.preferences.last_export_directory
+        if export_directory is not None and not export_directory.is_dir():
+            self.preferences.last_export_directory = None
+            changed = True
+        if changed:
+            self.save_preferences()
+
+    def save_preferences(self) -> None:
+        try:
+            self.preferences_store.save(self.preferences)
+        except OSError as error:
+            logger.exception("Unable to save preferences")
+            self.status.setText(f"Não foi possível salvar as preferências: {error}")
 
     @Slot()
     def selection_changed(self) -> None:
@@ -681,6 +760,7 @@ class MainWindow(QMainWindow):
             self.status.setText("Cancelando scan antes de fechar…")
             event.ignore()
             return
+        self.save_preferences()
         try:
             self.output.close()
         except Exception as error:

@@ -16,3 +16,7 @@ def application_data_directory() -> Path:
 
 def database_path() -> Path:
     return application_data_directory() / "library.sqlite3"
+
+
+def preferences_path() -> Path:
+    return application_data_directory() / "preferences.json"

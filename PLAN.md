@@ -56,6 +56,8 @@ DI em loop, navegação contínua entre IRs e metadados persistentes.
    **Implementado para auditoria; 57 testes automatizados passando.**
 2. Persistir última DI/pasta de IR/exportação, dispositivo, ganho e Loop, com
    fallback quando recursos não estiverem disponíveis.
+   **Implementado para auditoria; preferências JSON têm escrita atômica e
+   fallback para caminhos ou dispositivos ausentes.**
 3. Medir e decidir a implementação de crossfade curto na troca de IR.
 
 ## 2 — Capturas NAM

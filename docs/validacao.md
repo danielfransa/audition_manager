@@ -256,3 +256,22 @@ Roteiro prático:
 5. Inclua WAVs inválidos e confirme a contagem de ignorados após conclusão.
 6. Feche a janela durante um scan. Ela deve cancelar com segurança e fechar
    assim que a inspeção do arquivo em andamento retornar.
+
+## Preferências da aplicação
+
+- `python -m pytest -q`: **62 passed** após este incremento.
+- Os testes cobrem JSON ausente/corrompido, validação, limite do ganho, escrita
+  atômica, restauração automática da DI e pasta, identidade estável da saída e
+  fallback para caminhos e dispositivo que deixaram de existir.
+- `python -m compileall -q src tests` e `git diff --check`: sem erros.
+
+Roteiro prático:
+
+1. Abra uma DI e uma pasta de IRs; escolha uma saída, ajuste ganho e Loop.
+2. Exporte favoritos para uma pasta e feche a aplicação normalmente.
+3. Reabra: confirme DI, scan automático dos IRs, saída, ganho e Loop. Abra a
+   exportação novamente e confirme que o seletor começa no último destino.
+4. Feche, desconecte ou renomeie o dispositivo salvo e reabra. A aplicação deve
+   selecionar a saída padrão e continuar utilizável.
+5. Feche, mova temporariamente a DI e a pasta de IRs e reabra. A janela deve
+   iniciar sem erro e esquecer somente os caminhos que não existem mais.

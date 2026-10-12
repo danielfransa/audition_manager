@@ -23,6 +23,11 @@ foram analisados; **Cancelar scan** mantém a biblioteca anterior. Se outra past
 for escolhida durante o trabalho, o scan anterior é cancelado e somente a pasta
 mais recente pode substituir a lista e atualizar o SQLite.
 
+Ao reabrir a aplicação, a última DI e a pasta de IRs são restauradas; a pasta
+é escaneada novamente em segundo plano. Também são preservados o último destino
+de exportação, a saída de áudio, o ganho e o estado de Loop. Caminhos removidos
+são esquecidos e uma saída desconectada volta para a saída padrão do sistema.
+
 O seletor de saída lista os dispositivos fornecidos pelo PortAudio. A opção
 inicial acompanha a saída padrão do sistema. Trocar o dispositivo preserva a
 posição e o estado do player, com uma breve interrupção enquanto o stream é
@@ -62,9 +67,9 @@ facilitando copiar o resultado para uma pedaleira. A aplicação recusa sobrescr
 uma pasta existente e também impede exportar para dentro da própria biblioteca,
 o que criaria duplicatas no próximo scan.
 
-Esta entrega fecha as funções planejadas da biblioteca do MVP. O próximo passo,
-após validação prática, é o polimento técnico: scan assíncrono, persistência de
-preferências e decisão sobre crossfade. NAM, ANN, A2, entrada ao vivo e envio à
+Esta entrega fecha as funções planejadas da biblioteca do MVP. Scan assíncrono
+e preferências persistentes já fazem parte do polimento técnico; o próximo passo
+é medir e decidir o crossfade. NAM, ANN, A2, entrada ao vivo e envio à
 Blackbox e IR-Box não estão implementados.
 
 ## Desenvolvimento no WSL com mise e venv
@@ -171,7 +176,8 @@ Arquivos inválidos são ignorados e contabilizados após a leitura do cabeçalh
 - `library/scanner.py`: descoberta e leitura de metadados WAV.
 - `library/repository.py`: migração e persistência SQLite de metadados do IR.
 - `library/exporter.py`: cópia transacional dos favoritos para uma nova pasta.
-- `config/settings.py`: caminho do banco conforme Windows/Linux.
+- `config/settings.py`: caminhos de dados conforme Windows/Linux.
+- `config/preferences.py`: leitura e gravação atômica das preferências em JSON.
 - `ui/main_window.py`: janela e coordenação da tarefa de processamento.
 - `main.py`: composição da aplicação e logging.
 
@@ -196,7 +202,8 @@ Veja o [roteiro manual por plataforma](docs/validacao.md).
 
 O banco fica em `%LOCALAPPDATA%\Audition Manager\library.sqlite3` no Windows e
 em `$XDG_DATA_HOME/audition-manager/library.sqlite3` no Linux (ou
-`~/.local/share/audition-manager/library.sqlite3`). Para testes isolados, defina
+`~/.local/share/audition-manager/library.sqlite3`). O arquivo
+`preferences.json` fica no mesmo diretório. Para testes isolados, defina
 `AUDITION_MANAGER_DATA_DIR` antes de iniciar. O scan é assíncrono, mas a
 enumeração inicial dos nomes acontece antes de a
 contagem ficar disponível; o cancelamento entra em vigor entre dois arquivos.
@@ -214,8 +221,7 @@ já enviados terminarem; pode haver um pequeno atraso. Picos acima de
 entre alguns IRs. Não há normalização de volume perceptual, crossfade ou
 promessa de baixa latência. O dispositivo precisa aceitar a taxa da DI.
 O fechamento aguarda o usuário tentar novamente após um processamento ativo.
-Dispositivo e ganho ainda não são persistidos: cada execução começa na saída
-padrão e em 0 dB. Dispositivos desconectados durante a reprodução podem exigir
+Dispositivos desconectados durante a reprodução podem exigir
 selecionar outra saída ou reiniciar o aplicativo.
 
 As dependências usam faixas de versões em `pyproject.toml`; ainda não há lockfile
