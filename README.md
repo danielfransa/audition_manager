@@ -168,6 +168,32 @@ Abra uma DI de até 5 minutos e uma pasta com IRs WAV de até 2 segundos.
 Selecione um IR para processar e reproduzir automaticamente. Teste Pause, Stop e Loop.
 Arquivos inválidos são ignorados e contabilizados após a leitura do cabeçalho.
 
+### Gerar o executável portátil
+
+O `.exe` precisa ser construído no Windows; PyInstaller não produz oficialmente
+um executável Windows a partir do Linux/WSL. Copie ou clone o projeto para uma
+pasta local do Windows, abra PowerShell nessa pasta e execute:
+
+```powershell
+Set-ExecutionPolicy -Scope Process Bypass
+.\scripts\build-windows.ps1
+```
+
+O script usa Python 3.12 instalado pelo `python.org`/launcher `py`, cria
+`.venv-package`, roda os testes e gera:
+
+```text
+dist\AuditionManager\AuditionManager.exe
+dist\AuditionManager-Windows-x64.zip
+```
+
+Para testar em outro computador, extraia o ZIP inteiro e execute o `.exe` dentro
+da pasta. Não copie somente o executável, pois o pacote inicial mantém DLLs e
+dependências ao lado dele. Ele não exige Python instalado na máquina de teste.
+O Windows pode mostrar SmartScreen porque o binário ainda não tem assinatura.
+Um instalador será criado depois que este pacote portátil passar pelos testes de
+interface, PortAudio/WASAPI, preferências e exportação em Windows real.
+
 ## Arquitetura e dependências
 
 - `audio/files.py`: carregamento e validação de WAV; `AudioBuffer` padroniza dados.
@@ -247,6 +273,7 @@ para uma etapa própria.
 - [Scan assíncrono](docs/decisions/0011-scan-assincrono.md)
 - [Preferências](docs/decisions/0012-preferencias.md)
 - [Crossfade curto](docs/decisions/0013-crossfade.md)
+- [NAM A2, AM4DATA e pacote Windows](docs/decisions/0014-nam-a2-am4-windows.md)
 - [Validação](docs/validacao.md)
 
 Cada incremento deve registrar decisões, testes e limitações em `docs/`, e

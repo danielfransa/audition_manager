@@ -295,3 +295,18 @@ Roteiro prático:
    O áudio deve continuar parado e, no próximo Play, começar limpo do início.
 4. Troque entre resultados mono e estéreo. Confirme a breve reabertura já
    esperada; este caso não usa crossfade.
+
+## Pacote portátil Windows
+
+O script de build foi preparado no WSL, mas o `.exe` ainda precisa ser gerado e
+validado em Windows real. PyInstaller não é um cross-compiler.
+
+1. Copie/clone o projeto para uma pasta local do Windows e execute
+   `scripts\build-windows.ps1` no PowerShell com Python 3.12 instalado.
+2. Confirme que os testes passam antes do empacotamento e que o ZIP contém a
+   pasta completa, `LICENSE` e `README.md`.
+3. Extraia o ZIP em outra pasta e abra `AuditionManager.exe` sem ativar venv.
+4. Repita o roteiro de IR, saída WASAPI, ganho, Loop, crossfade, preferências e
+   exportação. Feche/reabra o executável e confirme a persistência.
+5. Registre versão do Windows, dispositivo/driver, tamanho do ZIP, aviso do
+   SmartScreen e qualquer DLL ausente antes de decidir o instalador.

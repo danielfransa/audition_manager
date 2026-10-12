@@ -20,6 +20,7 @@ dependencies = [
 
 [project.optional-dependencies]
 dev = ["pytest>=8.2,<10"]
+package = ["pyinstaller>=6.22,<7"]
 
 [project.scripts]
 audition-manager = "audition_manager.main:main"

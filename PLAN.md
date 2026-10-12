@@ -63,12 +63,17 @@ DI em loop, navegação contínua entre IRs e metadados persistentes.
    preparação medida em cerca de 10 µs por troca. Mudança de canais continua
    reabrindo o stream sem crossfade.**
 
-## 2 — Capturas NAM
+## 2 — Capturas NAM A2
 
 Pesquisar runtime oficial/open source, manutenção, licença e viabilidade no
 Windows. Documentar alternativas antes de instalar dependências. Definir
 `CaptureEngine` com supports/load/process/unload e contrato de canais,
 blocos, sample rate e estado. Implementar apenas um formato comprovado.
+
+**Decisão inicial:** priorizar NAM A2 em `.nam`, com NeuralAmpModelerCore como
+runtime candidato. Não adicionar o pacote de treinamento PyTorch ao aplicativo.
+Validar `SlimmableContainer`, A2 Full/Lite, desempenho e integração Windows/Linux
+em um protótipo isolado antes da interface.
 
 ## 3 — Entrada ao vivo
 
@@ -77,12 +82,13 @@ migrar DSP. Meta exploratória: 48 kHz, 64/128 amostras; não é compromisso des
 fase. Callbacks não devem fazer I/O, carregar modelos ou alocar grandes buffers.
 Convolução por blocos e eventual backend C++/JUCE exigem contrato próprio.
 
-## 4 — ANN / A2 / Blackbox / IR-Box
+## 4 — AM4DATA / Blackbox / IR-Box
 
 Pesquisar separadamente formatos e ferramentas; classificação por extensão
 não comprova compatibilidade. Não inventar parsers ou conversores proprietários.
 Investigar exportação e USB/MIDI/SysEx somente com evidências/documentação.
-Tratar Blackbox e IR-Box como destinos independentes: pesquisar protocolos,
+Usar inicialmente o conversor oficial NAM → AM4DATA da M-VAVE. Tratar Blackbox
+e IR-Box como destinos independentes: pesquisar protocolos,
 limites, formatos e ferramentas de cada equipamento antes de transferência direta.
 
 ## 5 — Biblioteca e distribuição
