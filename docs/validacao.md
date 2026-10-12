@@ -310,3 +310,17 @@ validado em Windows real. PyInstaller não é um cross-compiler.
    exportação. Feche/reabra o executável e confirme a persistência.
 5. Registre versão do Windows, dispositivo/driver, tamanho do ZIP, aviso do
    SmartScreen e qualquer DLL ausente antes de decidir o instalador.
+
+## Avaliação por estrelas clicáveis
+
+- O teste Qt clica nas estrelas 2 e 4, confirma a atualização visual, consulta o
+  valor persistido no SQLite e reabre a janela. Os atalhos anteriores continuam
+  cobertos. A suíte completa permanece com **66 testes passando**.
+
+Roteiro prático:
+
+1. Selecione um IR e clique sucessivamente nas estrelas 1, 3 e 5. Confirme a
+   nota na área de metadados e na linha da biblioteca.
+2. Feche e reabra a aplicação; confirme que a última avaliação reaparece.
+3. Use `0` para limpar e `1..5` para avaliar pelo teclado.
+4. Remova a seleção com um filtro e confirme que as estrelas ficam desabilitadas.

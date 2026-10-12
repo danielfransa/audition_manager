@@ -40,6 +40,38 @@ def format_time(seconds: float) -> str:
     return f"{minutes:02d}:{remainder:02d}"
 
 
+class StarRating(QWidget):
+    rating_selected = Signal(int)
+
+    def __init__(self) -> None:
+        super().__init__()
+        self._value = 0
+        layout = QHBoxLayout(self)
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.setSpacing(0)
+        layout.addWidget(QLabel("Avaliação:"))
+        self.buttons: list[QPushButton] = []
+        for value in range(1, 6):
+            button = QPushButton("☆")
+            button.setFlat(True)
+            button.setFixedWidth(24)
+            button.setToolTip(f"Definir avaliação como {value} de 5")
+            button.setAccessibleName(f"{value} de 5 estrelas")
+            button.clicked.connect(
+                lambda _checked=False, value=value: self.rating_selected.emit(value)
+            )
+            layout.addWidget(button)
+            self.buttons.append(button)
+
+    def set_value(self, value: int) -> None:
+        self._value = value
+        for index, button in enumerate(self.buttons, start=1):
+            button.setText("★" if index <= value else "☆")
+
+    def text(self) -> str:
+        return f"Avaliação: {'★' * self._value}{'☆' * (5 - self._value)}"
+
+
 class RenderWorker(QThread):
     rendered = Signal(object)
     failed = Signal(str)
@@ -161,7 +193,8 @@ class MainWindow(QMainWindow):
         self.active_ir = QLabel("IR em reprodução: nenhum")
         self.favorite = QCheckBox("Favorito (F)")
         self.favorite.setEnabled(False)
-        self.rating = QLabel("Avaliação: ☆☆☆☆☆")
+        self.rating = StarRating()
+        self.rating.setEnabled(False)
         self.notes = QPlainTextEdit()
         self.notes.setPlaceholderText("Notas sobre o IR selecionado…")
         self.notes.setMaximumHeight(90)
@@ -225,6 +258,7 @@ class MainWindow(QMainWindow):
         self.loop.toggled.connect(self.change_loop)
         self.bypass.toggled.connect(self.selection_changed)
         self.favorite.toggled.connect(self.set_favorite)
+        self.rating.rating_selected.connect(self.set_rating)
         self.save_notes_button.clicked.connect(self.save_notes)
         self.timer = QTimer(self)
         self.timer.setInterval(100)
@@ -582,7 +616,8 @@ class MainWindow(QMainWindow):
         del blocker
         self.favorite.setEnabled(item is not None)
         rating = item.rating if item else 0
-        self.rating.setText(f"Avaliação: {'★' * rating}{'☆' * (5 - rating)}")
+        self.rating.set_value(rating)
+        self.rating.setEnabled(item is not None)
         notes_blocker = QSignalBlocker(self.notes)
         self.notes.setPlainText(item.notes if item else "")
         del notes_blocker

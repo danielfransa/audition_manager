@@ -50,11 +50,11 @@ incluindo bypass. Voltar a um IR reutiliza o resultado se os arquivos não
 mudaram. Trocar DI ou pasta limpa o cache. Esse limite não inclui buffers ativos
 e temporários do processamento.
 
-Use **F** para alternar favorito e **1..5** para avaliar o IR selecionado. Esses
-dados persistem em SQLite e reaparecem após fechar, abrir ou reescanear a pasta.
-O banco armazena caminhos e metadados; os arquivos de áudio não são copiados.
-Use **0** para limpar a avaliação. A lista mostra favorito e estrelas ao lado
-do caminho relativo.
+Clique em uma das cinco estrelas para avaliar o IR selecionado. Também é possível
+usar **1..5** pelo teclado; **0** limpa a avaliação e **F** alterna o favorito.
+Esses dados persistem em SQLite e reaparecem após fechar, abrir ou reescanear a
+pasta. O banco armazena caminhos e metadados; os arquivos de áudio não são
+copiados. A lista mostra favorito e estrelas ao lado do caminho relativo.
 
 A busca filtra por nome ou caminho dentro da pasta aberta. Também é possível
 mostrar somente favoritos e exigir uma avaliação mínima. Aplicar um filtro não
@@ -274,6 +274,7 @@ para uma etapa própria.
 - [Preferências](docs/decisions/0012-preferencias.md)
 - [Crossfade curto](docs/decisions/0013-crossfade.md)
 - [NAM A2, AM4DATA e pacote Windows](docs/decisions/0014-nam-a2-am4-windows.md)
+- [Avaliação por estrelas clicáveis](docs/decisions/0015-estrelas-clicaveis.md)
 - [Validação](docs/validacao.md)
 
 Cada incremento deve registrar decisões, testes e limitações em `docs/`, e

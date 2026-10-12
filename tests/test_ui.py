@@ -369,6 +369,11 @@ def test_favorite_and_rating_shortcuts_persist_after_rescan(tmp_path, monkeypatc
     QTest.keyClick(first, Qt.Key.Key_4)
     assert first.favorite.isChecked()
     assert first.rating.text() == "Avaliação: ★★★★☆"
+    QTest.mouseClick(first.rating.buttons[1], Qt.MouseButton.LeftButton)
+    assert first.rating.text() == "Avaliação: ★★☆☆☆"
+    assert first.repository.get(ir).rating == 2
+    QTest.mouseClick(first.rating.buttons[3], Qt.MouseButton.LeftButton)
+    assert first.rating.text() == "Avaliação: ★★★★☆"
     first.close()
 
     second = MainWindow(FakeOutput(), ImpulseResponseRepository(database), preferences)
