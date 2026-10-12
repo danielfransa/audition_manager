@@ -36,7 +36,9 @@ reaberto. O ganho de saída vai de -24 a 0 dB e não altera o áudio em cache.
 Ao trocar o IR, o áudio anterior continua durante o processamento. A nova
 seleção assume a posição atual e preserva Pause/Stop. Navegação rápida aplica
 apenas a última seleção. O rótulo IR ativo identifica o áudio realmente aplicado.
-Trocar a DI ou pasta encerra o áudio atual.
+Quando taxa e canais permanecem iguais, um crossfade linear de 10 ms suaviza a
+troca. Mudanças mono/estéreo ainda exigem reabrir o stream e podem causar uma
+breve interrupção. Trocar a DI ou pasta encerra o áudio atual.
 
 Use **B** ou a opção **Bypass IR** para ouvir a DI sem IR; **Espaço** alterna
 Play/Pause. Bypass também funciona sem selecionar um IR. A volta ao IR mantém
@@ -67,9 +69,9 @@ facilitando copiar o resultado para uma pedaleira. A aplicação recusa sobrescr
 uma pasta existente e também impede exportar para dentro da própria biblioteca,
 o que criaria duplicatas no próximo scan.
 
-Esta entrega fecha as funções planejadas da biblioteca do MVP. Scan assíncrono
-e preferências persistentes já fazem parte do polimento técnico; o próximo passo
-é medir e decidir o crossfade. NAM, ANN, A2, entrada ao vivo e envio à
+Esta entrega fecha as funções planejadas da biblioteca e do polimento do MVP:
+scan assíncrono, preferências persistentes e crossfade curto. NAM, ANN, A2,
+entrada ao vivo e envio à
 Blackbox e IR-Box não estão implementados.
 
 ## Desenvolvimento no WSL com mise e venv
@@ -218,8 +220,9 @@ representa amostras entregues ao dispositivo e pode adiantar o som pela latênci
 da saída. A barra é informativa, sem busca por posição. Pause aguarda os buffers
 já enviados terminarem; pode haver um pequeno atraso. Picos acima de
 0,95 são atenuados: isso evita clipping digital, mas altera o nível relativo
-entre alguns IRs. Não há normalização de volume perceptual, crossfade ou
-promessa de baixa latência. O dispositivo precisa aceitar a taxa da DI.
+entre alguns IRs. Não há normalização de volume perceptual nem promessa de baixa
+latência. O crossfade não se aplica a mudanças na quantidade de canais. O
+dispositivo precisa aceitar a taxa da DI.
 O fechamento aguarda o usuário tentar novamente após um processamento ativo.
 Dispositivos desconectados durante a reprodução podem exigir
 selecionar outra saída ou reiniciar o aplicativo.
@@ -242,6 +245,8 @@ para uma etapa própria.
 - [Filtros e notas](docs/decisions/0009-filtros-notas.md)
 - [Exportação de favoritos](docs/decisions/0010-exportacao-favoritos.md)
 - [Scan assíncrono](docs/decisions/0011-scan-assincrono.md)
+- [Preferências](docs/decisions/0012-preferencias.md)
+- [Crossfade curto](docs/decisions/0013-crossfade.md)
 - [Validação](docs/validacao.md)
 
 Cada incremento deve registrar decisões, testes e limitações em `docs/`, e

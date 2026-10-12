@@ -59,6 +59,9 @@ DI em loop, navegação contínua entre IRs e metadados persistentes.
    **Implementado para auditoria; preferências JSON têm escrita atômica e
    fallback para caminhos ou dispositivos ausentes.**
 3. Medir e decidir a implementação de crossfade curto na troca de IR.
+   **Crossfade linear de 10 ms implementado para trocas com mesma taxa e canais;
+   preparação medida em cerca de 10 µs por troca. Mudança de canais continua
+   reabrindo o stream sem crossfade.**
 
 ## 2 — Capturas NAM
 

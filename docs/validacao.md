@@ -275,3 +275,23 @@ Roteiro prático:
    selecionar a saída padrão e continuar utilizável.
 5. Feche, mova temporariamente a DI e a pasta de IRs e reabra. A janela deve
    iniciar sem erro e esquecer somente os caminhos que não existem mais.
+
+## Crossfade na troca de IR
+
+- `python -m pytest -q`: **66 passed** após este incremento.
+- Testes cobrem a rampa de 10 ms, cursor preservado, troca pausada, descarte no
+  Stop e rejeição de canais diferentes no transporte de mesmo stream.
+- Preparar a transição estéreo a 48 kHz levou cerca de **10 µs por troca** no
+  WSL desta sessão, em cinco séries de mil trocas. Isso não mede áudio real.
+- `python -m compileall -q src tests` e `git diff --check`: sem erros.
+
+Roteiro prático:
+
+1. Com Loop ativo, alterne rapidamente entre dois IRs mono. Compare com a troca
+   anterior e confirme ausência de estalo ou queda perceptível de duração longa.
+2. Pause, escolha outro IR e pressione Play. A retomada deve começar na mesma
+   posição e aplicar a transição sem iniciar áudio enquanto estava pausado.
+3. Selecione outro IR durante a reprodução e pressione Stop durante o preparo.
+   O áudio deve continuar parado e, no próximo Play, começar limpo do início.
+4. Troque entre resultados mono e estéreo. Confirme a breve reabertura já
+   esperada; este caso não usa crossfade.

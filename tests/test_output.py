@@ -113,7 +113,7 @@ def test_replace_same_format_keeps_stream_cursor_and_pause(backend) -> None:
     assert output._stream is stream
     output.play()
     stream.options["callback"](block, 2, None, None)
-    np.testing.assert_allclose(block, 0.5)
+    np.testing.assert_allclose(block[:, 0], [0.1, 0.1 * 8 / 9 + 0.5 / 9])
     assert backend.OutputStream.call_count == 1
 
 
