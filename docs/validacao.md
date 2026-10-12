@@ -235,3 +235,24 @@ Roteiro prático:
    exportação. Cancele cada diálogo e confirme que nenhuma pasta é criada.
 6. Tente escolher a própria pasta de IRs como destino: deve ser recusado para
    evitar duplicatas. Os favoritos e arquivos originais devem permanecer intactos.
+
+## Scan assíncrono
+
+- `python -m pytest -q`: **57 passed** após este incremento.
+- Os testes Qt agora aguardam o worker real para scans normais.
+- Testes específicos bloqueiam artificialmente a inspeção de um arquivo e
+  confirmam que a biblioteca anterior permanece visível, que a pasta mais
+  recente prevalece e que Cancelar preserva a raiz anterior.
+
+Roteiro prático:
+
+1. Abra uma pasta grande. Durante o scan, mova/redimensione a janela e controle
+   o player da biblioteca anterior; a interface deve continuar respondendo.
+2. Observe a barra sair do modo indeterminado e avançar até o total de WAVs.
+3. Clique Cancelar scan: a lista anterior deve permanecer e nenhum resultado
+   parcial deve entrar no banco ou nos filtros.
+4. Inicie um scan e, antes de terminar, escolha duas outras pastas em sequência.
+   Somente a última deve aparecer ao final.
+5. Inclua WAVs inválidos e confirme a contagem de ignorados após conclusão.
+6. Feche a janela durante um scan. Ela deve cancelar com segurança e fechar
+   assim que a inspeção do arquivo em andamento retornar.

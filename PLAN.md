@@ -50,6 +50,14 @@ DI em loop, navegação contínua entre IRs e metadados persistentes.
    **Implementado para auditoria. Exportação de capturas será adicionada quando
    a biblioteca de capturas existir.**
 
+## 1.1 — Polimento do MVP
+
+1. Scan assíncrono com progresso, cancelamento e descarte de resultados antigos.
+   **Implementado para auditoria; 57 testes automatizados passando.**
+2. Persistir última DI/pasta de IR/exportação, dispositivo, ganho e Loop, com
+   fallback quando recursos não estiverem disponíveis.
+3. Medir e decidir a implementação de crossfade curto na troca de IR.
+
 ## 2 — Capturas NAM
 
 Pesquisar runtime oficial/open source, manutenção, licença e viabilidade no

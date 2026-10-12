@@ -20,8 +20,12 @@ def inspect_wavs(paths: list[Path]) -> tuple[list[ImpulseResponse], list[tuple[P
     errors: list[tuple[Path, str]] = []
     for path in paths:
         try:
-            info = sf.info(path)
-            items.append(ImpulseResponse(path.resolve(), path.name, info.samplerate, info.channels))
+            items.append(inspect_wav(path))
         except (OSError, RuntimeError, sf.LibsndfileError) as error:
             errors.append((path, str(error)))
     return items, errors
+
+
+def inspect_wav(path: Path) -> ImpulseResponse:
+    info = sf.info(path)
+    return ImpulseResponse(path.resolve(), path.name, info.samplerate, info.channels)

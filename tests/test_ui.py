@@ -14,6 +14,7 @@ from audition_manager.audio.files import AudioBuffer
 from audition_manager.audio.output import OutputDevice
 from audition_manager.audio.transport import PlaybackTransport, PlaybackState
 from audition_manager.library.repository import ImpulseResponseRepository
+from audition_manager.library.models import ImpulseResponse
 from audition_manager.ui.main_window import MainWindow
 
 
@@ -70,6 +71,14 @@ class FakeOutput:
         self.transport.stop()
 
 
+def wait_for_scan(window: MainWindow, app: QApplication, timeout: float = 5) -> None:
+    deadline = monotonic() + timeout
+    while window.scan_worker is not None and monotonic() < deadline:
+        app.processEvents()
+        sleep(0.01)
+    assert window.scan_worker is None
+
+
 def test_select_render_play_and_stop(tmp_path: Path, monkeypatch) -> None:
     app = QApplication.instance() or QApplication([])
     output = FakeOutput()
@@ -97,6 +106,7 @@ def test_select_render_play_and_stop(tmp_path: Path, monkeypatch) -> None:
         assert window.gain_label.text() == "Ganho de saída: -12 dB"
         window.choose_di()
         window.choose_folder()
+        wait_for_scan(window, app)
         assert window.ir_list.count() == 1
         window.ir_list.setCurrentRow(0)
         assert not window.play_button.isEnabled()
@@ -261,6 +271,7 @@ def test_favorite_and_rating_shortcuts_persist_after_rescan(tmp_path, monkeypatc
     first.activateWindow()
     app.processEvents()
     first.choose_folder()
+    wait_for_scan(first, app)
     first.ir_list.setCurrentRow(0)
     app.processEvents()
     QTest.keyClick(first, Qt.Key.Key_F)
@@ -272,6 +283,7 @@ def test_favorite_and_rating_shortcuts_persist_after_rescan(tmp_path, monkeypatc
     second = MainWindow(FakeOutput(), ImpulseResponseRepository(database))
     try:
         second.choose_folder()
+        wait_for_scan(second, app)
         second.ir_list.setCurrentRow(0)
         assert second.favorite.isChecked()
         assert second.rating.text() == "Avaliação: ★★★★☆"
@@ -301,6 +313,7 @@ def test_library_filters_decorate_list_and_do_not_change_playback_selection(
     window = MainWindow(FakeOutput(), repository)
     try:
         window.choose_folder()
+        wait_for_scan(window, app)
         assert window.ir_list.count() == 3
         mesa_row = window.ir_paths.index(paths[0].resolve())
         window.ir_list.setCurrentRow(mesa_row)
@@ -350,6 +363,7 @@ def test_notes_persist_and_typing_does_not_trigger_global_shortcuts(
         window.show()
         window.activateWindow()
         window.choose_folder()
+        wait_for_scan(window, app)
         window.ir_list.setCurrentRow(0)
         app.processEvents()
         window.notes.setFocus()
@@ -399,6 +413,7 @@ def test_exports_all_favorites_from_current_root_regardless_of_filters(
     window = MainWindow(FakeOutput(), repository)
     try:
         window.choose_folder()
+        wait_for_scan(window, app)
         for path in favorites:
             repository.set_favorite(path, True)
         window.apply_filters()
@@ -413,4 +428,109 @@ def test_exports_all_favorites_from_current_root_regardless_of_filters(
         assert "2 favoritos exportados" in window.status.text()
         assert messages == [window.status.text()]
     finally:
+        window.close()
+
+
+def test_newest_async_scan_wins_and_old_library_remains_visible(
+    tmp_path, monkeypatch
+) -> None:
+    from threading import Event
+
+    app = QApplication.instance() or QApplication([])
+    original = tmp_path / "original"
+    first = tmp_path / "first"
+    latest = tmp_path / "latest"
+    for root in (original, first, latest):
+        root.mkdir()
+        (root / f"{root.name}.wav").touch()
+    repository = ImpulseResponseRepository(tmp_path / "library.sqlite3")
+    repository.upsert_many([
+        ImpulseResponse((original / "original.wav").resolve(), "original.wav", 48000, 1)
+    ])
+    window = MainWindow(FakeOutput(), repository)
+    window.ir_root = original.resolve()
+    window.all_ir_paths = [(original / "original.wav").resolve()]
+    window.apply_filters()
+    entered = Event()
+    release = Event()
+
+    monkeypatch.setattr(
+        "audition_manager.ui.main_window.scan_wavs",
+        lambda root: [root / f"{root.name}.wav"],
+    )
+
+    def inspect(path):
+        if path.parent == first.resolve():
+            entered.set()
+            assert release.wait(5)
+        return ImpulseResponse(path.resolve(), path.name, 44100, 1)
+
+    monkeypatch.setattr("audition_manager.ui.main_window.inspect_wav", inspect)
+    try:
+        window.begin_scan(first)
+        assert entered.wait(2)
+        assert window.ir_list.item(0).text().startswith("original.wav")
+        assert not window.scan_progress.isHidden()
+        window.begin_scan(latest)
+        release.set()
+        wait_for_scan(window, app)
+        assert window.ir_root == latest.resolve()
+        assert window.all_ir_paths == [(latest / "latest.wav").resolve()]
+        assert window.ir_list.item(0).text().startswith("latest.wav")
+        assert window.scan_progress.isHidden()
+    finally:
+        release.set()
+        if window.scan_worker is not None:
+            window.scan_worker.requestInterruption()
+            window.scan_worker.wait()
+            app.processEvents()
+        window.close()
+
+
+def test_cancel_scan_keeps_previous_library(tmp_path, monkeypatch) -> None:
+    from threading import Event
+
+    app = QApplication.instance() or QApplication([])
+    original = tmp_path / "original"
+    pending = tmp_path / "pending"
+    original.mkdir()
+    pending.mkdir()
+    old_path = original / "old.wav"
+    new_path = pending / "new.wav"
+    old_path.touch()
+    new_path.touch()
+    repository = ImpulseResponseRepository(tmp_path / "library.sqlite3")
+    repository.upsert_many([ImpulseResponse(old_path.resolve(), old_path.name, 48000, 1)])
+    window = MainWindow(FakeOutput(), repository)
+    window.ir_root = original.resolve()
+    window.all_ir_paths = [old_path.resolve()]
+    window.apply_filters()
+    entered = Event()
+    release = Event()
+    monkeypatch.setattr(
+        "audition_manager.ui.main_window.scan_wavs", lambda root: [new_path]
+    )
+
+    def inspect(path):
+        entered.set()
+        assert release.wait(5)
+        return ImpulseResponse(path.resolve(), path.name, 48000, 1)
+
+    monkeypatch.setattr("audition_manager.ui.main_window.inspect_wav", inspect)
+    try:
+        window.begin_scan(pending)
+        assert entered.wait(2)
+        window.cancel_scan()
+        release.set()
+        wait_for_scan(window, app)
+        assert window.ir_root == original.resolve()
+        assert window.all_ir_paths == [old_path.resolve()]
+        assert window.ir_list.item(0).text().startswith("old.wav")
+        assert "cancelado" in window.status.text().casefold()
+    finally:
+        release.set()
+        if window.scan_worker is not None:
+            window.scan_worker.requestInterruption()
+            window.scan_worker.wait()
+            app.processEvents()
         window.close()

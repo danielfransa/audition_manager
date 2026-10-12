@@ -18,6 +18,11 @@ Pause preserva a posição, Stop volta ao início e Loop pode ser alterado duran
 a reprodução. O contador e a barra mostram a posição no resultado processado.
 A convolução roda em uma thread de trabalho para manter a janela responsiva.
 
+O scan da pasta também ocorre em segundo plano. A barra mostra quantos candidatos
+foram analisados; **Cancelar scan** mantém a biblioteca anterior. Se outra pasta
+for escolhida durante o trabalho, o scan anterior é cancelado e somente a pasta
+mais recente pode substituir a lista e atualizar o SQLite.
+
 O seletor de saída lista os dispositivos fornecidos pelo PortAudio. A opção
 inicial acompanha a saída padrão do sistema. Trocar o dispositivo preserva a
 posição e o estado do player, com uma breve interrupção enquanto o stream é
@@ -192,9 +197,10 @@ Veja o [roteiro manual por plataforma](docs/validacao.md).
 O banco fica em `%LOCALAPPDATA%\Audition Manager\library.sqlite3` no Windows e
 em `$XDG_DATA_HOME/audition-manager/library.sqlite3` no Linux (ou
 `~/.local/share/audition-manager/library.sqlite3`). Para testes isolados, defina
-`AUDITION_MANAGER_DATA_DIR` antes de iniciar. O scan é síncrono nesta etapa;
-pastas muito grandes podem deixar a janela ocupada enquanto os cabeçalhos são
-lidos. Arquivos removidos permanecem no banco para preservar a classificação,
+`AUDITION_MANAGER_DATA_DIR` antes de iniciar. O scan é assíncrono, mas a
+enumeração inicial dos nomes acontece antes de a
+contagem ficar disponível; o cancelamento entra em vigor entre dois arquivos.
+Arquivos removidos permanecem no banco para preservar a classificação,
 mas não aparecem na lista quando não estão presentes na pasta escaneada.
 
 O processamento carrega DI, IR e resultado na memória. São aceitos mono/estéreo
@@ -229,6 +235,7 @@ para uma etapa própria.
 - [Dispositivo e ganho](docs/decisions/0008-dispositivo-ganho.md)
 - [Filtros e notas](docs/decisions/0009-filtros-notas.md)
 - [Exportação de favoritos](docs/decisions/0010-exportacao-favoritos.md)
+- [Scan assíncrono](docs/decisions/0011-scan-assincrono.md)
 - [Validação](docs/validacao.md)
 
 Cada incremento deve registrar decisões, testes e limitações em `docs/`, e

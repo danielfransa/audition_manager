@@ -27,9 +27,8 @@ from audition_manager.audio.ir_processor import render_files
 from audition_manager.audio.output import AudioOutput
 from audition_manager.audio.render_cache import RenderCache
 from audition_manager.audio.transport import PlaybackState
-from audition_manager.library.scanner import scan_wavs
+from audition_manager.library.scanner import inspect_wav, scan_wavs
 from audition_manager.library.repository import ImpulseResponseRepository
-from audition_manager.library.scanner import inspect_wavs
 from audition_manager.library.exporter import export_files
 
 logger = logging.getLogger(__name__)
@@ -60,6 +59,41 @@ class RenderWorker(QThread):
             self.failed.emit(str(error))
 
 
+class ScanWorker(QThread):
+    progress = Signal(int, int)
+    scanned = Signal(object, object, object)
+    failed = Signal(object, str)
+    cancelled = Signal(object)
+
+    def __init__(self, root: Path, parent: QWidget) -> None:
+        super().__init__(parent)
+        self.root = root.resolve()
+
+    def run(self) -> None:
+        try:
+            candidates = scan_wavs(self.root)
+            total = len(candidates)
+            items = []
+            errors = []
+            self.progress.emit(0, total)
+            for index, path in enumerate(candidates, start=1):
+                if self.isInterruptionRequested():
+                    self.cancelled.emit(self.root)
+                    return
+                try:
+                    items.append(inspect_wav(path))
+                except Exception as error:
+                    errors.append((path, str(error)))
+                self.progress.emit(index, total)
+            if self.isInterruptionRequested():
+                self.cancelled.emit(self.root)
+                return
+            self.scanned.emit(self.root, items, errors)
+        except Exception as error:
+            logger.exception("Unable to scan IR directory")
+            self.failed.emit(self.root, str(error))
+
+
 class MainWindow(QMainWindow):
     def __init__(
         self, output: AudioOutput, repository: ImpulseResponseRepository
@@ -72,6 +106,10 @@ class MainWindow(QMainWindow):
         self.all_ir_paths: list[Path] = []
         self.ir_paths: list[Path] = []
         self.worker: RenderWorker | None = None
+        self.scan_worker: ScanWorker | None = None
+        self.desired_scan_root: Path | None = None
+        self.applied_scan_root: Path | None = None
+        self.close_after_scan = False
         self.cache = RenderCache()
         self.has_rendered_audio = False
         self.selection_version = 0
@@ -84,6 +122,10 @@ class MainWindow(QMainWindow):
         self.folder_button = QPushButton("Selecionar pasta de IRs")
         self.export_button = QPushButton("Exportar favoritos…")
         self.export_button.setEnabled(False)
+        self.cancel_scan_button = QPushButton("Cancelar scan")
+        self.cancel_scan_button.setEnabled(False)
+        self.scan_progress = QProgressBar()
+        self.scan_progress.setVisible(False)
         self.search = QLineEdit()
         self.search.setPlaceholderText("Buscar IR por nome ou caminho…")
         self.favorites_only = QCheckBox("Somente favoritos")
@@ -128,7 +170,9 @@ class MainWindow(QMainWindow):
         file_buttons.addWidget(self.di_button)
         file_buttons.addWidget(self.folder_button)
         file_buttons.addWidget(self.export_button)
+        file_buttons.addWidget(self.cancel_scan_button)
         layout.addLayout(file_buttons)
+        layout.addWidget(self.scan_progress)
         layout.addWidget(self.device)
         gain_row = QHBoxLayout()
         gain_row.addWidget(self.gain_label)
@@ -161,6 +205,7 @@ class MainWindow(QMainWindow):
         self.di_button.clicked.connect(self.choose_di)
         self.folder_button.clicked.connect(self.choose_folder)
         self.export_button.clicked.connect(self.export_favorites)
+        self.cancel_scan_button.clicked.connect(self.cancel_scan)
         self.device.currentIndexChanged.connect(self.change_device)
         self.gain.valueChanged.connect(self.change_gain)
         self.search.textChanged.connect(self.apply_filters)
@@ -215,23 +260,98 @@ class MainWindow(QMainWindow):
         directory = QFileDialog.getExistingDirectory(self, "Pasta de IRs")
         if not directory:
             return
+        self.begin_scan(Path(directory))
+
+    def begin_scan(self, root: Path) -> None:
         try:
-            root = Path(directory)
-            candidates = scan_wavs(root)
-            metadata, errors = inspect_wavs(candidates)
-            self.repository.upsert_many(metadata)
-            paths = [item.path for item in metadata]
-        except (OSError, ValueError) as error:
+            resolved = root.resolve(strict=True)
+        except OSError as error:
             self.show_error(str(error))
             return
+        if not resolved.is_dir():
+            self.show_error("Selecione um diretório existente.")
+            return
+        self.desired_scan_root = resolved
+        if self.scan_worker is not None:
+            self.scan_worker.requestInterruption()
+            self.status.setText("Cancelando scan anterior para abrir a nova pasta…")
+            return
+        self.start_scan(resolved)
+
+    def start_scan(self, root: Path) -> None:
+        self.scan_worker = ScanWorker(root, self)
+        self.scan_worker.progress.connect(self.update_scan_progress)
+        self.scan_worker.scanned.connect(self.scan_completed)
+        self.scan_worker.failed.connect(self.scan_failed)
+        self.scan_worker.cancelled.connect(self.scan_cancelled)
+        self.scan_worker.finished.connect(self.scan_finished)
+        self.cancel_scan_button.setEnabled(True)
+        self.scan_progress.setRange(0, 0)
+        self.scan_progress.setVisible(True)
+        self.status.setText(f"Escaneando IRs em {root}…")
+        self.scan_worker.start()
+
+    @Slot(int, int)
+    def update_scan_progress(self, current: int, total: int) -> None:
+        self.scan_progress.setRange(0, total or 0)
+        if total:
+            self.scan_progress.setValue(current)
+            self.scan_progress.setFormat(f"Analisando IRs: {current}/{total}")
+
+    @Slot(object, object, object)
+    def scan_completed(self, root: Path, metadata: list, errors: list) -> None:
+        if root != self.desired_scan_root:
+            return
+        try:
+            self.repository.upsert_many(metadata)
+        except Exception as error:
+            self.show_error(str(error))
+            self.desired_scan_root = None
+            return
         self.reset_audio()
-        self.ir_root = root.resolve()
-        self.all_ir_paths = paths
+        self.ir_root = root
+        self.all_ir_paths = [item.path for item in metadata]
+        self.applied_scan_root = root
         self.apply_filters()
         skipped = f"; {len(errors)} inválidos ignorados" if errors else ""
         self.status.setText(
-            f"{len(paths)} IRs válidos encontrados{skipped}; selecione um IR."
+            f"{len(metadata)} IRs válidos encontrados{skipped}; selecione um IR."
         )
+
+    @Slot(object, str)
+    def scan_failed(self, root: Path, message: str) -> None:
+        if root == self.desired_scan_root:
+            self.desired_scan_root = None
+            self.show_error(message)
+
+    @Slot(object)
+    def scan_cancelled(self, root: Path) -> None:
+        if self.desired_scan_root is None or root == self.desired_scan_root:
+            self.status.setText("Scan cancelado; a biblioteca anterior foi mantida.")
+
+    @Slot()
+    def scan_finished(self) -> None:
+        if self.scan_worker is not None:
+            self.scan_worker.deleteLater()
+        self.scan_worker = None
+        self.cancel_scan_button.setEnabled(False)
+        self.scan_progress.setVisible(False)
+        if self.close_after_scan:
+            self.close_after_scan = False
+            self.close()
+            return
+        if (
+            self.desired_scan_root is not None
+            and self.desired_scan_root != self.applied_scan_root
+        ):
+            self.start_scan(self.desired_scan_root)
+
+    @Slot()
+    def cancel_scan(self) -> None:
+        self.desired_scan_root = None
+        if self.scan_worker is not None:
+            self.scan_worker.requestInterruption()
+            self.status.setText("Cancelando scan…")
 
     def reset_audio(self) -> None:
         self.cache = RenderCache()
@@ -553,6 +673,12 @@ class MainWindow(QMainWindow):
     def closeEvent(self, event: QCloseEvent) -> None:
         if self.worker is not None:
             self.status.setText("Aguarde o processamento terminar antes de fechar.")
+            event.ignore()
+            return
+        if self.scan_worker is not None:
+            self.close_after_scan = True
+            self.cancel_scan()
+            self.status.setText("Cancelando scan antes de fechar…")
             event.ignore()
             return
         try:
