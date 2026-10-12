@@ -62,4 +62,6 @@ o histórico de cada incremento e podem mencionar limitações já resolvidas.
 - `PLAN.md`: etapas, ordem de implementação e riscos.
 - `docs/validacao.md`: resultados e roteiros manuais acumulados.
 - `docs/decisions/`: decisões técnicas numeradas e fontes consultadas.
-- `README.md`: uso, instalação, build e comportamento visível da aplicação.
+- `README.md`: visão pública, instalação rápida e primeiro uso.
+- `docs/installation.md`: instalação completa, build e solução de problemas.
+- `docs/development.md`: arquitetura, testes e limites internos.
