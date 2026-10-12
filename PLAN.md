@@ -1,5 +1,8 @@
 # Plano de execução
 
+O resumo vigente de entregas, verificações e pendências está em
+[`docs/status.md`](docs/status.md). Este plano registra a ordem do trabalho.
+
 ## Processo
 
 Entregar uma fatia pequena por rodada, com código, verificação e decisões

@@ -259,6 +259,7 @@ para uma etapa própria.
 
 ## Documentação e processo
 
+- [Status atual do projeto](docs/status.md)
 - [Plano e pontos de auditoria](PLAN.md)
 - [Prompt original preservado](docs/prompt-inicial.md)
 - [Decisões iniciais](docs/decisions/0001-fundacao.md)

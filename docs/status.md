@@ -1,0 +1,65 @@
+# Status atual do projeto
+
+Atualizado em **12 de outubro de 2026**. Este arquivo é o resumo vigente; os
+registros em `docs/decisions/` e as seções antigas de `docs/validacao.md` formam
+o histórico de cada incremento e podem mencionar limitações já resolvidas.
+
+## Entregue
+
+- Aplicação desktop Python/PySide6 para Windows e Linux, executada e validada
+  pelo usuário no WSL/WSLg.
+- Seleção de DI WAV e scan recursivo, assíncrono e cancelável de bibliotecas IR.
+- Convolução offline, reamostragem, proteção de pico, reprodução, posição,
+  Play/Pause/Stop/Loop e bypass.
+- Troca automática de IR, cache limitado e crossfade linear de 10 ms quando o
+  formato do stream permanece igual.
+- Biblioteca SQLite com favoritos, avaliação de 0 a 5, estrelas clicáveis,
+  atalhos, busca, filtros e notas.
+- Exportação de IRs favoritos para uma pasta escolhida, preservando subpastas.
+- Seleção de saída, ganho e mensagens específicas para configuração WSLg.
+- Preferências JSON com DI, pasta de IRs, destino de exportação, dispositivo,
+  ganho e Loop, incluindo fallback para recursos removidos.
+- Configuração `mise`/venv, licença MIT, documentação técnica e versionamento
+  Git em commits pequenos.
+- Script PowerShell para gerar pacote portátil Windows com PyInstaller.
+
+## Verificação atual
+
+- Suíte automatizada: **66 testes passando**.
+- Compilação de bytecode e `git diff --check`: sem erros na última entrega.
+- Reprodução e interface: confirmadas no WSL/WSLg pelo usuário.
+- Saída PortAudio no WSLg: validada com a ponte ALSA/PulseAudio.
+- Branch local: `main`.
+
+## Em andamento — NAM A2
+
+- A2 foi escolhido como o primeiro formato de captura de amplificador.
+- `NeuralAmpModelerCore` é o runtime candidato. O próximo incremento é um
+  protótipo isolado que carrega uma captura A2 conhecida, processa uma DI e mede
+  compatibilidade, tempo e memória em Windows/Linux.
+- Nenhuma engine NAM foi integrada à interface ainda.
+- O pacote Python de treinamento, com PyTorch, não será adicionado sem necessidade.
+
+## BlackBox e AM4DATA
+
+- O software oficial da M-VAVE documenta conversão NAM para AM4DATA.
+- A primeira solução prevista é exportar/organizar o `.nam` no Audition Manager
+  e usar o conversor oficial para a BlackBox.
+- Geração direta de AM4DATA e transferência para BlackBox ou IR-Box não estão
+  implementadas e dependem de documentação ou protocolo confiável.
+
+## Validações pendentes
+
+- Gerar `AuditionManager-Windows-x64.zip` em Windows real e executar o roteiro
+  de interface, WASAPI, preferências, exportação e encerramento.
+- Executar o roteiro completo em Linux nativo; WSLg não substitui essa validação.
+- Avaliar instalador e assinatura somente após aprovar o pacote portátil.
+- Validar auditivamente as estrelas clicáveis e o crossfade no uso cotidiano.
+- Revisar licenças e avisos das dependências antes de distribuir binários.
+
+## Referências de acompanhamento
+
+- `PLAN.md`: etapas, ordem de implementação e riscos.
+- `docs/validacao.md`: resultados e roteiros manuais acumulados.
+- `docs/decisions/`: decisões técnicas numeradas e fontes consultadas.
+- `README.md`: uso, instalação, build e comportamento visível da aplicação.
