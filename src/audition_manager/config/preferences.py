@@ -16,6 +16,7 @@ class UserPreferences:
     output_device_name: str | None = None
     output_host_api: str | None = None
     output_gain_db: int = 0
+    capture_gain_db: int = 0
     loop_enabled: bool = True
 
 
@@ -35,6 +36,9 @@ class PreferencesStore:
         gain = payload.get("output_gain_db", 0)
         if not isinstance(gain, int) or isinstance(gain, bool):
             gain = 0
+        capture_gain = payload.get("capture_gain_db", 0)
+        if not isinstance(capture_gain, int) or isinstance(capture_gain, bool):
+            capture_gain = 0
         return UserPreferences(
             last_di_file=self._path(payload.get("last_di_file")),
             last_ir_directory=self._path(payload.get("last_ir_directory")),
@@ -44,6 +48,7 @@ class PreferencesStore:
             output_device_name=self._text(payload.get("output_device_name")),
             output_host_api=self._text(payload.get("output_host_api")),
             output_gain_db=max(-24, min(0, gain)),
+            capture_gain_db=max(-24, min(12, capture_gain)),
             loop_enabled=(
                 payload["loop_enabled"]
                 if isinstance(payload.get("loop_enabled"), bool)

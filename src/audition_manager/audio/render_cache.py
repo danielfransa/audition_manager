@@ -25,10 +25,12 @@ class RenderCache:
         self, di: Path, ir: Path | None,
         renderer: Callable[[Path, Path | None], AudioBuffer],
         dependencies: tuple[Path, ...] = (),
+        variant: tuple[object, ...] = (),
     ) -> AudioBuffer:
         key = (
             file_identity(di), file_identity(ir) if ir else None,
             tuple(file_identity(path) for path in dependencies),
+            variant,
         )
         if key in self._items:
             self._items.move_to_end(key)
@@ -39,6 +41,7 @@ class RenderCache:
         current = (
             file_identity(di), file_identity(ir) if ir else None,
             tuple(file_identity(path) for path in dependencies),
+            variant,
         )
         if key != current or size > self.max_bytes or self.max_entries <= 0:
             return audio

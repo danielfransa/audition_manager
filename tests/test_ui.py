@@ -316,15 +316,26 @@ def test_capture_and_ir_are_processed_as_one_chain(tmp_path: Path, monkeypatch) 
         assert renderer.models == [model.resolve()]
         assert output.audio is not None
         assert output.audio.samples[:, 0] == pytest.approx([0.2, 0.4])
-        assert "amp.nam → cab.wav" in window.active_ir.text()
+        assert "NAM (amp.nam) → IR (cab.wav)" in window.active_ir.text()
+        assert window.peak_meter.format().startswith("Pico: ")
+        window.capture_gain.setValue(6)
+        deadline = monotonic() + 5
+        while window.worker is not None and monotonic() < deadline:
+            app.processEvents()
+            sleep(0.01)
+        assert output.audio.samples[:, 0] == pytest.approx(
+            [0.2 * (10 ** (6 / 20)), 0.4 * (10 ** (6 / 20))]
+        )
         window.capture_bypass.setChecked(True)
         deadline = monotonic() + 5
         while window.worker is not None and monotonic() < deadline:
             app.processEvents()
             sleep(0.01)
-        assert renderer.models == [model.resolve()]
+        assert renderer.models == [model.resolve(), model.resolve()]
         assert output.audio.samples[:, 0] == pytest.approx([0.1, 0.2])
-        assert window.active_ir.text() == "Ativo: cab.wav"
+        assert window.active_ir.text() == (
+            "Cadeia ativa: DI → IR (cab.wav) — Bypass ativo: NAM"
+        )
         window.capture_search.setText("missing")
         assert window.capture_list.count() == 0
         window.capture_search.clear()

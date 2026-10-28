@@ -28,10 +28,11 @@ o histórico de cada incremento e podem mencionar limitações já resolvidas.
 - Biblioteca NAM com busca, filtros, favoritos, avaliação, notas e persistência.
 - Exportação conjunta planejada com separação em `Favoritos/Capturas` e
   `Favoritos/IRs`.
+- Ganho NAM independente, medidor de pico e proteção de pico em toda a cadeia.
 
 ## Verificação atual
 
-- Suíte automatizada: **76 testes passando**.
+- Suíte automatizada: **79 testes passando**.
 - Compilação de bytecode e `git diff --check`: sem erros na última entrega.
 - Reprodução e interface: confirmadas no WSL/WSLg pelo usuário.
 - Saída PortAudio no WSLg: validada com a ponte ALSA/PulseAudio.

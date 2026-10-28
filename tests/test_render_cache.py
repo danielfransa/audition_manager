@@ -73,3 +73,15 @@ def test_dependency_renderer_runs_without_ir_and_is_cached(tmp_path) -> None:
     assert cache.render(di, None, renderer, dependencies=(capture,)) is audio
     assert cache.render(di, None, renderer, dependencies=(capture,)) is audio
     renderer.assert_called_once_with(di, None)
+
+
+def test_processing_variant_has_its_own_cache_entry(tmp_path) -> None:
+    di = tmp_path / "di.wav"
+    capture = tmp_path / "amp.nam"
+    di.touch()
+    capture.touch()
+    renderer = Mock(return_value=AudioBuffer(np.zeros((2, 1), dtype=np.float32), 48000))
+    cache = RenderCache()
+    cache.render(di, None, renderer, dependencies=(capture,), variant=(0,))
+    cache.render(di, None, renderer, dependencies=(capture,), variant=(6,))
+    assert renderer.call_count == 2

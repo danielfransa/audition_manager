@@ -90,6 +90,10 @@ somente com IR. Falta a validação prática e auditiva em Windows e Linux nativ
 notas, navegação `Ctrl+←/→` e restauração da última pasta/seleção. A migração
 SQLite versão 2 preserva os metadados em novos scans.
 
+**Comparação de nível implementada para auditoria:** ganho NAM de -24 a +12 dB,
+medidor do pico processado, proteção contra clipping e descrição explícita da
+cadeia e dos bypasses. O ganho é persistido e participa da chave do cache.
+
 ## 3 — Entrada ao vivo
 
 Investigar WASAPI/ASIO, buffers, taxas, concorrência e latência. Medir antes de

@@ -52,6 +52,8 @@ confirmam driver, som audível ou latência do hardware.
 - Todo o DI, IR e resultado são mantidos em memória durante o processamento.
 - IRs são reamostrados para a DI; a cauda completa entra no resultado e no Loop.
 - Picos acima de 0,95 são atenuados, sem normalização perceptual.
+- O ganho NAM ocorre após a captura e antes do IR; o medidor mostra o pico do
+  resultado antes do ganho geral de saída.
 - A posição representa amostras entregues ao dispositivo e pode adiantar o som
   pela latência do buffer. A barra ainda não permite buscar uma posição.
 - Crossfade exige a mesma quantidade de canais; mono/estéreo reabre o stream.

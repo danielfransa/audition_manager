@@ -14,7 +14,7 @@ import soundfile as sf
 from scipy.signal import resample_poly
 
 from audition_manager.audio.files import AudioBuffer, load_wav
-from audition_manager.audio.ir_processor import convolve_ir
+from audition_manager.audio.ir_processor import convolve_ir, limit_peak
 
 
 @dataclass(frozen=True)
@@ -139,11 +139,27 @@ def prepare_nam_input(source: AudioBuffer, sample_rate: int) -> AudioBuffer:
 
 
 def render_capture_chain(
-    di_path: Path, capture_path: Path, ir_path: Path | None, renderer: NamRenderer
+    di_path: Path, capture_path: Path, ir_path: Path | None, renderer: NamRenderer,
+    gain_db: float = 0,
 ) -> AudioBuffer:
     source = load_wav(di_path)
-    captured = renderer.render(source, capture_path)
+    captured = apply_gain_db(renderer.render(source, capture_path), gain_db)
     if ir_path is None:
-        return captured
+        return limit_peak(captured)
     impulse = load_wav(ir_path, max_seconds=2)
     return convolve_ir(captured, impulse)
+
+
+def apply_gain_db(audio: AudioBuffer, gain_db: float) -> AudioBuffer:
+    if not -24 <= gain_db <= 12:
+        raise ValueError("O ganho da captura deve estar entre -24 e +12 dB.")
+    factor = 10 ** (gain_db / 20)
+    return AudioBuffer(
+        np.ascontiguousarray(audio.samples * factor, dtype=np.float32),
+        audio.sample_rate,
+    )
+
+
+def peak_dbfs(audio: AudioBuffer) -> float:
+    peak = float(np.max(np.abs(audio.samples)))
+    return -120.0 if peak <= 0 else 20 * np.log10(peak)

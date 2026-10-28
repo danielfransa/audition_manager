@@ -8,7 +8,7 @@ de capturas de amplificadores **NAM A2** e a preparação de bibliotecas para
 equipamentos como M-VAVE BlackBox e IR-Box. Windows e Linux são os sistemas alvo.
 
 > **Estado do projeto:** o player e a biblioteca de IRs estão funcionais e têm
-> 76 testes automatizados. A reprodução offline de NAM A2 está em validação;
+> 79 testes automatizados. A reprodução offline de NAM A2 está em validação;
 > transferência direta para pedaleiras e o
 > instalador ainda estão em desenvolvimento. Consulte o [status completo](docs/status.md).
 
@@ -26,6 +26,7 @@ equipamentos como M-VAVE BlackBox e IR-Box. Windows e Linux são os sistemas alv
 - Cadeia offline **DI → captura NAM A2 → IR**, com troca automática do IR.
 - Biblioteca NAM com busca, filtros, favoritos, estrelas, notas e restauração da
   última pasta e captura selecionada.
+- Ganho NAM de -24 a +12 dB, medidor de pico e indicação da cadeia ativa.
 
 ## Instalação rápida
 

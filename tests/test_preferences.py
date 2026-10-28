@@ -22,6 +22,7 @@ def test_preferences_round_trip_and_atomic_write(tmp_path: Path) -> None:
         output_device_name="Speakers",
         output_host_api="WASAPI",
         output_gain_db=-12,
+        capture_gain_db=6,
         loop_enabled=False,
     )
     store.save(expected)

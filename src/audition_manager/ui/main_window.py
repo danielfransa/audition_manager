@@ -24,7 +24,9 @@ from PySide6.QtWidgets import (
 
 from audition_manager.audio.files import AudioBuffer
 from audition_manager.audio.ir_processor import render_files
-from audition_manager.audio.nam import NamRenderer, render_capture_chain, scan_nam_models
+from audition_manager.audio.nam import (
+    NamRenderer, peak_dbfs, render_capture_chain, scan_nam_models,
+)
 from audition_manager.audio.output import AudioOutput, OutputDevice
 from audition_manager.audio.render_cache import RenderCache
 from audition_manager.audio.transport import PlaybackState
@@ -114,6 +116,7 @@ class RenderWorker(QThread):
     def __init__(
         self, di_path: Path, ir_path: Path | None, cache: RenderCache, parent: QWidget,
         capture_path: Path | None = None, nam_renderer: NamRenderer | None = None,
+        capture_gain_db: int = 0,
     ) -> None:
         super().__init__(parent)
         self.di_path = di_path
@@ -121,6 +124,7 @@ class RenderWorker(QThread):
         self.cache = cache
         self.capture_path = capture_path
         self.nam_renderer = nam_renderer
+        self.capture_gain_db = capture_gain_db
 
     def run(self) -> None:
         try:
@@ -133,9 +137,11 @@ class RenderWorker(QThread):
                     self.di_path,
                     self.ir_path,
                     lambda di, ir: render_capture_chain(
-                        di, self.capture_path, ir, self.nam_renderer
+                        di, self.capture_path, ir, self.nam_renderer,
+                        self.capture_gain_db,
                     ),
                     dependencies=(self.capture_path,),
+                    variant=(self.capture_gain_db,),
                 )
             self.rendered.emit(audio)
         except Exception as error:
@@ -257,6 +263,13 @@ class MainWindow(QMainWindow):
         self.gain_label = QLabel(
             f"Ganho de saída: {self.preferences.output_gain_db} dB"
         )
+        self.capture_gain = QSlider(Qt.Orientation.Horizontal)
+        self.capture_gain.setRange(-24, 12)
+        self.capture_gain.setValue(self.preferences.capture_gain_db)
+        self.capture_gain.setToolTip("Ganho após a captura NAM e antes do IR")
+        self.capture_gain_label = QLabel(
+            f"Ganho NAM: {self.preferences.capture_gain_db:+d} dB"
+        )
         self.bypass = QCheckBox("Bypass IR (B)")
         self.capture_bypass = QCheckBox("Bypass captura NAM (N)")
         self.loop = QCheckBox("Loop")
@@ -269,6 +282,11 @@ class MainWindow(QMainWindow):
         self.progress.setRange(0, 1000)
         self.progress.setTextVisible(False)
         self.active_ir = QLabel("IR em reprodução: nenhum")
+        self.peak_meter = QProgressBar()
+        self.peak_meter.setRange(0, 60)
+        self.peak_meter.setValue(0)
+        self.peak_meter.setFormat("Pico: sem áudio")
+        self.peak_meter.setToolTip("Pico do áudio processado, antes do ganho de saída")
         self.favorite = QCheckBox("Favorito (F)")
         self.favorite.setEnabled(False)
         self.rating = StarRating()
@@ -312,6 +330,10 @@ class MainWindow(QMainWindow):
         gain_row.addWidget(self.gain_label)
         gain_row.addWidget(self.gain, 1)
         layout.addLayout(gain_row)
+        capture_gain_row = QHBoxLayout()
+        capture_gain_row.addWidget(self.capture_gain_label)
+        capture_gain_row.addWidget(self.capture_gain, 1)
+        layout.addLayout(capture_gain_row)
         filters = QHBoxLayout()
         filters.addWidget(self.search, 1)
         filters.addWidget(self.favorites_only)
@@ -328,6 +350,7 @@ class MainWindow(QMainWindow):
         layout.addWidget(self.position_label)
         layout.addWidget(self.progress)
         layout.addWidget(self.active_ir)
+        layout.addWidget(self.peak_meter)
         metadata = QHBoxLayout()
         metadata.addWidget(self.favorite)
         metadata.addWidget(self.rating)
@@ -353,6 +376,7 @@ class MainWindow(QMainWindow):
         self.cancel_scan_button.clicked.connect(self.cancel_scan)
         self.device.currentIndexChanged.connect(self.change_device)
         self.gain.valueChanged.connect(self.change_gain)
+        self.capture_gain.valueChanged.connect(self.change_capture_gain)
         self.search.textChanged.connect(self.apply_filters)
         self.favorites_only.toggled.connect(self.apply_filters)
         self.minimum_rating.currentIndexChanged.connect(self.apply_filters)
@@ -591,6 +615,8 @@ class MainWindow(QMainWindow):
         self.has_rendered_audio = False
         self.autoplay = True
         self.active_ir.setText("IR em reprodução: nenhum")
+        self.peak_meter.setValue(0)
+        self.peak_meter.setFormat("Pico: sem áudio")
 
     def move_ir(self, step: int) -> None:
         if self.notes.hasFocus():
@@ -748,6 +774,14 @@ class MainWindow(QMainWindow):
             self.save_preferences()
         except ValueError as error:
             self.show_error(str(error))
+
+    @Slot(int)
+    def change_capture_gain(self, gain_db: int) -> None:
+        self.capture_gain_label.setText(f"Ganho NAM: {gain_db:+d} dB")
+        self.preferences.capture_gain_db = gain_db
+        self.save_preferences()
+        if self.selected_capture_path() is not None and not self.capture_bypass.isChecked():
+            self.selection_changed()
 
     @Slot(bool)
     def change_loop(self, enabled: bool) -> None:
@@ -978,7 +1012,8 @@ class MainWindow(QMainWindow):
             else self.selected_capture_path()
         )
         self.worker = RenderWorker(
-            self.di_path, ir_path, self.cache, self, capture_path, self.nam_renderer
+            self.di_path, ir_path, self.cache, self, capture_path, self.nam_renderer,
+            self.capture_gain.value(),
         )
         self.worker.rendered.connect(self.play_rendered)
         self.worker.failed.connect(self.render_failed)
@@ -1009,14 +1044,21 @@ class MainWindow(QMainWindow):
             self.show_error(str(error))
             return
         self.has_rendered_audio = True
-        active = []
+        peak = peak_dbfs(audio)
+        self.peak_meter.setValue(max(0, min(60, round(peak + 60))))
+        self.peak_meter.setFormat(f"Pico: {peak:.1f} dBFS")
+        stages = ["DI"]
         if self.worker.capture_path is not None:
-            active.append(self.worker.capture_path.name)
+            stages.append(f"NAM ({self.worker.capture_path.name})")
         if self.worker.ir_path is not None:
-            active.append(self.worker.ir_path.name)
-        self.active_ir.setText(
-            f"Ativo: {' → '.join(active)}" if active else "Bypass ativo: DI limpa"
-        )
+            stages.append(f"IR ({self.worker.ir_path.name})")
+        bypassed = []
+        if self.selected_capture_path() is not None and self.worker.capture_path is None:
+            bypassed.append("NAM")
+        if self.selected_ir_path() is not None and self.worker.ir_path is None:
+            bypassed.append("IR")
+        suffix = f" — Bypass ativo: {', '.join(bypassed)}" if bypassed else ""
+        self.active_ir.setText(f"Cadeia ativa: {' → '.join(stages)}{suffix}")
         self.status.setText("Pause mantém a posição; Stop volta ao início.")
 
     @Slot(str)
