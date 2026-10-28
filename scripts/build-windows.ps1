@@ -14,6 +14,7 @@ if (-not (Test-Path $Python)) {
 & $Python -m pip install --upgrade pip
 & $Python -m pip install -e ".[dev,package]"
 & $Python -m pytest -q
+& "$PSScriptRoot\build-nam-runtime.ps1"
 & $Python -m PyInstaller `
     --noconfirm `
     --clean `
@@ -28,6 +29,9 @@ if (-not (Test-Path $Python)) {
 $Bundle = Join-Path $ProjectRoot "dist\AuditionManager"
 Copy-Item "LICENSE" $Bundle -Force
 Copy-Item "README.md" $Bundle -Force
+$NamBundle = Join-Path $Bundle "build\nam-runtime"
+New-Item -ItemType Directory -Force $NamBundle | Out-Null
+Copy-Item "build\nam-runtime\nam-render.exe" $NamBundle -Force
 
 $Archive = Join-Path $ProjectRoot "dist\AuditionManager-Windows-x64.zip"
 if (Test-Path $Archive) {

@@ -8,7 +8,8 @@ de capturas de amplificadores **NAM A2** e a preparação de bibliotecas para
 equipamentos como M-VAVE BlackBox e IR-Box. Windows e Linux são os sistemas alvo.
 
 > **Estado do projeto:** o player e a biblioteca de IRs estão funcionais e têm
-> 67 testes automatizados. NAM A2, transferência direta para pedaleiras e o
+> 74 testes automatizados. A reprodução offline de NAM A2 está em validação;
+> transferência direta para pedaleiras e o
 > instalador ainda estão em desenvolvimento. Consulte o [status completo](docs/status.md).
 
 ## O que já funciona
@@ -22,6 +23,7 @@ equipamentos como M-VAVE BlackBox e IR-Box. Windows e Linux são os sistemas alv
 - Seleção do dispositivo de áudio e ganho de saída de -24 a 0 dB.
 - Exportação dos IRs favoritos para uma nova pasta, preservando subpastas.
 - Restauração da última DI, biblioteca, dispositivo, ganho, Loop e destino.
+- Cadeia offline **DI → captura NAM A2 → IR**, com troca automática do IR.
 
 ## Instalação rápida
 
@@ -63,6 +65,7 @@ Depois de [instalar e ativar o mise](https://mise.jdx.dev/getting-started.html):
 mise trust
 mise install
 mise run install
+./scripts/build-nam-runtime.sh
 mise run run
 ```
 
@@ -88,7 +91,9 @@ Set-ExecutionPolicy -Scope Process Bypass
 .\scripts\build-windows.ps1
 ```
 
-O resultado fica em `dist\AuditionManager-Windows-x64.zip`. Extraia o ZIP
+O resultado fica em `dist\AuditionManager-Windows-x64.zip`. O script também
+compila o runtime NAM e requer CMake, Git e o compilador C++ do Visual Studio
+Build Tools. Extraia o ZIP
 inteiro antes de abrir `AuditionManager.exe`; um instalador ainda não é necessário
 para testar. O build precisa ocorrer no Windows, pois PyInstaller não gera o
 executável Windows oficialmente a partir do Linux/WSL.
@@ -99,11 +104,12 @@ O repositório inclui [duas DIs e quatro IRs de exemplo](samples/README.md),
 portanto é possível testar sem procurar outros áudios:
 
 1. Em **Abrir DI WAV**, abra `samples/di/clean_guitar.wav`.
-2. Em **Selecionar pasta de IRs**, escolha `samples/ir`.
-3. Clique em um IR para processar e reproduzir automaticamente.
-4. Troque de IR com o mouse ou ←/→ e ajuste Loop, bypass, saída e ganho.
-5. Clique nas estrelas para avaliar e marque seus favoritos.
-6. Use **Exportar favoritos…** para preparar uma pasta para sua pedaleira.
+2. Opcionalmente, escolha `samples/captures` e selecione uma captura `.nam`.
+3. Em **Selecionar pasta de IRs**, escolha `samples/ir`.
+4. Clique em um IR para processar e reproduzir automaticamente.
+5. Troque de IR com o mouse ou ←/→ e ajuste Loop, bypass, saída e ganho.
+6. Clique nas estrelas para avaliar e marque seus favoritos.
+7. Use **Exportar favoritos…** para preparar uma pasta para sua pedaleira.
 
 Atalhos principais: `Espaço` para Play/Pause, `B` para bypass, `F` para favorito,
 `1–5` para avaliação e `0` para limpar a nota.
@@ -112,7 +118,8 @@ Atalhos principais: `Espaço` para Play/Pause, `B` para bypass, `F` para favorit
 
 - São aceitos WAVs mono/estéreo de até 192 kHz, DI de até 5 minutos e IR de até
   2 segundos. O processamento é offline e mantém a cauda da convolução.
-- Capturas NAM A2 ainda não são reproduzidas; o protótipo da engine é a próxima fase.
+- Capturas NAM A2 `SlimmableContainer` são processadas offline a 48 kHz pelo
+  NeuralAmpModelerCore. Outras arquiteturas NAM ainda não são aceitas.
 - AM4DATA e transferência direta para BlackBox/IR-Box ainda não estão implementados.
 - O pacote Windows portátil ainda precisa de validação em Windows real.
 - A aplicação foi validada no WSL/WSLg; Linux nativo continua no roteiro de teste.

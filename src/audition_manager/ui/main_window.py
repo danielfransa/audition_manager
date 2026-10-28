@@ -24,6 +24,7 @@ from PySide6.QtWidgets import (
 
 from audition_manager.audio.files import AudioBuffer
 from audition_manager.audio.ir_processor import render_files
+from audition_manager.audio.nam import NamRenderer, render_capture_chain, scan_nam_models
 from audition_manager.audio.output import AudioOutput, OutputDevice
 from audition_manager.audio.render_cache import RenderCache
 from audition_manager.audio.transport import PlaybackState
@@ -54,6 +55,19 @@ def create_ir_directory_dialog(parent: QWidget, initial: str) -> QFileDialog:
 
 def choose_ir_directory(parent: QWidget, initial: str) -> str:
     dialog = create_ir_directory_dialog(parent, initial)
+    if not dialog.exec():
+        return ""
+    selected = dialog.selectedFiles()
+    return selected[0] if selected else ""
+
+
+def choose_nam_directory(parent: QWidget, initial: str) -> str:
+    dialog = QFileDialog(parent, "Pasta de capturas NAM", initial)
+    dialog.setFileMode(QFileDialog.FileMode.Directory)
+    dialog.setOption(QFileDialog.Option.ShowDirsOnly, False)
+    dialog.setOption(QFileDialog.Option.DontUseNativeDialog, True)
+    dialog.setNameFilter("Capturas NAM (*.nam *.NAM)")
+    dialog.setLabelText(QFileDialog.DialogLabel.Accept, "Escolher esta pasta")
     if not dialog.exec():
         return ""
     selected = dialog.selectedFiles()
@@ -97,16 +111,32 @@ class RenderWorker(QThread):
     failed = Signal(str)
 
     def __init__(
-        self, di_path: Path, ir_path: Path | None, cache: RenderCache, parent: QWidget
+        self, di_path: Path, ir_path: Path | None, cache: RenderCache, parent: QWidget,
+        capture_path: Path | None = None, nam_renderer: NamRenderer | None = None,
     ) -> None:
         super().__init__(parent)
         self.di_path = di_path
         self.ir_path = ir_path
         self.cache = cache
+        self.capture_path = capture_path
+        self.nam_renderer = nam_renderer
 
     def run(self) -> None:
         try:
-            self.rendered.emit(self.cache.render(self.di_path, self.ir_path, render_files))
+            if self.capture_path is None:
+                audio = self.cache.render(self.di_path, self.ir_path, render_files)
+            else:
+                if self.nam_renderer is None:
+                    raise RuntimeError("Runtime NAM não configurado.")
+                audio = self.cache.render(
+                    self.di_path,
+                    self.ir_path,
+                    lambda di, ir: render_capture_chain(
+                        di, self.capture_path, ir, self.nam_renderer
+                    ),
+                    dependencies=(self.capture_path,),
+                )
+            self.rendered.emit(audio)
         except Exception as error:
             logger.exception("Unable to render audio")
             self.failed.emit(str(error))
@@ -153,16 +183,20 @@ class MainWindow(QMainWindow):
         output: AudioOutput,
         repository: ImpulseResponseRepository,
         preferences_store: PreferencesStore,
+        nam_renderer: NamRenderer | None = None,
     ) -> None:
         super().__init__()
         self.output = output
         self.repository = repository
         self.preferences_store = preferences_store
         self.preferences = preferences_store.load()
+        self.nam_renderer = nam_renderer or NamRenderer()
         self.di_path: Path | None = None
         self.ir_root: Path | None = None
         self.all_ir_paths: list[Path] = []
         self.ir_paths: list[Path] = []
+        self.capture_root: Path | None = None
+        self.capture_paths: list[Path] = []
         self.worker: RenderWorker | None = None
         self.scan_worker: ScanWorker | None = None
         self.desired_scan_root: Path | None = None
@@ -178,6 +212,10 @@ class MainWindow(QMainWindow):
         self.di_label = QLabel("Nenhuma DI selecionada")
         self.di_button = QPushButton("Abrir DI WAV")
         self.folder_button = QPushButton("Selecionar pasta de IRs")
+        self.capture_button = QPushButton("Selecionar pasta de capturas NAM")
+        self.capture_list = QListWidget()
+        self.capture_list.setMaximumHeight(120)
+        self.capture_list.setToolTip("Opcional: selecione uma captura antes do IR")
         self.export_button = QPushButton("Exportar favoritos…")
         self.export_button.setEnabled(False)
         self.cancel_scan_button = QPushButton("Cancelar scan")
@@ -233,6 +271,9 @@ class MainWindow(QMainWindow):
         file_buttons.addWidget(self.export_button)
         file_buttons.addWidget(self.cancel_scan_button)
         layout.addLayout(file_buttons)
+        layout.addWidget(self.capture_button)
+        layout.addWidget(QLabel("Captura NAM (opcional):"))
+        layout.addWidget(self.capture_list)
         layout.addWidget(self.scan_progress)
         layout.addWidget(self.device)
         gain_row = QHBoxLayout()
@@ -265,6 +306,8 @@ class MainWindow(QMainWindow):
         self.setCentralWidget(container)
         self.di_button.clicked.connect(self.choose_di)
         self.folder_button.clicked.connect(self.choose_folder)
+        self.capture_button.clicked.connect(self.choose_capture_folder)
+        self.capture_list.currentRowChanged.connect(self.selection_changed)
         self.export_button.clicked.connect(self.export_favorites)
         self.cancel_scan_button.clicked.connect(self.cancel_scan)
         self.device.currentIndexChanged.connect(self.change_device)
@@ -332,6 +375,27 @@ class MainWindow(QMainWindow):
         if not directory:
             return
         self.begin_scan(Path(directory))
+
+    @Slot()
+    def choose_capture_folder(self) -> None:
+        initial = str(self.capture_root or "")
+        directory = choose_nam_directory(self, initial)
+        if not directory:
+            return
+        root = Path(directory).resolve()
+        models, errors = scan_nam_models(root)
+        self.capture_root = root
+        self.capture_paths = [model.path for model in models]
+        blocker = QSignalBlocker(self.capture_list)
+        self.capture_list.clear()
+        self.capture_list.addItems(
+            [str(path.relative_to(root)) for path in self.capture_paths]
+        )
+        del blocker
+        skipped = f"; {len(errors)} inválidas ignoradas" if errors else ""
+        self.status.setText(
+            f"{len(models)} capturas NAM A2 encontradas{skipped}."
+        )
 
     def begin_scan(self, root: Path) -> None:
         try:
@@ -628,6 +692,10 @@ class MainWindow(QMainWindow):
         row = self.ir_list.currentRow()
         return self.ir_paths[row] if 0 <= row < len(self.ir_paths) else None
 
+    def selected_capture_path(self) -> Path | None:
+        row = self.capture_list.currentRow()
+        return self.capture_paths[row] if 0 <= row < len(self.capture_paths) else None
+
     def refresh_metadata(self) -> None:
         path = self.selected_ir_path()
         item = self.repository.get(path) if path else None
@@ -738,12 +806,20 @@ class MainWindow(QMainWindow):
             return
         self.worker_version = self.selection_version
         ir_path = None if self.bypass.isChecked() else self.ir_paths[row]
-        self.worker = RenderWorker(self.di_path, ir_path, self.cache, self)
+        capture_path = self.selected_capture_path()
+        self.worker = RenderWorker(
+            self.di_path, ir_path, self.cache, self, capture_path, self.nam_renderer
+        )
         self.worker.rendered.connect(self.play_rendered)
         self.worker.failed.connect(self.render_failed)
         self.worker.finished.connect(self.render_finished)
         self.set_busy(True)
-        self.status.setText("Preparando DI…" if ir_path is None else "Processando DI + IR…")
+        stages = ["DI"]
+        if capture_path is not None:
+            stages.append("NAM")
+        if ir_path is not None:
+            stages.append("IR")
+        self.status.setText(f"Processando {' + '.join(stages)}…")
         self.worker.start()
 
     @Slot(object)
@@ -763,8 +839,13 @@ class MainWindow(QMainWindow):
             self.show_error(str(error))
             return
         self.has_rendered_audio = True
+        active = []
+        if self.worker.capture_path is not None:
+            active.append(self.worker.capture_path.name)
+        if self.worker.ir_path is not None:
+            active.append(self.worker.ir_path.name)
         self.active_ir.setText(
-            f"IR ativo: {self.worker.ir_path.name}" if self.worker.ir_path else "Bypass ativo: DI sem IR"
+            f"Ativo: {' → '.join(active)}" if active else "Bypass ativo: DI limpa"
         )
         self.status.setText("Pause mantém a posição; Stop volta ao início.")
 
@@ -784,7 +865,7 @@ class MainWindow(QMainWindow):
             self.start_render()
 
     def set_busy(self, busy: bool) -> None:
-        for widget in (self.di_button, self.folder_button):
+        for widget in (self.di_button, self.folder_button, self.capture_button):
             widget.setEnabled(not busy)
         self.update_play_button()
 

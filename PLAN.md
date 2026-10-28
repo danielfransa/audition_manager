@@ -79,6 +79,11 @@ runtime candidato. Não adicionar o pacote de treinamento PyTorch ao aplicativo.
 Validar `SlimmableContainer`, A2 Full/Lite, desempenho e integração Windows/Linux
 em um protótipo isolado antes da interface.
 
+**Implementado para auditoria:** validação de A2 `SlimmableContainer`, runtime
+oficial fixado por commit, downmix/reamostragem para 48 kHz e cadeia offline
+`DI → NAM → IR`. A interface lista capturas separadamente e preserva o fluxo
+somente com IR. Falta a validação prática e auditiva em Windows e Linux nativo.
+
 ## 3 — Entrada ao vivo
 
 Investigar WASAPI/ASIO, buffers, taxas, concorrência e latência. Medir antes de

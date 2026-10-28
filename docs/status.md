@@ -23,22 +23,24 @@ o histórico de cada incremento e podem mencionar limitações já resolvidas.
   Git em commits pequenos.
 - Duas DIs e quatro IRs de exemplo para o primeiro teste após o clone.
 - Script PowerShell para gerar pacote portátil Windows com PyInstaller.
+- Capturas NAM A2 combinadas com IR na cadeia offline `DI → NAM → IR`.
 
 ## Verificação atual
 
-- Suíte automatizada: **67 testes passando**.
+- Suíte automatizada: **74 testes passando**.
 - Compilação de bytecode e `git diff --check`: sem erros na última entrega.
 - Reprodução e interface: confirmadas no WSL/WSLg pelo usuário.
 - Saída PortAudio no WSLg: validada com a ponte ALSA/PulseAudio.
-- Branch local: `main`.
+- Branch local: `develop`.
 
 ## Em andamento — NAM A2
 
 - A2 foi escolhido como o primeiro formato de captura de amplificador.
-- `NeuralAmpModelerCore` é o runtime candidato. O próximo incremento é um
-  protótipo isolado que carrega uma captura A2 conhecida, processa uma DI e mede
-  compatibilidade, tempo e memória em Windows/Linux.
-- Nenhuma engine NAM foi integrada à interface ainda.
+- `NeuralAmpModelerCore` foi integrado como processo nativo isolado e fixado no
+  commit `0b3d3c9`. O renderer oficial carregou uma captura A2 real no WSL.
+- A interface aceita uma pasta de capturas, valida `SlimmableContainer`, converte
+  a DI para mono/48 kHz e combina a saída com o IR selecionado.
+- A compilação e audição ainda precisam ser validadas em Windows e Linux nativo.
 - O pacote Python de treinamento, com PyTorch, não será adicionado sem necessidade.
 
 ## BlackBox e AM4DATA

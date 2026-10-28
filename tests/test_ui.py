@@ -6,6 +6,8 @@ os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
 import soundfile as sf
 import pytest
+import json
+import numpy as np
 
 qt_widgets = pytest.importorskip("PySide6.QtWidgets", exc_type=ImportError)
 QApplication = qt_widgets.QApplication
@@ -70,6 +72,16 @@ class FakeOutput:
     def stop(self) -> None:
         self.stopped = True
         self.transport.stop()
+
+
+class FakeNamRenderer:
+    def __init__(self) -> None:
+        self.models: list[Path] = []
+
+    def render(self, source: AudioBuffer, model_path: Path) -> AudioBuffer:
+        self.models.append(model_path)
+        mono = np.mean(source.samples, axis=1, keepdims=True, dtype=np.float32)
+        return AudioBuffer(mono * 2, source.sample_rate)
 
 
 def wait_for_scan(window: MainWindow, app: QApplication, timeout: float = 5) -> None:
@@ -230,6 +242,60 @@ def test_select_render_play_and_stop(tmp_path: Path, monkeypatch) -> None:
         window.choose_di()
         assert not window.has_rendered_audio
         assert output.transport.snapshot()[0] == PlaybackState.EMPTY
+    finally:
+        if window.worker is not None:
+            window.worker.wait()
+            app.processEvents()
+        window.close()
+
+
+def test_capture_and_ir_are_processed_as_one_chain(tmp_path: Path, monkeypatch) -> None:
+    app = QApplication.instance() or QApplication([])
+    output = FakeOutput()
+    renderer = FakeNamRenderer()
+    window = MainWindow(
+        output,
+        ImpulseResponseRepository(tmp_path / "library.sqlite3"),
+        PreferencesStore(tmp_path / "preferences.json"),
+        renderer,
+    )
+    di = tmp_path / "di.wav"
+    ir_folder = tmp_path / "irs"
+    capture_folder = tmp_path / "captures"
+    ir_folder.mkdir()
+    capture_folder.mkdir()
+    sf.write(di, [0.1, 0.2], 48000, subtype="FLOAT")
+    sf.write(ir_folder / "cab.wav", [1.0], 48000, subtype="FLOAT")
+    model = capture_folder / "amp.nam"
+    model.write_text(json.dumps({
+        "version": "0.7.0", "architecture": "SlimmableContainer",
+        "sample_rate": 48000,
+        "config": {"submodels": [{"model": {"architecture": "WaveNet"}}]},
+    }), encoding="utf-8")
+    monkeypatch.setattr(
+        "audition_manager.ui.main_window.choose_ir_directory",
+        lambda *args: str(ir_folder),
+    )
+    monkeypatch.setattr(
+        "audition_manager.ui.main_window.choose_nam_directory",
+        lambda *args: str(capture_folder),
+    )
+    try:
+        window.di_path = di
+        window.choose_folder()
+        wait_for_scan(window, app)
+        window.choose_capture_folder()
+        assert window.capture_list.count() == 1
+        window.capture_list.setCurrentRow(0)
+        window.ir_list.setCurrentRow(0)
+        deadline = monotonic() + 5
+        while window.worker is not None and monotonic() < deadline:
+            app.processEvents()
+            sleep(0.01)
+        assert renderer.models == [model.resolve()]
+        assert output.audio is not None
+        assert output.audio.samples[:, 0] == pytest.approx([0.2, 0.4])
+        assert "amp.nam → cab.wav" in window.active_ir.text()
     finally:
         if window.worker is not None:
             window.worker.wait()

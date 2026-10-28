@@ -26,19 +26,19 @@ como backend conforme a configuração da distribuição.
 
 ```bash
 sudo apt update
-sudo apt install -y git curl libxkbcommon-x11-0 libxcb-cursor0 libgl1 libegl1 fontconfig fonts-dejavu-core libportaudio2 libsndfile1
+sudo apt install -y git curl cmake g++ libxkbcommon-x11-0 libxcb-cursor0 libgl1 libegl1 fontconfig fonts-dejavu-core libportaudio2 libsndfile1
 ```
 
 ### Fedora e derivados
 
 ```bash
-sudo dnf install -y git curl libxkbcommon-x11 xcb-util-cursor mesa-libGL mesa-libEGL fontconfig dejavu-sans-fonts portaudio libsndfile
+sudo dnf install -y git curl cmake gcc-c++ libxkbcommon-x11 xcb-util-cursor mesa-libGL mesa-libEGL fontconfig dejavu-sans-fonts portaudio libsndfile
 ```
 
 ### Arch Linux, Manjaro, EndeavourOS e derivados
 
 ```bash
-sudo pacman -Syu --needed git curl libxkbcommon libxkbcommon-x11 libxcb xcb-util-cursor mesa fontconfig ttf-dejavu portaudio libsndfile
+sudo pacman -Syu --needed git curl cmake gcc libxkbcommon libxkbcommon-x11 libxcb xcb-util-cursor mesa fontconfig ttf-dejavu portaudio libsndfile
 ```
 
 Esses nomes foram conferidos nos catálogos Debian, Fedora e Arch. Distribuições
@@ -60,6 +60,7 @@ Dentro do repositório:
 mise trust
 mise install
 mise run install
+./scripts/build-nam-runtime.sh
 mise run run
 ```
 
@@ -111,6 +112,9 @@ py -3.12 -m venv .venv-win
 ```
 
 O Windows usa sua própria venv. Não copie `.venv` do Linux ou do WSL.
+
+Para usar capturas NAM pela venv, instale também Git, CMake e o compilador C++
+do Visual Studio Build Tools e execute `scripts\build-nam-runtime.ps1`.
 
 ### Criar o pacote portátil
 
