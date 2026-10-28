@@ -16,7 +16,7 @@ from audition_manager.audio.transport import PlaybackTransport, PlaybackState
 from audition_manager.config.preferences import PreferencesStore, UserPreferences
 from audition_manager.library.repository import ImpulseResponseRepository
 from audition_manager.library.models import ImpulseResponse
-from audition_manager.ui.main_window import MainWindow
+from audition_manager.ui.main_window import MainWindow, create_ir_directory_dialog
 
 
 class FakeOutput:
@@ -78,6 +78,21 @@ def wait_for_scan(window: MainWindow, app: QApplication, timeout: float = 5) -> 
         app.processEvents()
         sleep(0.01)
     assert window.scan_worker is None
+
+
+def test_ir_directory_dialog_shows_wav_files_and_selects_directory() -> None:
+    app = QApplication.instance() or QApplication([])
+    dialog = create_ir_directory_dialog(None, "")
+    try:
+        assert dialog.fileMode() == dialog.FileMode.Directory
+        assert not dialog.testOption(dialog.Option.ShowDirsOnly)
+        assert dialog.testOption(dialog.Option.DontUseNativeDialog)
+        assert dialog.nameFilters() == ["Impulse Responses WAV (*.wav *.WAV)"]
+        assert (
+            dialog.labelText(dialog.DialogLabel.Accept) == "Escolher esta pasta"
+        )
+    finally:
+        dialog.close()
 
 
 def test_restores_and_updates_application_preferences(tmp_path: Path) -> None:
@@ -175,7 +190,7 @@ def test_select_render_play_and_stop(tmp_path: Path, monkeypatch) -> None:
         lambda *args: (str(di), ""),
     )
     monkeypatch.setattr(
-        "audition_manager.ui.main_window.QFileDialog.getExistingDirectory",
+        "audition_manager.ui.main_window.choose_ir_directory",
         lambda *args: str(ir_folder),
     )
     try:
@@ -352,7 +367,7 @@ def test_favorite_and_rating_shortcuts_persist_after_rescan(tmp_path, monkeypatc
     ir = folder / "cab.wav"
     sf.write(ir, [1.0], 48000, subtype="FLOAT")
     monkeypatch.setattr(
-        "audition_manager.ui.main_window.QFileDialog.getExistingDirectory",
+        "audition_manager.ui.main_window.choose_ir_directory",
         lambda *args: str(folder),
     )
 
@@ -401,7 +416,7 @@ def test_library_filters_decorate_list_and_do_not_change_playback_selection(
     for path in paths:
         sf.write(path, [1.0], 48000, subtype="FLOAT")
     monkeypatch.setattr(
-        "audition_manager.ui.main_window.QFileDialog.getExistingDirectory",
+        "audition_manager.ui.main_window.choose_ir_directory",
         lambda *args: str(folder),
     )
     repository = ImpulseResponseRepository(tmp_path / "library.sqlite3")
@@ -451,7 +466,7 @@ def test_notes_persist_and_typing_does_not_trigger_global_shortcuts(
     ir = folder / "cab.wav"
     sf.write(ir, [1.0], 48000, subtype="FLOAT")
     monkeypatch.setattr(
-        "audition_manager.ui.main_window.QFileDialog.getExistingDirectory",
+        "audition_manager.ui.main_window.choose_ir_directory",
         lambda *args: str(folder),
     )
     repository = ImpulseResponseRepository(tmp_path / "library.sqlite3")
@@ -494,10 +509,13 @@ def test_exports_all_favorites_from_current_root_regardless_of_filters(
         sf.write(path, [1.0], 48000, subtype="FLOAT")
     destination = tmp_path / "exports"
     destination.mkdir()
-    directories = iter([str(source), str(destination)])
+    monkeypatch.setattr(
+        "audition_manager.ui.main_window.choose_ir_directory",
+        lambda *args: str(source),
+    )
     monkeypatch.setattr(
         "audition_manager.ui.main_window.QFileDialog.getExistingDirectory",
-        lambda *args: next(directories),
+        lambda *args: str(destination),
     )
     monkeypatch.setattr(
         "audition_manager.ui.main_window.QInputDialog.getText",

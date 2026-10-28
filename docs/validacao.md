@@ -324,3 +324,17 @@ Roteiro prático:
 2. Feche e reabra a aplicação; confirme que a última avaliação reaparece.
 3. Use `0` para limpar e `1..5` para avaliar pelo teclado.
 4. Remova a seleção com um filtro e confirme que as estrelas ficam desabilitadas.
+
+## Seletor visual da pasta de IRs
+
+- A suíte completa passa com **67 testes**.
+- O teste Qt confirma que o diálogo permanece no modo de seleção de diretório,
+  não ativa `ShowDirsOnly`, filtra WAVs e mostra **Escolher esta pasta**.
+
+Roteiro prático:
+
+1. Clique em **Selecionar pasta de IRs** e entre em uma pasta com WAVs.
+2. Confirme que os nomes dos IRs aparecem no seletor, embora a ação continue
+   escolhendo a pasta inteira.
+3. Navegue por subpastas, volte à raiz desejada e clique em **Escolher esta
+   pasta**. Confirme que o scan recursivo mantém o comportamento anterior.

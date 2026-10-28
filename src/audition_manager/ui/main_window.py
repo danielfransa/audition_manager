@@ -40,6 +40,26 @@ def format_time(seconds: float) -> str:
     return f"{minutes:02d}:{remainder:02d}"
 
 
+def create_ir_directory_dialog(parent: QWidget, initial: str) -> QFileDialog:
+    dialog = QFileDialog(parent, "Pasta de IRs", initial)
+    dialog.setFileMode(QFileDialog.FileMode.Directory)
+    dialog.setOption(QFileDialog.Option.ShowDirsOnly, False)
+    dialog.setOption(QFileDialog.Option.DontUseNativeDialog, True)
+    dialog.setNameFilter("Impulse Responses WAV (*.wav *.WAV)")
+    dialog.setLabelText(
+        QFileDialog.DialogLabel.Accept, "Escolher esta pasta"
+    )
+    return dialog
+
+
+def choose_ir_directory(parent: QWidget, initial: str) -> str:
+    dialog = create_ir_directory_dialog(parent, initial)
+    if not dialog.exec():
+        return ""
+    selected = dialog.selectedFiles()
+    return selected[0] if selected else ""
+
+
 class StarRating(QWidget):
     rating_selected = Signal(int)
 
@@ -308,7 +328,7 @@ class MainWindow(QMainWindow):
     @Slot()
     def choose_folder(self) -> None:
         initial = str(self.ir_root or self.preferences.last_ir_directory or "")
-        directory = QFileDialog.getExistingDirectory(self, "Pasta de IRs", initial)
+        directory = choose_ir_directory(self, initial)
         if not directory:
             return
         self.begin_scan(Path(directory))

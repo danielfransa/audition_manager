@@ -8,12 +8,13 @@ de capturas de amplificadores **NAM A2** e a preparação de bibliotecas para
 equipamentos como M-VAVE BlackBox e IR-Box. Windows e Linux são os sistemas alvo.
 
 > **Estado do projeto:** o player e a biblioteca de IRs estão funcionais e têm
-> 66 testes automatizados. NAM A2, transferência direta para pedaleiras e o
+> 67 testes automatizados. NAM A2, transferência direta para pedaleiras e o
 > instalador ainda estão em desenvolvimento. Consulte o [status completo](docs/status.md).
 
 ## O que já funciona
 
-- Seleção de uma DI WAV e scan recursivo de pastas de IRs.
+- Seleção de uma DI WAV e scan recursivo de pastas de IRs; o seletor exibe os
+  arquivos WAV antes de confirmar a pasta.
 - Processamento e reprodução automática ao selecionar ou trocar um IR.
 - Play, Pause, Stop, Loop, bypass, posição e crossfade curto entre IRs.
 - Navegação com mouse, teclado e setas, sem bloquear a interface.
