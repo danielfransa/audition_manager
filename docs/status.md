@@ -1,6 +1,6 @@
 # Status atual do projeto
 
-Atualizado em **12 de outubro de 2026**. Este arquivo é o resumo vigente; os
+Atualizado em **28 de outubro de 2026**. Este arquivo é o resumo vigente; os
 registros em `docs/decisions/` e as seções antigas de `docs/validacao.md` formam
 o histórico de cada incremento e podem mencionar limitações já resolvidas.
 
@@ -21,6 +21,7 @@ o histórico de cada incremento e podem mencionar limitações já resolvidas.
   ganho e Loop, incluindo fallback para recursos removidos.
 - Configuração `mise`/venv, licença MIT, documentação técnica e versionamento
   Git em commits pequenos.
+- Duas DIs e quatro IRs de exemplo para o primeiro teste após o clone.
 - Script PowerShell para gerar pacote portátil Windows com PyInstaller.
 
 ## Verificação atual

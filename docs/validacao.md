@@ -62,7 +62,7 @@ Testes no WSL não comprovam reprodução nem latência no Windows.
   isolamento confirmou servidor PulseAudio acessível e saída padrão `RDPSink`.
 - PortAudio não listou dispositivos; `alsa-plugins` e `pulseaudio-alsa` ausentes.
   A instalação da ponte pelo usuário e o teste audível permanecem pendentes.
-- Os seis WAVs de `exemples/` foram lidos sem erros: duas DIs estéreo a 44,1 kHz
+- Os seis WAVs, agora em `samples/`, foram lidos sem erros: duas DIs estéreo a 44,1 kHz
   e quatro IRs mono a 44,1 kHz, cada um com 8192 amostras.
 - As oito combinações DI × IR foram processadas com sucesso, com saída estéreo
   e picos aproximadamente em 0,95 após a atenuação já prevista.
@@ -92,7 +92,7 @@ sonora; a auditoria audível do novo player continua pendente.
 
 ### Roteiro manual deste incremento
 
-1. Abra uma DI e um IR de `exemples/`; clique em Processar e reproduzir.
+1. Abra uma DI e um IR de `samples/`; clique em Processar e reproduzir.
 2. Confira contador, barra de progresso e botão Pause.
 3. Pause: o contador deve parar. Clique Play: deve continuar da posição pausada,
    sem mostrar novamente a mensagem de processamento.

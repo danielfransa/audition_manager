@@ -13,10 +13,10 @@ dist/
 .vscode/
 data/*
 !data/.gitkeep
-samples/**/*
-!samples/**/
-!samples/**/.gitkeep
-# Local tooling and user-provided audio examples
+# Local tooling
 .agents/
 .codex/
-exemples/
+
+# Windows download metadata, including files copied from NTFS into WSL
+*:Zone.Identifier
+*Zone.Identifier

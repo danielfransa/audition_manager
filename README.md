@@ -95,8 +95,11 @@ executável Windows oficialmente a partir do Linux/WSL.
 
 ## Primeiro teste
 
-1. Abra uma DI WAV em **Abrir DI WAV**.
-2. Escolha uma pasta que contenha IRs WAV.
+O repositório inclui [duas DIs e quatro IRs de exemplo](samples/README.md),
+portanto é possível testar sem procurar outros áudios:
+
+1. Em **Abrir DI WAV**, abra `samples/di/clean_guitar.wav`.
+2. Em **Selecionar pasta de IRs**, escolha `samples/ir`.
 3. Clique em um IR para processar e reproduzir automaticamente.
 4. Troque de IR com o mouse ou ←/→ e ajuste Loop, bypass, saída e ganho.
 5. Clique nas estrelas para avaliar e marque seus favoritos.
@@ -127,4 +130,5 @@ Atalhos principais: `Espaço` para Play/Pause, `B` para bypass, `F` para favorit
 ## Licença
 
 O Audition Manager é distribuído sob a [licença MIT](LICENSE). Dependências,
-capturas e arquivos de áudio mantêm suas próprias licenças.
+capturas e arquivos de áudio, incluindo `samples/`, mantêm suas próprias
+licenças e condições de redistribuição.
