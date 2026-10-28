@@ -11,9 +11,6 @@ Na aplicação, escolha uma DI com **Abrir DI WAV** e selecione a pasta `ir` com
 **Selecionar pasta de IRs**. Clique em qualquer IR listado para iniciar o
 processamento e a reprodução.
 
-Arquivos `Zone.Identifier` são metadados criados pelo Windows ao baixar arquivos
-da internet. Eles não fazem parte dos exemplos e são ignorados pelo Git.
-
 Os áudios de exemplo são materiais de teste e não são cobertos automaticamente
 pela licença MIT do código. Preserve os direitos e condições associados aos
 arquivos de áudio ao redistribuí-los.
