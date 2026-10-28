@@ -14,7 +14,8 @@ processamento e a reprodução.
 
 Para testar uma captura, compile antes o runtime NAM conforme o README, escolha
 `captures`, selecione o amplificador e depois selecione um IR. A aplicação
-processará `DI → NAM → IR`. O bypass permite ouvir `DI → NAM` sem o gabinete.
+processará `DI → NAM → IR`. Os bypasses independentes permitem comparar a
+captura sem gabinete, somente o IR e a DI limpa.
 
 Os áudios de exemplo são materiais de teste e não são cobertos automaticamente
 pela licença MIT do código. Preserve os direitos e condições associados aos

@@ -296,6 +296,14 @@ def test_capture_and_ir_are_processed_as_one_chain(tmp_path: Path, monkeypatch) 
         assert output.audio is not None
         assert output.audio.samples[:, 0] == pytest.approx([0.2, 0.4])
         assert "amp.nam → cab.wav" in window.active_ir.text()
+        window.capture_bypass.setChecked(True)
+        deadline = monotonic() + 5
+        while window.worker is not None and monotonic() < deadline:
+            app.processEvents()
+            sleep(0.01)
+        assert renderer.models == [model.resolve()]
+        assert output.audio.samples[:, 0] == pytest.approx([0.1, 0.2])
+        assert window.active_ir.text() == "Ativo: cab.wav"
     finally:
         if window.worker is not None:
             window.worker.wait()

@@ -239,6 +239,7 @@ class MainWindow(QMainWindow):
             f"Ganho de saída: {self.preferences.output_gain_db} dB"
         )
         self.bypass = QCheckBox("Bypass IR (B)")
+        self.capture_bypass = QCheckBox("Bypass captura NAM (N)")
         self.loop = QCheckBox("Loop")
         self.loop.setChecked(self.preferences.loop_enabled)
         self.play_button = QPushButton("Processar e reproduzir")
@@ -289,6 +290,7 @@ class MainWindow(QMainWindow):
         transport = QHBoxLayout()
         transport.addWidget(self.loop)
         transport.addWidget(self.bypass)
+        transport.addWidget(self.capture_bypass)
         transport.addWidget(self.play_button, 1)
         transport.addWidget(self.stop_button)
         layout.addLayout(transport)
@@ -320,6 +322,7 @@ class MainWindow(QMainWindow):
         self.stop_button.clicked.connect(self.stop)
         self.loop.toggled.connect(self.change_loop)
         self.bypass.toggled.connect(self.selection_changed)
+        self.capture_bypass.toggled.connect(self.selection_changed)
         self.favorite.toggled.connect(self.set_favorite)
         self.rating.rating_selected.connect(self.set_rating)
         self.save_notes_button.clicked.connect(self.save_notes)
@@ -338,6 +341,7 @@ class MainWindow(QMainWindow):
         for key, action in (
             ("Space", self.toggle_playback_shortcut),
             ("B", self.toggle_bypass_shortcut),
+            ("N", self.toggle_capture_bypass_shortcut),
         ):
             shortcut = QShortcut(QKeySequence(key), self)
             shortcut.setAutoRepeat(False)
@@ -511,6 +515,10 @@ class MainWindow(QMainWindow):
     def toggle_bypass_shortcut(self) -> None:
         if not self.notes.hasFocus():
             self.bypass.toggle()
+
+    def toggle_capture_bypass_shortcut(self) -> None:
+        if not self.notes.hasFocus():
+            self.capture_bypass.toggle()
 
     def item_text(self, path: Path) -> str:
         item = self.repository.get(path)
@@ -806,7 +814,10 @@ class MainWindow(QMainWindow):
             return
         self.worker_version = self.selection_version
         ir_path = None if self.bypass.isChecked() else self.ir_paths[row]
-        capture_path = self.selected_capture_path()
+        capture_path = (
+            None if self.capture_bypass.isChecked()
+            else self.selected_capture_path()
+        )
         self.worker = RenderWorker(
             self.di_path, ir_path, self.cache, self, capture_path, self.nam_renderer
         )

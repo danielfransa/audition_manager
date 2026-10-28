@@ -18,6 +18,11 @@ qualquer arquivo mudar. O modo somente com IR permanece disponível. Com uma
 captura selecionada, o bypass do IR produz `DI → NAM`, útil para comparação.
 Outras arquiteturas NAM são rejeitadas nesta etapa.
 
+Os bypasses são independentes: `B` desativa o IR e `N` desativa a captura. Isso
+permite comparar `DI → NAM → IR`, `DI → NAM`, `DI → IR` e a DI limpa. Não há
+mistura permanente da DI original com a saída NAM; somente o crossfade de 10 ms
+entre dois resultados consecutivos contém brevemente ambos os áudios.
+
 ## Distribuição
 
 Scripts reproduzíveis compilam o runtime no Linux e Windows. O pacote Windows

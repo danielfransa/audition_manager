@@ -24,6 +24,7 @@ o histórico de cada incremento e podem mencionar limitações já resolvidas.
 - Duas DIs e quatro IRs de exemplo para o primeiro teste após o clone.
 - Script PowerShell para gerar pacote portátil Windows com PyInstaller.
 - Capturas NAM A2 combinadas com IR na cadeia offline `DI → NAM → IR`.
+- Bypasses independentes para captura NAM e IR, com atalhos `N` e `B`.
 
 ## Verificação atual
 
