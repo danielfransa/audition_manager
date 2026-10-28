@@ -31,6 +31,7 @@ from audition_manager.audio.transport import PlaybackState
 from audition_manager.config.preferences import PreferencesStore
 from audition_manager.library.scanner import inspect_wav, scan_wavs
 from audition_manager.library.repository import ImpulseResponseRepository
+from audition_manager.library.models import Capture
 from audition_manager.library.exporter import export_files
 
 logger = logging.getLogger(__name__)
@@ -196,6 +197,7 @@ class MainWindow(QMainWindow):
         self.all_ir_paths: list[Path] = []
         self.ir_paths: list[Path] = []
         self.capture_root: Path | None = None
+        self.all_capture_paths: list[Path] = []
         self.capture_paths: list[Path] = []
         self.worker: RenderWorker | None = None
         self.scan_worker: ScanWorker | None = None
@@ -213,9 +215,27 @@ class MainWindow(QMainWindow):
         self.di_button = QPushButton("Abrir DI WAV")
         self.folder_button = QPushButton("Selecionar pasta de IRs")
         self.capture_button = QPushButton("Selecionar pasta de capturas NAM")
+        self.clear_capture_button = QPushButton("Sem captura")
         self.capture_list = QListWidget()
-        self.capture_list.setMaximumHeight(120)
+        self.capture_list.setMaximumHeight(150)
         self.capture_list.setToolTip("Opcional: selecione uma captura antes do IR")
+        self.capture_search = QLineEdit()
+        self.capture_search.setPlaceholderText("Buscar captura por nome ou caminho…")
+        self.capture_favorites_only = QCheckBox("Somente capturas favoritas")
+        self.capture_minimum_rating = QComboBox()
+        self.capture_minimum_rating.addItem("Todas as avaliações", 0)
+        for value in range(1, 6):
+            self.capture_minimum_rating.addItem(f"{value}+ estrelas", value)
+        self.capture_favorite = QCheckBox("Captura favorita")
+        self.capture_favorite.setEnabled(False)
+        self.capture_rating = StarRating()
+        self.capture_rating.setEnabled(False)
+        self.capture_notes = QPlainTextEdit()
+        self.capture_notes.setPlaceholderText("Notas sobre a captura selecionada…")
+        self.capture_notes.setMaximumHeight(70)
+        self.capture_notes.setEnabled(False)
+        self.save_capture_notes_button = QPushButton("Salvar notas da captura")
+        self.save_capture_notes_button.setEnabled(False)
         self.export_button = QPushButton("Exportar favoritos…")
         self.export_button.setEnabled(False)
         self.cancel_scan_button = QPushButton("Cancelar scan")
@@ -272,9 +292,24 @@ class MainWindow(QMainWindow):
         file_buttons.addWidget(self.export_button)
         file_buttons.addWidget(self.cancel_scan_button)
         layout.addLayout(file_buttons)
-        layout.addWidget(self.capture_button)
+        capture_buttons = QHBoxLayout()
+        capture_buttons.addWidget(self.capture_button)
+        capture_buttons.addWidget(self.clear_capture_button)
+        layout.addLayout(capture_buttons)
         layout.addWidget(QLabel("Captura NAM (opcional):"))
+        capture_filters = QHBoxLayout()
+        capture_filters.addWidget(self.capture_search, 1)
+        capture_filters.addWidget(self.capture_favorites_only)
+        capture_filters.addWidget(self.capture_minimum_rating)
+        layout.addLayout(capture_filters)
         layout.addWidget(self.capture_list)
+        capture_metadata = QHBoxLayout()
+        capture_metadata.addWidget(self.capture_favorite)
+        capture_metadata.addWidget(self.capture_rating)
+        capture_metadata.addStretch(1)
+        layout.addLayout(capture_metadata)
+        layout.addWidget(self.capture_notes)
+        layout.addWidget(self.save_capture_notes_button)
         layout.addWidget(self.scan_progress)
         layout.addWidget(self.device)
         gain_row = QHBoxLayout()
@@ -309,7 +344,16 @@ class MainWindow(QMainWindow):
         self.di_button.clicked.connect(self.choose_di)
         self.folder_button.clicked.connect(self.choose_folder)
         self.capture_button.clicked.connect(self.choose_capture_folder)
+        self.clear_capture_button.clicked.connect(self.clear_capture_selection)
         self.capture_list.currentRowChanged.connect(self.selection_changed)
+        self.capture_search.textChanged.connect(self.apply_capture_filters)
+        self.capture_favorites_only.toggled.connect(self.apply_capture_filters)
+        self.capture_minimum_rating.currentIndexChanged.connect(
+            self.apply_capture_filters
+        )
+        self.capture_favorite.toggled.connect(self.set_capture_favorite)
+        self.capture_rating.rating_selected.connect(self.set_capture_rating)
+        self.save_capture_notes_button.clicked.connect(self.save_capture_notes)
         self.export_button.clicked.connect(self.export_favorites)
         self.cancel_scan_button.clicked.connect(self.cancel_scan)
         self.device.currentIndexChanged.connect(self.change_device)
@@ -334,6 +378,10 @@ class MainWindow(QMainWindow):
         for key, step in (("Left", -1), ("Right", 1)):
             shortcut = QShortcut(QKeySequence(key), self)
             shortcut.activated.connect(lambda step=step: self.move_ir(step))
+            self.shortcuts.append(shortcut)
+        for key, step in (("Ctrl+Left", -1), ("Ctrl+Right", 1)):
+            shortcut = QShortcut(QKeySequence(key), self)
+            shortcut.activated.connect(lambda step=step: self.move_capture(step))
             self.shortcuts.append(shortcut)
         self.refresh_devices()
         self.output.set_gain_db(self.gain.value())
@@ -382,24 +430,81 @@ class MainWindow(QMainWindow):
 
     @Slot()
     def choose_capture_folder(self) -> None:
-        initial = str(self.capture_root or "")
+        initial = str(
+            self.capture_root or self.preferences.last_capture_directory or ""
+        )
         directory = choose_nam_directory(self, initial)
         if not directory:
             return
-        root = Path(directory).resolve()
+        self.open_capture_folder(Path(directory))
+
+    def open_capture_folder(self, directory: Path) -> None:
+        root = directory.resolve()
         models, errors = scan_nam_models(root)
+        captures = [Capture(
+            model.path, model.path.name, model.version, model.architecture,
+            model.sample_rate, model.submodel_count,
+        ) for model in models]
+        self.repository.upsert_captures(captures)
         self.capture_root = root
-        self.capture_paths = [model.path for model in models]
-        blocker = QSignalBlocker(self.capture_list)
-        self.capture_list.clear()
-        self.capture_list.addItems(
-            [str(path.relative_to(root)) for path in self.capture_paths]
-        )
-        del blocker
+        self.all_capture_paths = [model.path for model in models]
+        self.preferences.last_capture_directory = root
+        self.save_preferences()
+        self.apply_capture_filters()
         skipped = f"; {len(errors)} inválidas ignoradas" if errors else ""
         self.status.setText(
             f"{len(models)} capturas NAM A2 encontradas{skipped}."
         )
+        saved = self.preferences.last_capture_file
+        if saved in self.capture_paths:
+            self.capture_list.setCurrentRow(self.capture_paths.index(saved))
+
+    @Slot()
+    def clear_capture_selection(self) -> None:
+        blocker = QSignalBlocker(self.capture_list)
+        self.capture_list.setCurrentRow(-1)
+        del blocker
+        self.preferences.last_capture_file = None
+        self.save_preferences()
+        self.selection_changed()
+
+    def capture_item_text(self, path: Path) -> str:
+        item = self.repository.get_capture(path)
+        relative = str(path.relative_to(self.capture_root)) if self.capture_root else path.name
+        if item is None:
+            return relative
+        favorite = "★ " if item.favorite else ""
+        rating = f" [{'★' * item.rating}{'☆' * (5 - item.rating)}]"
+        return f"{favorite}{relative}{rating}"
+
+    @Slot()
+    def apply_capture_filters(self) -> None:
+        selected = self.selected_capture_path()
+        query = self.capture_search.text().strip().casefold()
+        minimum = self.capture_minimum_rating.currentData() or 0
+        visible = []
+        for path in self.all_capture_paths:
+            item = self.repository.get_capture(path)
+            if item is None:
+                continue
+            relative = str(path.relative_to(self.capture_root)) if self.capture_root else path.name
+            if query and query not in relative.casefold():
+                continue
+            if self.capture_favorites_only.isChecked() and not item.favorite:
+                continue
+            if item.rating < minimum:
+                continue
+            visible.append(path)
+        blocker = QSignalBlocker(self.capture_list)
+        self.capture_list.clear()
+        self.capture_paths = visible
+        self.capture_list.addItems([self.capture_item_text(path) for path in visible])
+        if selected in visible:
+            self.capture_list.setCurrentRow(visible.index(selected))
+        del blocker
+        self.refresh_capture_metadata()
+        if selected is not None and selected not in visible:
+            self.selection_changed()
 
     def begin_scan(self, root: Path) -> None:
         try:
@@ -507,6 +612,13 @@ class MainWindow(QMainWindow):
         row = self.ir_list.currentRow() + step
         if 0 <= row < self.ir_list.count():
             self.ir_list.setCurrentRow(row)
+
+    def move_capture(self, step: int) -> None:
+        if self.capture_notes.hasFocus():
+            return
+        row = self.capture_list.currentRow() + step
+        if 0 <= row < self.capture_list.count():
+            self.capture_list.setCurrentRow(row)
 
     def toggle_playback_shortcut(self) -> None:
         if not self.notes.hasFocus():
@@ -672,6 +784,13 @@ class MainWindow(QMainWindow):
         elif ir_directory is not None:
             self.preferences.last_ir_directory = None
             changed = True
+        capture_directory = self.preferences.last_capture_directory
+        if capture_directory is not None and capture_directory.is_dir():
+            self.open_capture_folder(capture_directory)
+        elif capture_directory is not None:
+            self.preferences.last_capture_directory = None
+            self.preferences.last_capture_file = None
+            changed = True
         export_directory = self.preferences.last_export_directory
         if export_directory is not None and not export_directory.is_dir():
             self.preferences.last_export_directory = None
@@ -689,10 +808,15 @@ class MainWindow(QMainWindow):
     @Slot()
     def selection_changed(self) -> None:
         self.selection_version += 1
+        capture = self.selected_capture_path()
+        if capture != self.preferences.last_capture_file:
+            self.preferences.last_capture_file = capture
+            self.save_preferences()
         if self.ir_list.currentRow() < 0 and not self.bypass.isChecked():
             self.reset_audio()
         self.start_render()
         self.refresh_metadata()
+        self.refresh_capture_metadata()
         self.refresh_playback()
         self.update_play_button()
 
@@ -719,6 +843,55 @@ class MainWindow(QMainWindow):
         del notes_blocker
         self.notes.setEnabled(item is not None)
         self.save_notes_button.setEnabled(item is not None)
+
+    def refresh_capture_metadata(self) -> None:
+        path = self.selected_capture_path()
+        item = self.repository.get_capture(path) if path else None
+        blocker = QSignalBlocker(self.capture_favorite)
+        self.capture_favorite.setChecked(item.favorite if item else False)
+        del blocker
+        self.capture_favorite.setEnabled(item is not None)
+        self.capture_rating.set_value(item.rating if item else 0)
+        self.capture_rating.setEnabled(item is not None)
+        notes_blocker = QSignalBlocker(self.capture_notes)
+        self.capture_notes.setPlainText(item.notes if item else "")
+        del notes_blocker
+        self.capture_notes.setEnabled(item is not None)
+        self.save_capture_notes_button.setEnabled(item is not None)
+
+    @Slot(bool)
+    def set_capture_favorite(self, favorite: bool) -> None:
+        path = self.selected_capture_path()
+        if path is None:
+            return
+        try:
+            self.repository.set_capture_favorite(path, favorite)
+            self.status.setText("Favorito da captura atualizado.")
+        except (KeyError, OSError) as error:
+            self.show_error(str(error))
+        self.apply_capture_filters()
+
+    def set_capture_rating(self, rating: int) -> None:
+        path = self.selected_capture_path()
+        if path is None:
+            return
+        try:
+            self.repository.set_capture_rating(path, rating)
+            self.status.setText(f"Avaliação da captura definida como {rating}/5.")
+        except (KeyError, OSError, ValueError) as error:
+            self.show_error(str(error))
+        self.apply_capture_filters()
+
+    @Slot()
+    def save_capture_notes(self) -> None:
+        path = self.selected_capture_path()
+        if path is None:
+            return
+        try:
+            self.repository.set_capture_notes(path, self.capture_notes.toPlainText())
+            self.status.setText("Notas da captura salvas.")
+        except (KeyError, OSError) as error:
+            self.show_error(str(error))
 
     @Slot()
     def toggle_favorite(self) -> None:

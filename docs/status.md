@@ -25,10 +25,11 @@ o histórico de cada incremento e podem mencionar limitações já resolvidas.
 - Script PowerShell para gerar pacote portátil Windows com PyInstaller.
 - Capturas NAM A2 combinadas com IR na cadeia offline `DI → NAM → IR`.
 - Bypasses independentes para captura NAM e IR, com atalhos `N` e `B`.
+- Biblioteca NAM com busca, filtros, favoritos, avaliação, notas e persistência.
 
 ## Verificação atual
 
-- Suíte automatizada: **74 testes passando**.
+- Suíte automatizada: **76 testes passando**.
 - Compilação de bytecode e `git diff --check`: sem erros na última entrega.
 - Reprodução e interface: confirmadas no WSL/WSLg pelo usuário.
 - Saída PortAudio no WSLg: validada com a ponte ALSA/PulseAudio.

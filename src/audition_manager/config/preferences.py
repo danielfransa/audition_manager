@@ -10,6 +10,8 @@ from typing import Any
 class UserPreferences:
     last_di_file: Path | None = None
     last_ir_directory: Path | None = None
+    last_capture_directory: Path | None = None
+    last_capture_file: Path | None = None
     last_export_directory: Path | None = None
     output_device_name: str | None = None
     output_host_api: str | None = None
@@ -36,6 +38,8 @@ class PreferencesStore:
         return UserPreferences(
             last_di_file=self._path(payload.get("last_di_file")),
             last_ir_directory=self._path(payload.get("last_ir_directory")),
+            last_capture_directory=self._path(payload.get("last_capture_directory")),
+            last_capture_file=self._path(payload.get("last_capture_file")),
             last_export_directory=self._path(payload.get("last_export_directory")),
             output_device_name=self._text(payload.get("output_device_name")),
             output_host_api=self._text(payload.get("output_host_api")),
@@ -51,7 +55,10 @@ class PreferencesStore:
         self.path.parent.mkdir(parents=True, exist_ok=True)
         payload: dict[str, Any] = asdict(preferences)
         payload["version"] = self.VERSION
-        for key in ("last_di_file", "last_ir_directory", "last_export_directory"):
+        for key in (
+            "last_di_file", "last_ir_directory", "last_capture_directory",
+            "last_capture_file", "last_export_directory",
+        ):
             value = payload[key]
             payload[key] = str(value) if value is not None else None
         descriptor, temporary_name = tempfile.mkstemp(

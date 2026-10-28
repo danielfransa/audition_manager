@@ -8,7 +8,7 @@ de capturas de amplificadores **NAM A2** e a preparação de bibliotecas para
 equipamentos como M-VAVE BlackBox e IR-Box. Windows e Linux são os sistemas alvo.
 
 > **Estado do projeto:** o player e a biblioteca de IRs estão funcionais e têm
-> 74 testes automatizados. A reprodução offline de NAM A2 está em validação;
+> 76 testes automatizados. A reprodução offline de NAM A2 está em validação;
 > transferência direta para pedaleiras e o
 > instalador ainda estão em desenvolvimento. Consulte o [status completo](docs/status.md).
 
@@ -24,6 +24,8 @@ equipamentos como M-VAVE BlackBox e IR-Box. Windows e Linux são os sistemas alv
 - Exportação dos IRs favoritos para uma nova pasta, preservando subpastas.
 - Restauração da última DI, biblioteca, dispositivo, ganho, Loop e destino.
 - Cadeia offline **DI → captura NAM A2 → IR**, com troca automática do IR.
+- Biblioteca NAM com busca, filtros, favoritos, estrelas, notas e restauração da
+  última pasta e captura selecionada.
 
 ## Instalação rápida
 
@@ -113,7 +115,8 @@ portanto é possível testar sem procurar outros áudios:
 
 Atalhos principais: `Espaço` para Play/Pause, `B` para bypass do IR, `N` para
 bypass da captura NAM, `F` para favorito, `1–5` para avaliação e `0` para
-limpar a nota.
+limpar a nota. Use `Ctrl+←/→` para navegar entre capturas NAM e **Sem captura**
+para removê-la da cadeia sem fechar a biblioteca.
 
 ## Limites atuais
 

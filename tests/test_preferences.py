@@ -16,6 +16,8 @@ def test_preferences_round_trip_and_atomic_write(tmp_path: Path) -> None:
     expected = UserPreferences(
         last_di_file=tmp_path / "di.wav",
         last_ir_directory=tmp_path / "irs",
+        last_capture_directory=tmp_path / "captures",
+        last_capture_file=tmp_path / "captures" / "amp.nam",
         last_export_directory=tmp_path / "exports",
         output_device_name="Speakers",
         output_host_api="WASAPI",

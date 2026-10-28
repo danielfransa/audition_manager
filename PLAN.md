@@ -84,6 +84,10 @@ oficial fixado por commit, downmix/reamostragem para 48 kHz e cadeia offline
 `DI → NAM → IR`. A interface lista capturas separadamente e preserva o fluxo
 somente com IR. Falta a validação prática e auditiva em Windows e Linux nativo.
 
+**Biblioteca implementada para auditoria:** busca, filtros, favoritos, estrelas,
+notas, navegação `Ctrl+←/→`, remoção da captura ativa e restauração da última
+pasta/seleção. A migração SQLite versão 2 preserva os metadados em novos scans.
+
 ## 3 — Entrada ao vivo
 
 Investigar WASAPI/ASIO, buffers, taxas, concorrência e latência. Medir antes de

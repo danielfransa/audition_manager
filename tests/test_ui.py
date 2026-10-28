@@ -111,16 +111,26 @@ def test_restores_and_updates_application_preferences(tmp_path: Path) -> None:
     app = QApplication.instance() or QApplication([])
     di = tmp_path / "di.wav"
     ir_folder = tmp_path / "irs"
+    capture_folder = tmp_path / "captures"
     export_folder = tmp_path / "exports"
     ir_folder.mkdir()
+    capture_folder.mkdir()
     export_folder.mkdir()
     sf.write(di, [0.1], 48000)
     sf.write(ir_folder / "cab.wav", [1.0], 48000, subtype="FLOAT")
+    capture = capture_folder / "amp.nam"
+    capture.write_text(json.dumps({
+        "version": "0.7.0", "architecture": "SlimmableContainer",
+        "sample_rate": 48000,
+        "config": {"submodels": [{"model": {"architecture": "WaveNet"}}]},
+    }), encoding="utf-8")
     store = PreferencesStore(tmp_path / "preferences.json")
     store.save(
         UserPreferences(
             last_di_file=di,
             last_ir_directory=ir_folder,
+            last_capture_directory=capture_folder,
+            last_capture_file=capture,
             last_export_directory=export_folder,
             output_device_name="Test Output",
             output_host_api="Test API",
@@ -137,6 +147,8 @@ def test_restores_and_updates_application_preferences(tmp_path: Path) -> None:
         assert window.di_path == di.resolve()
         assert window.ir_root == ir_folder.resolve()
         assert window.ir_list.count() == 1
+        assert window.capture_list.count() == 1
+        assert window.selected_capture_path() == capture.resolve()
         assert window.device.currentIndex() == 1
         assert output.device == 3
         assert window.gain.value() == -9
@@ -287,6 +299,15 @@ def test_capture_and_ir_are_processed_as_one_chain(tmp_path: Path, monkeypatch) 
         window.choose_capture_folder()
         assert window.capture_list.count() == 1
         window.capture_list.setCurrentRow(0)
+        window.capture_rating.buttons[3].click()
+        window.capture_favorite.setChecked(True)
+        window.capture_notes.setPlainText("My amp notes")
+        window.save_capture_notes_button.click()
+        capture_item = window.repository.get_capture(model)
+        assert capture_item is not None
+        assert (capture_item.rating, capture_item.favorite, capture_item.notes) == (
+            4, True, "My amp notes"
+        )
         window.ir_list.setCurrentRow(0)
         deadline = monotonic() + 5
         while window.worker is not None and monotonic() < deadline:
@@ -304,6 +325,15 @@ def test_capture_and_ir_are_processed_as_one_chain(tmp_path: Path, monkeypatch) 
         assert renderer.models == [model.resolve()]
         assert output.audio.samples[:, 0] == pytest.approx([0.1, 0.2])
         assert window.active_ir.text() == "Ativo: cab.wav"
+        window.capture_search.setText("missing")
+        assert window.capture_list.count() == 0
+        window.capture_search.clear()
+        assert window.capture_list.count() == 1
+        window.capture_favorites_only.setChecked(True)
+        assert window.capture_list.count() == 1
+        window.clear_capture_selection()
+        assert window.selected_capture_path() is None
+        assert window.preferences.last_capture_file is None
     finally:
         if window.worker is not None:
             window.worker.wait()

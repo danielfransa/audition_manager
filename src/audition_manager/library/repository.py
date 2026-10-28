@@ -4,7 +4,7 @@ import sqlite3
 from collections.abc import Iterable
 from pathlib import Path
 
-from audition_manager.library.models import ImpulseResponse
+from audition_manager.library.models import Capture, ImpulseResponse
 
 
 class ImpulseResponseRepository:
@@ -45,6 +45,25 @@ class ImpulseResponseRepository:
                     """
                 )
                 self._connection.execute("INSERT INTO schema_version(version) VALUES (1)")
+            if version < 2:
+                self._connection.execute(
+                    """
+                    CREATE TABLE capture (
+                        path TEXT PRIMARY KEY,
+                        name TEXT NOT NULL,
+                        version TEXT NOT NULL,
+                        architecture TEXT NOT NULL,
+                        sample_rate INTEGER NOT NULL CHECK(sample_rate > 0),
+                        submodel_count INTEGER NOT NULL CHECK(submodel_count > 0),
+                        favorite INTEGER NOT NULL DEFAULT 0 CHECK(favorite IN (0, 1)),
+                        rating INTEGER NOT NULL DEFAULT 0 CHECK(rating BETWEEN 0 AND 5),
+                        notes TEXT NOT NULL DEFAULT '',
+                        created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                        updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+                    )
+                    """
+                )
+                self._connection.execute("INSERT INTO schema_version(version) VALUES (2)")
 
     def upsert_many(self, items: Iterable[ImpulseResponse]) -> None:
         values = [
@@ -92,6 +111,57 @@ class ImpulseResponseRepository:
     def set_notes(self, path: Path, notes: str) -> None:
         self._update(path, "notes", notes)
 
+    def upsert_captures(self, items: Iterable[Capture]) -> None:
+        values = [(
+            str(item.path.resolve()), item.name, item.version, item.architecture,
+            item.sample_rate, item.submodel_count,
+        ) for item in items]
+        with self._connection:
+            self._connection.executemany(
+                """
+                INSERT INTO capture(
+                    path, name, version, architecture, sample_rate, submodel_count
+                ) VALUES (?, ?, ?, ?, ?, ?)
+                ON CONFLICT(path) DO UPDATE SET
+                    name = excluded.name,
+                    version = excluded.version,
+                    architecture = excluded.architecture,
+                    sample_rate = excluded.sample_rate,
+                    submodel_count = excluded.submodel_count,
+                    updated_at = CURRENT_TIMESTAMP
+                """,
+                values,
+            )
+
+    def get_capture(self, path: Path) -> Capture | None:
+        row = self._connection.execute(
+            """
+            SELECT path, name, version, architecture, sample_rate,
+                   submodel_count, favorite, rating, notes
+            FROM capture WHERE path = ?
+            """,
+            (str(path.resolve()),),
+        ).fetchone()
+        if row is None:
+            return None
+        return Capture(
+            path=Path(row["path"]), name=row["name"], version=row["version"],
+            architecture=row["architecture"], sample_rate=row["sample_rate"],
+            submodel_count=row["submodel_count"], favorite=bool(row["favorite"]),
+            rating=row["rating"], notes=row["notes"],
+        )
+
+    def set_capture_favorite(self, path: Path, favorite: bool) -> None:
+        self._update_capture(path, "favorite", int(favorite))
+
+    def set_capture_rating(self, path: Path, rating: int) -> None:
+        if not 0 <= rating <= 5:
+            raise ValueError("A avaliação deve estar entre 0 e 5.")
+        self._update_capture(path, "rating", rating)
+
+    def set_capture_notes(self, path: Path, notes: str) -> None:
+        self._update_capture(path, "notes", notes)
+
     def _update(self, path: Path, column: str, value: object) -> None:
         with self._connection:
             cursor = self._connection.execute(
@@ -101,6 +171,16 @@ class ImpulseResponseRepository:
             )
         if cursor.rowcount != 1:
             raise KeyError(f"IR não encontrado na biblioteca: {path}")
+
+    def _update_capture(self, path: Path, column: str, value: object) -> None:
+        with self._connection:
+            cursor = self._connection.execute(
+                f"UPDATE capture SET {column} = ?, updated_at = CURRENT_TIMESTAMP "
+                "WHERE path = ?",
+                (value, str(path.resolve())),
+            )
+        if cursor.rowcount != 1:
+            raise KeyError(f"Captura não encontrada na biblioteca: {path}")
 
     def close(self) -> None:
         self._connection.close()

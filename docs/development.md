@@ -22,7 +22,7 @@ Também é possível trabalhar com uma venv manual conforme
 - `audio/transport.py`: estados, cursor, blocos e crossfade.
 - `audio/output.py`: stream sounddevice/PortAudio.
 - `library/scanner.py`: descoberta e metadados WAV.
-- `library/repository.py`: migração e persistência SQLite.
+- `library/repository.py`: migrações e persistência SQLite para IRs e capturas.
 - `library/exporter.py`: exportação transacional dos favoritos.
 - `config/settings.py`: caminhos de dados por sistema.
 - `config/preferences.py`: preferências JSON com escrita atômica.
@@ -63,8 +63,8 @@ confirmam driver, som audível ou latência do hardware.
 
 Cada incremento registra sua decisão em `docs/decisions/`, atualiza o plano e o
 roteiro de validação, executa verificações apropriadas e termina em um commit
-revisável. O repositório local usa a branch `main`; ambientes virtuais, dados e
-áudios pessoais ficam fora do Git.
+revisável. O repositório local usa a branch `develop` durante os incrementos;
+ambientes virtuais, dados e áudios pessoais ficam fora do Git.
 
 O histórico detalhado de WSL/WSLg, dependências, problemas de fontes e áudio está
 em [`validacao.md`](validacao.md) e nas decisões 0002 e 0003. O estado vigente
