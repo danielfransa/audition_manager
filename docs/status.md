@@ -26,6 +26,8 @@ o histórico de cada incremento e podem mencionar limitações já resolvidas.
 - Capturas NAM A2 combinadas com IR na cadeia offline `DI → NAM → IR`.
 - Bypasses independentes para captura NAM e IR, com atalhos `N` e `B`.
 - Biblioteca NAM com busca, filtros, favoritos, avaliação, notas e persistência.
+- Exportação conjunta planejada com separação em `Favoritos/Capturas` e
+  `Favoritos/IRs`.
 
 ## Verificação atual
 

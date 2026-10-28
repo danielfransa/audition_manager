@@ -53,6 +53,8 @@ DI em loop, navegação contínua entre IRs e metadados persistentes.
    usuário, preservando subpastas e sem sobrescrever exportações existentes.
    **Implementado para auditoria. Exportação de capturas será adicionada quando
    a biblioteca de capturas existir.**
+   **Ampliação definida:** a exportação conjunta criará subpastas separadas,
+   `Favoritos/Capturas` e `Favoritos/IRs`.
 
 ## 1.1 — Polimento do MVP
 
@@ -85,8 +87,8 @@ oficial fixado por commit, downmix/reamostragem para 48 kHz e cadeia offline
 somente com IR. Falta a validação prática e auditiva em Windows e Linux nativo.
 
 **Biblioteca implementada para auditoria:** busca, filtros, favoritos, estrelas,
-notas, navegação `Ctrl+←/→`, remoção da captura ativa e restauração da última
-pasta/seleção. A migração SQLite versão 2 preserva os metadados em novos scans.
+notas, navegação `Ctrl+←/→` e restauração da última pasta/seleção. A migração
+SQLite versão 2 preserva os metadados em novos scans.
 
 ## 3 — Entrada ao vivo
 

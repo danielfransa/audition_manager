@@ -215,7 +215,6 @@ class MainWindow(QMainWindow):
         self.di_button = QPushButton("Abrir DI WAV")
         self.folder_button = QPushButton("Selecionar pasta de IRs")
         self.capture_button = QPushButton("Selecionar pasta de capturas NAM")
-        self.clear_capture_button = QPushButton("Sem captura")
         self.capture_list = QListWidget()
         self.capture_list.setMaximumHeight(150)
         self.capture_list.setToolTip("Opcional: selecione uma captura antes do IR")
@@ -292,10 +291,7 @@ class MainWindow(QMainWindow):
         file_buttons.addWidget(self.export_button)
         file_buttons.addWidget(self.cancel_scan_button)
         layout.addLayout(file_buttons)
-        capture_buttons = QHBoxLayout()
-        capture_buttons.addWidget(self.capture_button)
-        capture_buttons.addWidget(self.clear_capture_button)
-        layout.addLayout(capture_buttons)
+        layout.addWidget(self.capture_button)
         layout.addWidget(QLabel("Captura NAM (opcional):"))
         capture_filters = QHBoxLayout()
         capture_filters.addWidget(self.capture_search, 1)
@@ -344,7 +340,6 @@ class MainWindow(QMainWindow):
         self.di_button.clicked.connect(self.choose_di)
         self.folder_button.clicked.connect(self.choose_folder)
         self.capture_button.clicked.connect(self.choose_capture_folder)
-        self.clear_capture_button.clicked.connect(self.clear_capture_selection)
         self.capture_list.currentRowChanged.connect(self.selection_changed)
         self.capture_search.textChanged.connect(self.apply_capture_filters)
         self.capture_favorites_only.toggled.connect(self.apply_capture_filters)
@@ -458,15 +453,6 @@ class MainWindow(QMainWindow):
         saved = self.preferences.last_capture_file
         if saved in self.capture_paths:
             self.capture_list.setCurrentRow(self.capture_paths.index(saved))
-
-    @Slot()
-    def clear_capture_selection(self) -> None:
-        blocker = QSignalBlocker(self.capture_list)
-        self.capture_list.setCurrentRow(-1)
-        del blocker
-        self.preferences.last_capture_file = None
-        self.save_preferences()
-        self.selection_changed()
 
     def capture_item_text(self, path: Path) -> str:
         item = self.repository.get_capture(path)

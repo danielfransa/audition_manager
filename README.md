@@ -115,8 +115,7 @@ portanto é possível testar sem procurar outros áudios:
 
 Atalhos principais: `Espaço` para Play/Pause, `B` para bypass do IR, `N` para
 bypass da captura NAM, `F` para favorito, `1–5` para avaliação e `0` para
-limpar a nota. Use `Ctrl+←/→` para navegar entre capturas NAM e **Sem captura**
-para removê-la da cadeia sem fechar a biblioteca.
+limpar a nota. Use `Ctrl+←/→` para navegar entre capturas NAM.
 
 ## Limites atuais
 

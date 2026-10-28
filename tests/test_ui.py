@@ -331,9 +331,6 @@ def test_capture_and_ir_are_processed_as_one_chain(tmp_path: Path, monkeypatch) 
         assert window.capture_list.count() == 1
         window.capture_favorites_only.setChecked(True)
         assert window.capture_list.count() == 1
-        window.clear_capture_selection()
-        assert window.selected_capture_path() is None
-        assert window.preferences.last_capture_file is None
     finally:
         if window.worker is not None:
             window.worker.wait()

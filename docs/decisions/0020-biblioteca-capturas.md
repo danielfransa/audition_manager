@@ -13,9 +13,13 @@ avaliação e notas. Um novo scan atualiza os dados técnicos sem apagar os dado
 do usuário.
 
 A interface mantém busca e filtros próprios para capturas, estrelas clicáveis,
-favorito e editor de notas. `Ctrl+←/→` navega pela lista e **Sem captura** remove
-o modelo da cadeia. A última pasta e a última captura são gravadas nas
-preferências e restauradas quando ainda existem.
+favorito e editor de notas. `Ctrl+←/→` navega pela lista. O bypass NAM já remove
+a captura do processamento, por isso não há um segundo botão para essa função.
+A última pasta e a última captura são gravadas nas preferências e restauradas
+quando ainda existem.
+
+A futura exportação conjunta deverá separar os tipos em `Favoritos/Capturas` e
+`Favoritos/IRs`.
 
 IRs e capturas usam tabelas e controles separados porque seus metadados e seus
 ciclos de exportação serão diferentes nas próximas etapas.
