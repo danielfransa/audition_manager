@@ -60,3 +60,28 @@ def test_bypass_attenuates_overload_without_clipping(tmp_path) -> None:
     sf.write(path, [2.0, -1.0], 48000, subtype="FLOAT")
     audio = RenderCache().render(path, None, Mock())
     np.testing.assert_allclose(audio.samples[:, 0], [0.95, -0.475])
+
+
+def test_dependency_renderer_runs_without_ir_and_is_cached(tmp_path) -> None:
+    di = tmp_path / "di.wav"
+    capture = tmp_path / "amp.nam"
+    di.touch()
+    capture.touch()
+    audio = AudioBuffer(np.zeros((2, 1), dtype=np.float32), 48000)
+    renderer = Mock(return_value=audio)
+    cache = RenderCache()
+    assert cache.render(di, None, renderer, dependencies=(capture,)) is audio
+    assert cache.render(di, None, renderer, dependencies=(capture,)) is audio
+    renderer.assert_called_once_with(di, None)
+
+
+def test_processing_variant_has_its_own_cache_entry(tmp_path) -> None:
+    di = tmp_path / "di.wav"
+    capture = tmp_path / "amp.nam"
+    di.touch()
+    capture.touch()
+    renderer = Mock(return_value=AudioBuffer(np.zeros((2, 1), dtype=np.float32), 48000))
+    cache = RenderCache()
+    cache.render(di, None, renderer, dependencies=(capture,), variant=(0,))
+    cache.render(di, None, renderer, dependencies=(capture,), variant=(6,))
+    assert renderer.call_count == 2

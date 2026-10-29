@@ -51,8 +51,10 @@ DI em loop, navegação contínua entre IRs e metadados persistentes.
 
 5. Exportar os IRs favoritos da pasta aberta para uma nova pasta escolhida pelo
    usuário, preservando subpastas e sem sobrescrever exportações existentes.
-   **Implementado para auditoria. Exportação de capturas será adicionada quando
-   a biblioteca de capturas existir.**
+   **Implementado para auditoria:** a exportação conjunta inclui favoritos das
+   duas bibliotecas em subpastas separadas, `Favoritos/Capturas` e
+   `Favoritos/IRs`, preserva subpastas e não sobrescreve destinos existentes.
+   O diálogo permite incluir ambos os tipos ou somente um deles.
 
 ## 1.1 — Polimento do MVP
 
@@ -79,14 +81,57 @@ runtime candidato. Não adicionar o pacote de treinamento PyTorch ao aplicativo.
 Validar `SlimmableContainer`, A2 Full/Lite, desempenho e integração Windows/Linux
 em um protótipo isolado antes da interface.
 
-## 3 — Entrada ao vivo
+**Implementado para auditoria:** validação de A2 `SlimmableContainer`, runtime
+oficial fixado por commit, downmix/reamostragem para 48 kHz e cadeia offline
+`DI → NAM → IR`. A interface lista capturas separadamente e preserva o fluxo
+somente com IR. Falta a validação prática e auditiva em Windows e Linux nativo.
+
+**Biblioteca implementada para auditoria:** busca, filtros, favoritos, estrelas,
+notas, navegação `Ctrl+←/→` e restauração da última pasta/seleção. A migração
+SQLite versão 2 preserva os metadados em novos scans.
+
+**Comparação de nível implementada para auditoria:** ganho NAM de -24 a +12 dB,
+medidor do pico processado, proteção contra clipping e descrição explícita da
+cadeia e dos bypasses. O ganho é persistido e participa da chave do cache.
+
+**Compatibilidade ampliada para auditoria:** A2 permite escolher Full ou Lite;
+modelos legados WaveNet, LSTM, ConvNet, Linear e Sequential são encaminhados ao
+runtime sem parâmetro de slimming. Arquitetura e versão aparecem na biblioteca.
+
+## 3 — Internacionalização
+
+1. Catálogo i18n da aplicação, seletor Português/English, troca em tempo de
+   execução e persistência. **Implementado para auditoria.**
+2. README público bilíngue curto com links para guias completos de instalação e
+   uso em PT e EN. **Implementado para auditoria.**
+3. Espelhar documentação técnica, status e decisões nos dois idiomas, com
+   navegação clara. **Implementado para auditoria.**
+
+## 4 — Distribuição Windows
+
+Gerar e validar o pacote portátil em Windows real já com os dois idiomas e o
+runtime NAM. Depois avaliar instalador, assinatura e publicação em Releases.
+
+**Pacote portátil validado:** o script executa um autoteste no `.exe` congelado
+e o GitHub Actions gera o ZIP em `windows-2022`. O usuário validou o pacote em
+Windows real após os ajustes de interface, console, samples e compactação.
+
+**Polimento para auditoria:** janela inicial ampliada, listas NAM/IR com altura
+mínima equilibrada, subprocesso NAM sem console no Windows e `samples` rastreados
+pelo Git incluídos no ZIP. O tempo de inferência Full/Lite ainda será medido no
+teste prático; remover a janela de console não elimina o custo do modelo A2.
+
+**Próximo marco:** publicar `v0.1.0-alpha` como pré-release. Instalador e
+assinatura digital continuam adiados até haver mais validação pública.
+
+## 5 — Entrada ao vivo
 
 Investigar WASAPI/ASIO, buffers, taxas, concorrência e latência. Medir antes de
 migrar DSP. Meta exploratória: 48 kHz, 64/128 amostras; não é compromisso desta
 fase. Callbacks não devem fazer I/O, carregar modelos ou alocar grandes buffers.
 Convolução por blocos e eventual backend C++/JUCE exigem contrato próprio.
 
-## 4 — AM4DATA / Blackbox / IR-Box
+## 6 — AM4DATA / Blackbox / IR-Box
 
 Pesquisar separadamente formatos e ferramentas; classificação por extensão
 não comprova compatibilidade. Não inventar parsers ou conversores proprietários.
@@ -95,10 +140,10 @@ Usar inicialmente o conversor oficial NAM → AM4DATA da M-VAVE. Tratar Blackbox
 e IR-Box como destinos independentes: pesquisar protocolos,
 limites, formatos e ferramentas de cada equipamento antes de transferência direta.
 
-## 5 — Biblioteca e distribuição
+## 7 — Biblioteca em escala
 
-Comparação de centenas de capturas/IRs, instalador Windows,
-reprodutibilidade das dependências e revisão das licenças redistribuídas.
+Comparação de centenas de capturas/IRs, reprodutibilidade das dependências e
+revisão das licenças redistribuídas.
 
 ## Riscos técnicos
 

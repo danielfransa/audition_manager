@@ -1,0 +1,41 @@
+name: Windows prerelease
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  build-and-release:
+    runs-on: windows-2022
+    timeout-minutes: 45
+
+    steps:
+      - name: Check out tagged source
+        uses: actions/checkout@v7
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Build and test portable package
+        shell: pwsh
+        run: .\scripts\build-windows.ps1
+
+      - name: Publish prerelease
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: >-
+          gh release create $env:GITHUB_REF_NAME
+          "dist\AuditionManager-Windows-x64.zip"
+          --repo $env:GITHUB_REPOSITORY
+          --title "Audition Manager $env:GITHUB_REF_NAME"
+          --notes-file "docs\releases\v0.1.0-alpha.md"
+          --prerelease
+          --verify-tag

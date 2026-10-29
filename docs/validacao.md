@@ -1,5 +1,9 @@
 # Validação da primeira fatia
 
+Este é o registro cronológico completo em Português. Para os roteiros vigentes,
+consulte a [navegação técnica em Português](pt-BR/technical.md) ou o
+[validation guide in English](en/validation.md).
+
 ## Automática
 
 Execute `mise run test` no WSL ou `python -m pytest` com a venv ativa.
@@ -310,6 +314,54 @@ validado em Windows real. PyInstaller não é um cross-compiler.
    exportação. Feche/reabra o executável e confirme a persistência.
 5. Registre versão do Windows, dispositivo/driver, tamanho do ZIP, aviso do
    SmartScreen e qualquer DLL ausente antes de decidir o instalador.
+
+### Automação do pacote — 2026-10-29
+
+- `scripts/build-windows.ps1` agora executa o `.exe` com
+  `--packaging-smoke-test` antes de compactar o ZIP. O teste confirma imports e
+  a presença de `nam-render.exe` no caminho usado pela aplicação congelada.
+- `.github/workflows/windows-portable.yml` gera o pacote em `windows-2022` e o
+  mantém como artefato por 14 dias. Na `develop`, mudanças relacionadas ao build
+  disparam a execução; após o merge na branch padrão, também há execução manual.
+- Os dois caminhos do autoteste têm cobertura automatizada; a suíte local passa
+  com **87 testes**.
+- A execução real do workflow e o teste auditivo do ZIP continuam pendentes.
+- A primeira execução encontrou a migração de `windows-latest` para Visual Studio
+  2026. O runner foi fixado em `windows-2022`, compatível com o gerador CMake do
+  Visual Studio 2022; o script agora para imediatamente no comando que falhar.
+- A segunda execução chegou ao compilador MSVC e revelou três usos upstream de
+  `-Wno-error`, opção exclusiva de GCC/Clang. O build substitui essas ocorrências
+  por `/WX-`, equivalente no MSVC, e valida a quantidade antes de alterar o
+  arquivo do commit fixado.
+
+### Retorno prático da interface Windows — 2026-10-29
+
+- A janela inicial passou para 960 × 900, com mínimo de 110 px e distribuição de
+  espaço equivalente para as listas de capturas e IRs.
+- `nam-render.exe` usa `CREATE_NO_WINDOW`; a troca de captura não deve mais abrir
+  uma janela de console. O tempo de inferência A2 continua real e deve ser
+  comparado nos modos Full e Lite.
+- O ZIP copia somente arquivos de `samples/` rastreados pelo Git. Assim inclui os
+  exemplos redistribuíveis sem capturas TONE3000 ou arquivos pessoais locais.
+- A suíte local passa com **89 testes**. Interface, tempo de troca e conteúdo do
+  novo ZIP aguardam a próxima validação no Windows.
+- A altura mínima das listas, combinada com escala/fonte do Windows e pouca
+  altura disponível, revelou sobreposição entre lista, metadados e transporte.
+  O conteúdo central agora usa uma área vertical rolável: em 760 × 700 o teste
+  Qt confirma que a rolagem é ativada em vez de comprimir controles sobrepostos.
+- O primeiro download do artefato continha o ZIP portátil dentro de outro ZIP,
+  pois o GitHub compactava novamente o arquivo. O upload passou a usar o modo
+  direto (`archive: false`): o download agora deve ser o próprio
+  `AuditionManager-Windows-x64.zip`, contendo a pasta `AuditionManager`.
+
+### Aceite do pacote portátil — 2026-10-29
+
+O usuário confirmou que o ZIP da revisão `eeed30f` funciona corretamente em
+Windows após os ajustes. O workflow terminou com sucesso e publicou um arquivo
+direto de aproximadamente 107 MB, incluindo aplicação, runtime e samples.
+Interface, ausência de console e organização do pacote foram aprovadas. O pacote
+está liberado para a pré-release `v0.1.0-alpha`; instalador e assinatura ficam
+para uma etapa posterior.
 
 ## Avaliação por estrelas clicáveis
 

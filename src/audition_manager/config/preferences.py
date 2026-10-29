@@ -10,11 +10,16 @@ from typing import Any
 class UserPreferences:
     last_di_file: Path | None = None
     last_ir_directory: Path | None = None
+    last_capture_directory: Path | None = None
+    last_capture_file: Path | None = None
     last_export_directory: Path | None = None
     output_device_name: str | None = None
     output_host_api: str | None = None
     output_gain_db: int = 0
+    capture_gain_db: int = 0
+    nam_quality: str = "full"
     loop_enabled: bool = True
+    language: str = "pt_BR"
 
 
 class PreferencesStore:
@@ -33,13 +38,27 @@ class PreferencesStore:
         gain = payload.get("output_gain_db", 0)
         if not isinstance(gain, int) or isinstance(gain, bool):
             gain = 0
+        capture_gain = payload.get("capture_gain_db", 0)
+        if not isinstance(capture_gain, int) or isinstance(capture_gain, bool):
+            capture_gain = 0
+        nam_quality = payload.get("nam_quality", "full")
+        if nam_quality not in {"full", "lite"}:
+            nam_quality = "full"
+        language = payload.get("language", "pt_BR")
+        if language not in {"pt_BR", "en"}:
+            language = "pt_BR"
         return UserPreferences(
             last_di_file=self._path(payload.get("last_di_file")),
             last_ir_directory=self._path(payload.get("last_ir_directory")),
+            last_capture_directory=self._path(payload.get("last_capture_directory")),
+            last_capture_file=self._path(payload.get("last_capture_file")),
             last_export_directory=self._path(payload.get("last_export_directory")),
             output_device_name=self._text(payload.get("output_device_name")),
             output_host_api=self._text(payload.get("output_host_api")),
             output_gain_db=max(-24, min(0, gain)),
+            capture_gain_db=max(-24, min(12, capture_gain)),
+            nam_quality=nam_quality,
+            language=language,
             loop_enabled=(
                 payload["loop_enabled"]
                 if isinstance(payload.get("loop_enabled"), bool)
@@ -51,7 +70,10 @@ class PreferencesStore:
         self.path.parent.mkdir(parents=True, exist_ok=True)
         payload: dict[str, Any] = asdict(preferences)
         payload["version"] = self.VERSION
-        for key in ("last_di_file", "last_ir_directory", "last_export_directory"):
+        for key in (
+            "last_di_file", "last_ir_directory", "last_capture_directory",
+            "last_capture_file", "last_export_directory",
+        ):
             value = payload[key]
             payload[key] = str(value) if value is not None else None
         descriptor, temporary_name = tempfile.mkstemp(

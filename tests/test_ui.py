@@ -6,6 +6,8 @@ os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
 import soundfile as sf
 import pytest
+import json
+import numpy as np
 
 qt_widgets = pytest.importorskip("PySide6.QtWidgets", exc_type=ImportError)
 QApplication = qt_widgets.QApplication
@@ -16,7 +18,9 @@ from audition_manager.audio.transport import PlaybackTransport, PlaybackState
 from audition_manager.config.preferences import PreferencesStore, UserPreferences
 from audition_manager.library.repository import ImpulseResponseRepository
 from audition_manager.library.models import ImpulseResponse
-from audition_manager.ui.main_window import MainWindow, create_ir_directory_dialog
+from audition_manager.ui.main_window import (
+    ExportOptionsDialog, MainWindow, create_ir_directory_dialog,
+)
 
 
 class FakeOutput:
@@ -72,6 +76,20 @@ class FakeOutput:
         self.transport.stop()
 
 
+class FakeNamRenderer:
+    def __init__(self) -> None:
+        self.models: list[Path] = []
+        self.qualities: list[str] = []
+
+    def render(
+        self, source: AudioBuffer, model_path: Path, quality: str = "full"
+    ) -> AudioBuffer:
+        self.models.append(model_path)
+        self.qualities.append(quality)
+        mono = np.mean(source.samples, axis=1, keepdims=True, dtype=np.float32)
+        return AudioBuffer(mono * 2, source.sample_rate)
+
+
 def wait_for_scan(window: MainWindow, app: QApplication, timeout: float = 5) -> None:
     deadline = monotonic() + timeout
     while window.scan_worker is not None and monotonic() < deadline:
@@ -95,20 +113,92 @@ def test_ir_directory_dialog_shows_wav_files_and_selects_directory() -> None:
         dialog.close()
 
 
+def test_export_options_default_to_both_and_require_one_category() -> None:
+    app = QApplication.instance() or QApplication([])
+    dialog = ExportOptionsDialog()
+    try:
+        ok = dialog.buttons.button(dialog.buttons.StandardButton.Ok)
+        assert dialog.folder_name.text() == "Audition Manager Favorites"
+        assert dialog.export_captures.isChecked()
+        assert dialog.export_irs.isChecked()
+        assert ok.isEnabled()
+        dialog.export_captures.setChecked(False)
+        dialog.export_irs.setChecked(False)
+        assert not ok.isEnabled()
+        dialog.export_irs.setChecked(True)
+        assert ok.isEnabled()
+    finally:
+        dialog.close()
+
+
+def test_language_switch_updates_interface_and_persists(tmp_path: Path) -> None:
+    app = QApplication.instance() or QApplication([])
+    store = PreferencesStore(tmp_path / "preferences.json")
+    window = MainWindow(
+        FakeOutput(), ImpulseResponseRepository(tmp_path / "library.sqlite3"), store
+    )
+    try:
+        window.language.setCurrentIndex(window.language.findData("en"))
+        assert window.di_button.text() == "Open DI WAV"
+        assert window.folder_button.text() == "Select IR folder"
+        assert window.capture_button.text() == "Select NAM capture folder"
+        assert window.export_button.text() == "Export favorites…"
+        assert window.play_button.text() == "Process and play"
+        assert window.language_label.text() == "Language:"
+        assert store.load().language == "en"
+        window.language.setCurrentIndex(window.language.findData("pt_BR"))
+        assert window.di_button.text() == "Abrir DI WAV"
+        assert store.load().language == "pt_BR"
+    finally:
+        window.close()
+
+
+def test_audio_lists_keep_a_practical_minimum_height(tmp_path: Path) -> None:
+    app = QApplication.instance() or QApplication([])
+    window = MainWindow(
+        FakeOutput(),
+        ImpulseResponseRepository(tmp_path / "library.sqlite3"),
+        PreferencesStore(tmp_path / "preferences.json"),
+    )
+    try:
+        assert window.capture_list.minimumHeight() >= 110
+        assert window.ir_list.minimumHeight() >= 110
+        assert window.size().width() >= 960
+        assert window.size().height() >= 900
+        assert window.content_scroll.widgetResizable()
+        assert window.content_scroll.widget() is not None
+        window.resize(760, 700)
+        window.show()
+        app.processEvents()
+        assert window.content_scroll.verticalScrollBar().maximum() > 0
+    finally:
+        window.close()
+
+
 def test_restores_and_updates_application_preferences(tmp_path: Path) -> None:
     app = QApplication.instance() or QApplication([])
     di = tmp_path / "di.wav"
     ir_folder = tmp_path / "irs"
+    capture_folder = tmp_path / "captures"
     export_folder = tmp_path / "exports"
     ir_folder.mkdir()
+    capture_folder.mkdir()
     export_folder.mkdir()
     sf.write(di, [0.1], 48000)
     sf.write(ir_folder / "cab.wav", [1.0], 48000, subtype="FLOAT")
+    capture = capture_folder / "amp.nam"
+    capture.write_text(json.dumps({
+        "version": "0.7.0", "architecture": "SlimmableContainer",
+        "sample_rate": 48000,
+        "config": {"submodels": [{"model": {"architecture": "WaveNet"}}]},
+    }), encoding="utf-8")
     store = PreferencesStore(tmp_path / "preferences.json")
     store.save(
         UserPreferences(
             last_di_file=di,
             last_ir_directory=ir_folder,
+            last_capture_directory=capture_folder,
+            last_capture_file=capture,
             last_export_directory=export_folder,
             output_device_name="Test Output",
             output_host_api="Test API",
@@ -125,6 +215,8 @@ def test_restores_and_updates_application_preferences(tmp_path: Path) -> None:
         assert window.di_path == di.resolve()
         assert window.ir_root == ir_folder.resolve()
         assert window.ir_list.count() == 1
+        assert window.capture_list.count() == 1
+        assert window.selected_capture_path() == capture.resolve()
         assert window.device.currentIndex() == 1
         assert output.device == 3
         assert window.gain.value() == -9
@@ -234,6 +326,130 @@ def test_select_render_play_and_stop(tmp_path: Path, monkeypatch) -> None:
         if window.worker is not None:
             window.worker.wait()
             app.processEvents()
+        window.close()
+
+
+def test_capture_and_ir_are_processed_as_one_chain(tmp_path: Path, monkeypatch) -> None:
+    app = QApplication.instance() or QApplication([])
+    output = FakeOutput()
+    renderer = FakeNamRenderer()
+    window = MainWindow(
+        output,
+        ImpulseResponseRepository(tmp_path / "library.sqlite3"),
+        PreferencesStore(tmp_path / "preferences.json"),
+        renderer,
+    )
+    di = tmp_path / "di.wav"
+    ir_folder = tmp_path / "irs"
+    capture_folder = tmp_path / "captures"
+    ir_folder.mkdir()
+    capture_folder.mkdir()
+    sf.write(di, [0.1, 0.2], 48000, subtype="FLOAT")
+    sf.write(ir_folder / "cab.wav", [1.0], 48000, subtype="FLOAT")
+    model = capture_folder / "amp.nam"
+    model.write_text(json.dumps({
+        "version": "0.7.0", "architecture": "SlimmableContainer",
+        "sample_rate": 48000,
+        "config": {"submodels": [{"model": {"architecture": "WaveNet"}}]},
+    }), encoding="utf-8")
+    monkeypatch.setattr(
+        "audition_manager.ui.main_window.choose_ir_directory",
+        lambda *args: str(ir_folder),
+    )
+    monkeypatch.setattr(
+        "audition_manager.ui.main_window.choose_nam_directory",
+        lambda *args: str(capture_folder),
+    )
+    try:
+        window.di_path = di
+        window.choose_folder()
+        wait_for_scan(window, app)
+        window.choose_capture_folder()
+        assert window.capture_list.count() == 1
+        window.capture_list.setCurrentRow(0)
+        window.capture_rating.buttons[3].click()
+        window.capture_favorite.setChecked(True)
+        window.capture_notes.setPlainText("My amp notes")
+        window.save_capture_notes_button.click()
+        capture_item = window.repository.get_capture(model)
+        assert capture_item is not None
+        assert (capture_item.rating, capture_item.favorite, capture_item.notes) == (
+            4, True, "My amp notes"
+        )
+        window.ir_list.setCurrentRow(0)
+        deadline = monotonic() + 5
+        while window.worker is not None and monotonic() < deadline:
+            app.processEvents()
+            sleep(0.01)
+        assert renderer.models == [model.resolve()]
+        assert output.audio is not None
+        assert output.audio.samples[:, 0] == pytest.approx([0.2, 0.4])
+        assert "NAM A2 Full (amp.nam) → IR (cab.wav)" in window.active_ir.text()
+        assert window.peak_meter.format().startswith("Pico: ")
+        window.nam_quality.setCurrentIndex(window.nam_quality.findData("lite"))
+        deadline = monotonic() + 5
+        while window.worker is not None and monotonic() < deadline:
+            app.processEvents()
+            sleep(0.01)
+        assert renderer.qualities == ["full", "lite"]
+        assert "NAM A2 Lite" in window.active_ir.text()
+        window.capture_gain.setValue(6)
+        deadline = monotonic() + 5
+        while window.worker is not None and monotonic() < deadline:
+            app.processEvents()
+            sleep(0.01)
+        assert output.audio.samples[:, 0] == pytest.approx(
+            [0.2 * (10 ** (6 / 20)), 0.4 * (10 ** (6 / 20))]
+        )
+        window.capture_bypass.setChecked(True)
+        deadline = monotonic() + 5
+        while window.worker is not None and monotonic() < deadline:
+            app.processEvents()
+            sleep(0.01)
+        assert renderer.models == [model.resolve(), model.resolve(), model.resolve()]
+        assert output.audio.samples[:, 0] == pytest.approx([0.1, 0.2])
+        assert window.active_ir.text() == (
+            "Cadeia ativa: DI → IR (cab.wav) — Bypass ativo: NAM"
+        )
+        window.capture_search.setText("missing")
+        assert window.capture_list.count() == 0
+        window.capture_search.clear()
+        assert window.capture_list.count() == 1
+        window.capture_favorites_only.setChecked(True)
+        assert window.capture_list.count() == 1
+    finally:
+        if window.worker is not None:
+            window.worker.wait()
+            app.processEvents()
+        window.close()
+
+
+def test_legacy_nam_is_listed_and_disables_a2_quality_selector(
+    tmp_path: Path, monkeypatch
+) -> None:
+    app = QApplication.instance() or QApplication([])
+    folder = tmp_path / "captures"
+    folder.mkdir()
+    model = folder / "legacy.nam"
+    model.write_text(json.dumps({
+        "version": "0.5.4", "architecture": "WaveNet",
+        "sample_rate": 48000, "config": {}, "weights": [],
+    }), encoding="utf-8")
+    monkeypatch.setattr(
+        "audition_manager.ui.main_window.choose_nam_directory",
+        lambda *args: str(folder),
+    )
+    window = MainWindow(
+        FakeOutput(), ImpulseResponseRepository(tmp_path / "library.sqlite3"),
+        PreferencesStore(tmp_path / "preferences.json"), FakeNamRenderer(),
+    )
+    try:
+        window.choose_capture_folder()
+        assert window.capture_list.count() == 1
+        assert "WaveNet v0.5.4" in window.capture_list.item(0).text()
+        window.capture_list.setCurrentRow(0)
+        assert not window.nam_quality.isEnabled()
+    finally:
         window.close()
 
 
@@ -501,12 +717,20 @@ def test_exports_all_favorites_from_current_root_regardless_of_filters(
 ) -> None:
     app = QApplication.instance() or QApplication([])
     source = tmp_path / "irs"
+    capture_source = tmp_path / "captures"
     nested = source / "Mesa"
     nested.mkdir(parents=True)
     favorites = [nested / "V30.wav", source / "Clean.wav"]
     other = source / "Other.wav"
     for path in [*favorites, other]:
         sf.write(path, [1.0], 48000, subtype="FLOAT")
+    capture_source.mkdir()
+    capture = capture_source / "Favorite Amp.nam"
+    capture.write_text(json.dumps({
+        "version": "0.7.0", "architecture": "SlimmableContainer",
+        "sample_rate": 48000,
+        "config": {"submodels": [{"model": {"architecture": "WaveNet"}}]},
+    }), encoding="utf-8")
     destination = tmp_path / "exports"
     destination.mkdir()
     monkeypatch.setattr(
@@ -514,12 +738,16 @@ def test_exports_all_favorites_from_current_root_regardless_of_filters(
         lambda *args: str(source),
     )
     monkeypatch.setattr(
+        "audition_manager.ui.main_window.choose_nam_directory",
+        lambda *args: str(capture_source),
+    )
+    monkeypatch.setattr(
         "audition_manager.ui.main_window.QFileDialog.getExistingDirectory",
         lambda *args: str(destination),
     )
     monkeypatch.setattr(
-        "audition_manager.ui.main_window.QInputDialog.getText",
-        lambda *args, **kwargs: ("My Pedal IRs", True),
+        "audition_manager.ui.main_window.choose_export_options",
+        lambda *args: ("My Pedal IRs", False, True, True),
     )
     messages = []
     monkeypatch.setattr(
@@ -533,18 +761,22 @@ def test_exports_all_favorites_from_current_root_regardless_of_filters(
     try:
         window.choose_folder()
         wait_for_scan(window, app)
+        window.choose_capture_folder()
         for path in favorites:
             repository.set_favorite(path, True)
+        repository.set_capture_favorite(capture, True)
         window.apply_filters()
+        window.apply_capture_filters()
         assert window.export_button.isEnabled()
         window.search.setText("V30")
         assert window.ir_list.count() == 1
         window.export_button.click()
         exported = destination / "My Pedal IRs"
-        assert (exported / "Mesa" / "V30.wav").exists()
-        assert (exported / "Clean.wav").exists()
-        assert not (exported / "Other.wav").exists()
-        assert "2 favoritos exportados" in window.status.text()
+        assert (exported / "IRs" / "Mesa" / "V30.wav").exists()
+        assert (exported / "IRs" / "Clean.wav").exists()
+        assert not (exported / "IRs" / "Other.wav").exists()
+        assert not (exported / "Capturas").exists()
+        assert "2 favoritos exportados (0 capturas, 2 IRs)" in window.status.text()
         assert messages == [window.status.text()]
     finally:
         window.close()

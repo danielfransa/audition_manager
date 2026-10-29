@@ -1,0 +1,44 @@
+name: Windows portable package
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - develop
+    paths:
+      - ".github/workflows/windows-portable.yml"
+      - "pyproject.toml"
+      - "scripts/build-nam-runtime.ps1"
+      - "scripts/build-windows.ps1"
+      - "src/**"
+      - "tests/**"
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: windows-2022
+    timeout-minutes: 45
+
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v7
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Build and test portable package
+        shell: pwsh
+        run: .\scripts\build-windows.ps1
+
+      - name: Upload portable ZIP
+        uses: actions/upload-artifact@v7
+        with:
+          path: dist/AuditionManager-Windows-x64.zip
+          archive: false
+          if-no-files-found: error
+          retention-days: 14

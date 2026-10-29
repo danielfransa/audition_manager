@@ -18,14 +18,16 @@ Também é possível trabalhar com uma venv manual conforme
 
 - `audio/files.py`: carregamento e validação de WAV.
 - `audio/ir_processor.py`: convolução offline e reamostragem.
+- `audio/nam.py`: validação NAM e coordenação do renderer nativo.
 - `audio/render_cache.py`: cache LRU e preparação do bypass.
 - `audio/transport.py`: estados, cursor, blocos e crossfade.
 - `audio/output.py`: stream sounddevice/PortAudio.
 - `library/scanner.py`: descoberta e metadados WAV.
-- `library/repository.py`: migração e persistência SQLite.
-- `library/exporter.py`: exportação transacional dos favoritos.
+- `library/repository.py`: migrações e persistência SQLite para IRs e capturas.
+- `library/exporter.py`: exportação transacional de IRs e capturas favoritos.
 - `config/settings.py`: caminhos de dados por sistema.
 - `config/preferences.py`: preferências JSON com escrita atômica.
+- `i18n.py`: catálogo de mensagens Português/Inglês em tempo de execução.
 - `ui/main_window.py`: janela e coordenação de workers.
 - `main.py`: composição da aplicação e logging.
 
@@ -52,6 +54,10 @@ confirmam driver, som audível ou latência do hardware.
 - Todo o DI, IR e resultado são mantidos em memória durante o processamento.
 - IRs são reamostrados para a DI; a cauda completa entra no resultado e no Loop.
 - Picos acima de 0,95 são atenuados, sem normalização perceptual.
+- O ganho NAM ocorre após a captura e antes do IR; o medidor mostra o pico do
+  resultado antes do ganho geral de saída.
+- A2 Full envia `--slim 1.0`, A2 Lite envia `--slim 0.0`; modelos NAM legados
+  não recebem o argumento `--slim`.
 - A posição representa amostras entregues ao dispositivo e pode adiantar o som
   pela latência do buffer. A barra ainda não permite buscar uma posição.
 - Crossfade exige a mesma quantidade de canais; mono/estéreo reabre o stream.
@@ -63,9 +69,10 @@ confirmam driver, som audível ou latência do hardware.
 
 Cada incremento registra sua decisão em `docs/decisions/`, atualiza o plano e o
 roteiro de validação, executa verificações apropriadas e termina em um commit
-revisável. O repositório local usa a branch `main`; ambientes virtuais, dados e
-áudios pessoais ficam fora do Git.
+revisável. O repositório local usa a branch `develop` durante os incrementos;
+ambientes virtuais, dados e áudios pessoais ficam fora do Git.
 
 O histórico detalhado de WSL/WSLg, dependências, problemas de fontes e áudio está
 em [`validacao.md`](validacao.md) e nas decisões 0002 e 0003. O estado vigente
-está em [`status.md`](status.md).
+está em [`status.md`](status.md). A navegação técnica por idioma começa em
+[`pt-BR/technical.md`](pt-BR/technical.md) ou [`en/README.md`](en/README.md).
