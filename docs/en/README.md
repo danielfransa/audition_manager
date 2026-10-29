@@ -44,14 +44,11 @@ BlackBox/IR-Box transfer are still pending.
 
 - [Installation](installation.md)
 - [User guide](usage.md)
-- [Detailed status — Portuguese](../status.md)
-- [Roadmap — Portuguese](../../PLAN.md)
-- [Development — Portuguese](../development.md)
-- [Validation — Portuguese](../validacao.md)
-- [Technical decisions — Portuguese](../decisions/)
-
-English versions of the technical and historical documents are the next i18n
-increment.
+- [Current status](status.md)
+- [Roadmap](roadmap.md)
+- [Development and architecture](development.md)
+- [Validation](validation.md)
+- [Decision register](decisions.md)
 
 ## License
 

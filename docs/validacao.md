@@ -1,5 +1,9 @@
 # Validação da primeira fatia
 
+Este é o registro cronológico completo em Português. Para os roteiros vigentes,
+consulte a [navegação técnica em Português](pt-BR/technical.md) ou o
+[validation guide in English](en/validation.md).
+
 ## Automática
 
 Execute `mise run test` no WSL ou `python -m pytest` com a venv ativa.

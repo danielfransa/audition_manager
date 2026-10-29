@@ -44,11 +44,12 @@ entrada de guitarra ao vivo e transferência direta para BlackBox/IR-Box.
 
 - [Instalação](installation.md)
 - [Guia de uso](usage.md)
+- [Índice da documentação técnica](technical.md)
 - [Status detalhado](../status.md)
 - [Plano](../../PLAN.md)
 - [Desenvolvimento](../development.md)
 - [Validação](../validacao.md)
-- [Decisões técnicas](../decisions/)
+- [Registro das decisões](decisions.md)
 
 ## Licença
 

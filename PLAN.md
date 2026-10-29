@@ -105,7 +105,7 @@ runtime sem parâmetro de slimming. Arquitetura e versão aparecem na biblioteca
 2. README público bilíngue curto com links para guias completos de instalação e
    uso em PT e EN. **Implementado para auditoria.**
 3. Espelhar documentação técnica, status e decisões nos dois idiomas, com
-   navegação clara. **Pendente.**
+   navegação clara. **Implementado para auditoria.**
 
 ## 4 — Distribuição Windows
 

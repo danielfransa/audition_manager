@@ -29,6 +29,8 @@ o histórico de cada incremento e podem mencionar limitações já resolvidas.
   controles e persistência da preferência.
 - README público bilíngue e guias completos de instalação e uso em Português e
   Inglês, com navegação separada por idioma.
+- Documentação técnica navegável nos dois idiomas, incluindo status,
+  desenvolvimento, validação, plano e registro das 25 decisões anteriores.
 - Script PowerShell para gerar pacote portátil Windows com PyInstaller.
 - Capturas NAM A2 combinadas com IR na cadeia offline `DI → NAM → IR`.
 - Bypasses independentes para captura NAM e IR, com atalhos `N` e `B`.
@@ -81,5 +83,6 @@ o histórico de cada incremento e podem mencionar limitações já resolvidas.
 - `docs/decisions/`: decisões técnicas numeradas e fontes consultadas.
 - `README.md`: apresentação bilíngue e acesso à documentação de cada idioma.
 - `docs/pt-BR/` e `docs/en/`: visão, instalação e guia de uso completos.
+- `docs/pt-BR/technical.md` e `docs/en/README.md`: índices técnicos por idioma.
 - `docs/installation.md`: seletor de idioma para os guias de instalação.
 - `docs/development.md`: arquitetura, testes e limites internos.

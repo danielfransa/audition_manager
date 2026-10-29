@@ -18,6 +18,7 @@ Também é possível trabalhar com uma venv manual conforme
 
 - `audio/files.py`: carregamento e validação de WAV.
 - `audio/ir_processor.py`: convolução offline e reamostragem.
+- `audio/nam.py`: validação NAM e coordenação do renderer nativo.
 - `audio/render_cache.py`: cache LRU e preparação do bypass.
 - `audio/transport.py`: estados, cursor, blocos e crossfade.
 - `audio/output.py`: stream sounddevice/PortAudio.
@@ -26,6 +27,7 @@ Também é possível trabalhar com uma venv manual conforme
 - `library/exporter.py`: exportação transacional de IRs e capturas favoritos.
 - `config/settings.py`: caminhos de dados por sistema.
 - `config/preferences.py`: preferências JSON com escrita atômica.
+- `i18n.py`: catálogo de mensagens Português/Inglês em tempo de execução.
 - `ui/main_window.py`: janela e coordenação de workers.
 - `main.py`: composição da aplicação e logging.
 
@@ -72,4 +74,5 @@ ambientes virtuais, dados e áudios pessoais ficam fora do Git.
 
 O histórico detalhado de WSL/WSLg, dependências, problemas de fontes e áudio está
 em [`validacao.md`](validacao.md) e nas decisões 0002 e 0003. O estado vigente
-está em [`status.md`](status.md).
+está em [`status.md`](status.md). A navegação técnica por idioma começa em
+[`pt-BR/technical.md`](pt-BR/technical.md) ou [`en/README.md`](en/README.md).
