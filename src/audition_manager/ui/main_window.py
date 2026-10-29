@@ -17,6 +17,7 @@ from PySide6.QtWidgets import (
     QPushButton,
     QProgressBar,
     QPlainTextEdit,
+    QScrollArea,
     QSlider,
     QHBoxLayout,
     QVBoxLayout,
@@ -432,7 +433,10 @@ class MainWindow(QMainWindow):
         layout.addWidget(self.notes)
         layout.addWidget(self.save_notes_button)
         layout.addWidget(self.status)
-        self.setCentralWidget(container)
+        self.content_scroll = QScrollArea()
+        self.content_scroll.setWidgetResizable(True)
+        self.content_scroll.setWidget(container)
+        self.setCentralWidget(self.content_scroll)
         self.di_button.clicked.connect(self.choose_di)
         self.language.currentIndexChanged.connect(self.change_language)
         self.folder_button.clicked.connect(self.choose_folder)

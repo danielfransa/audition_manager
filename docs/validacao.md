@@ -345,6 +345,10 @@ validado em Windows real. PyInstaller não é um cross-compiler.
   exemplos redistribuíveis sem capturas TONE3000 ou arquivos pessoais locais.
 - A suíte local passa com **89 testes**. Interface, tempo de troca e conteúdo do
   novo ZIP aguardam a próxima validação no Windows.
+- A altura mínima das listas, combinada com escala/fonte do Windows e pouca
+  altura disponível, revelou sobreposição entre lista, metadados e transporte.
+  O conteúdo central agora usa uma área vertical rolável: em 760 × 700 o teste
+  Qt confirma que a rolagem é ativada em vez de comprimir controles sobrepostos.
 - O primeiro download do artefato continha o ZIP portátil dentro de outro ZIP,
   pois o GitHub compactava novamente o arquivo. O upload passou a usar o modo
   direto (`archive: false`): o download agora deve ser o próprio

@@ -165,6 +165,12 @@ def test_audio_lists_keep_a_practical_minimum_height(tmp_path: Path) -> None:
         assert window.ir_list.minimumHeight() >= 110
         assert window.size().width() >= 960
         assert window.size().height() >= 900
+        assert window.content_scroll.widgetResizable()
+        assert window.content_scroll.widget() is not None
+        window.resize(760, 700)
+        window.show()
+        app.processEvents()
+        assert window.content_scroll.verticalScrollBar().maximum() > 0
     finally:
         window.close()
 

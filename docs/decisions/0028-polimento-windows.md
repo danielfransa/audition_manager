@@ -12,6 +12,9 @@ levava os exemplos usados no roteiro inicial.
 
 - Aumentar a janela inicial para 960 × 900 e dar às duas listas altura mínima de
   110 px e participação equivalente no espaço vertical disponível.
+- Colocar todo o formulário central em uma área rolável e redimensionável. Se a
+  resolução ou escala do Windows não comportar a altura mínima, a janela passa a
+  rolar verticalmente em vez de sobrepor widgets.
 - Iniciar o processo NAM com `CREATE_NO_WINDOW` somente no Windows. Linux mantém
   a chamada padrão do `subprocess`.
 - Copiar para o ZIP apenas arquivos sob `samples/` retornados por `git ls-files`.
