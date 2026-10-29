@@ -112,9 +112,14 @@ runtime sem parâmetro de slimming. Arquitetura e versão aparecem na biblioteca
 Gerar e validar o pacote portátil em Windows real já com os dois idiomas e o
 runtime NAM. Depois avaliar instalador, assinatura e publicação em Releases.
 
-**Em implementação:** o script executa um autoteste no `.exe` congelado e um
-workflow manual do GitHub Actions gera o ZIP em `windows-latest`. O artefato
-ainda precisa ser gerado com sucesso e validado auditivamente em Windows real.
+**Em implementação:** o script executa um autoteste no `.exe` congelado e o
+GitHub Actions gera o ZIP em `windows-2022`. O artefato foi executado em Windows
+real e recebeu ajustes; a validação auditiva completa ainda está em andamento.
+
+**Polimento para auditoria:** janela inicial ampliada, listas NAM/IR com altura
+mínima equilibrada, subprocesso NAM sem console no Windows e `samples` rastreados
+pelo Git incluídos no ZIP. O tempo de inferência Full/Lite ainda será medido no
+teste prático; remover a janela de console não elimina o custo do modelo A2.
 
 ## 5 — Entrada ao vivo
 

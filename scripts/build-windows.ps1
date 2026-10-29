@@ -33,6 +33,22 @@ $NamBundle = Join-Path $Bundle "build\nam-runtime"
 New-Item -ItemType Directory -Force $NamBundle | Out-Null
 Copy-Item "build\nam-runtime\nam-render.exe" $NamBundle -Force
 
+# Package only samples tracked by Git. This deliberately excludes personal NAM
+# captures or other local files that happen to be under samples/.
+$TrackedSamples = @(git ls-files -- samples)
+if ($LASTEXITCODE -ne 0) {
+    throw "Nao foi possivel listar os samples versionados (codigo $LASTEXITCODE)."
+}
+foreach ($RelativePath in $TrackedSamples) {
+    $Source = Join-Path $ProjectRoot $RelativePath
+    if (-not (Test-Path $Source -PathType Leaf)) {
+        continue
+    }
+    $Destination = Join-Path $Bundle $RelativePath
+    New-Item -ItemType Directory -Force (Split-Path -Parent $Destination) | Out-Null
+    Copy-Item $Source $Destination -Force
+}
+
 $Executable = Join-Path $Bundle "AuditionManager.exe"
 & $Executable --packaging-smoke-test
 if ($LASTEXITCODE -ne 0) {

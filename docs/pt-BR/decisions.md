@@ -33,3 +33,4 @@ antigas já foram resolvidas; consulte primeiro o [status atual](../status.md).
 | [0025](../decisions/0025-documentacao-publica-bilingue.md) | Documentação pública bilíngue |
 | [0026](../decisions/0026-documentacao-tecnica-bilingue.md) | Documentação técnica bilíngue |
 | [0027](../decisions/0027-build-windows-automatizado.md) | Build Windows automatizado e verificável |
+| [0028](../decisions/0028-polimento-windows.md) | Polimento da interface e execução no Windows |

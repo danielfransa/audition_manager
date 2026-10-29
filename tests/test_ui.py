@@ -153,6 +153,22 @@ def test_language_switch_updates_interface_and_persists(tmp_path: Path) -> None:
         window.close()
 
 
+def test_audio_lists_keep_a_practical_minimum_height(tmp_path: Path) -> None:
+    app = QApplication.instance() or QApplication([])
+    window = MainWindow(
+        FakeOutput(),
+        ImpulseResponseRepository(tmp_path / "library.sqlite3"),
+        PreferencesStore(tmp_path / "preferences.json"),
+    )
+    try:
+        assert window.capture_list.minimumHeight() >= 110
+        assert window.ir_list.minimumHeight() >= 110
+        assert window.size().width() >= 960
+        assert window.size().height() >= 900
+    finally:
+        window.close()
+
+
 def test_restores_and_updates_application_preferences(tmp_path: Path) -> None:
     app = QApplication.instance() or QApplication([])
     di = tmp_path / "di.wav"

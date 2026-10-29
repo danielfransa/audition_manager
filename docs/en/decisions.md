@@ -34,3 +34,4 @@ Portuguese, while this register provides their English titles and outcomes.
 | [0025](../decisions/0025-documentacao-publica-bilingue.md) | Bilingual public docs: keep the root README short and route readers to complete PT/EN guides. |
 | [0026](../decisions/0026-documentacao-tecnica-bilingue.md) | Bilingual technical docs: publish current English references while keeping immutable Portuguese history and bilingual ADR navigation. |
 | [0027](../decisions/0027-build-windows-automatizado.md) | Verifiable Windows build: smoke-test the frozen executable and generate a short-lived ZIP through a read-only manual workflow. |
+| [0028](../decisions/0028-polimento-windows.md) | Windows polish: balance capture/IR list space, hide the native renderer console, and package only Git-tracked samples. |

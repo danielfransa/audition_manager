@@ -133,6 +133,7 @@ class NamRenderer:
                     text=True,
                     timeout=self.timeout_seconds,
                     check=False,
+                    **renderer_process_options(),
                 )
             except (OSError, subprocess.TimeoutExpired) as error:
                 raise RuntimeError(f"Falha ao executar o runtime NAM: {error}") from error
@@ -149,6 +150,15 @@ class NamRenderer:
             command.extend(["--slim", "1.0" if quality == "full" else "0.0"])
         command.extend([str(model.path), str(input_path), str(output_path)])
         return command
+
+
+def renderer_process_options(platform_name: str = os.name) -> dict[str, int]:
+    """Keep the native renderer hidden when called by the Windows GUI."""
+    if platform_name != "nt":
+        return {}
+    return {
+        "creationflags": getattr(subprocess, "CREATE_NO_WINDOW", 0x08000000)
+    }
 
 
 def prepare_nam_input(source: AudioBuffer, sample_rate: int) -> AudioBuffer:

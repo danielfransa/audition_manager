@@ -8,7 +8,7 @@ import soundfile as sf
 from audition_manager.audio.files import AudioBuffer
 from audition_manager.audio.nam import (
     NamRenderer, apply_gain_db, inspect_nam, peak_dbfs, prepare_nam_input,
-    render_capture_chain, scan_nam_models,
+    render_capture_chain, renderer_process_options, scan_nam_models,
 )
 
 
@@ -107,6 +107,11 @@ def test_renderer_selects_a2_full_lite_and_omits_slim_for_legacy(tmp_path: Path)
     assert "--slim" not in renderer.build_command(
         legacy, input_path, output_path, "full"
     )
+
+
+def test_renderer_hides_console_only_on_windows() -> None:
+    assert renderer_process_options("posix") == {}
+    assert renderer_process_options("nt")["creationflags"] != 0
 
 
 @pytest.mark.parametrize("filename", ["amp.nan", "amp.json"])

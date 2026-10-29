@@ -270,7 +270,8 @@ class MainWindow(QMainWindow):
         self.worker_version = -1
         self.autoplay = True
         self.setWindowTitle("Audition Manager")
-        self.resize(820, 700)
+        self.resize(960, 900)
+        self.setMinimumSize(760, 700)
         self.di_label = QLabel("Nenhuma DI selecionada")
         self.language_label = QLabel("Idioma:")
         self.language = QComboBox()
@@ -281,7 +282,7 @@ class MainWindow(QMainWindow):
         self.folder_button = QPushButton("Selecionar pasta de IRs")
         self.capture_button = QPushButton("Selecionar pasta de capturas NAM")
         self.capture_list = QListWidget()
-        self.capture_list.setMaximumHeight(150)
+        self.capture_list.setMinimumHeight(110)
         self.capture_list.setToolTip("Opcional: selecione uma captura antes do IR")
         self.capture_search = QLineEdit()
         self.capture_search.setPlaceholderText("Buscar captura por nome ou caminho…")
@@ -314,6 +315,7 @@ class MainWindow(QMainWindow):
         for value in range(1, 6):
             self.minimum_rating.addItem(f"{value}+ estrelas", value)
         self.ir_list = QListWidget()
+        self.ir_list.setMinimumHeight(110)
         self.device = QComboBox()
         self.device.setToolTip("Dispositivo de saída")
         self.gain = QSlider(Qt.Orientation.Horizontal)
@@ -386,7 +388,7 @@ class MainWindow(QMainWindow):
         capture_filters.addWidget(self.capture_favorites_only)
         capture_filters.addWidget(self.capture_minimum_rating)
         layout.addLayout(capture_filters)
-        layout.addWidget(self.capture_list)
+        layout.addWidget(self.capture_list, 1)
         capture_metadata = QHBoxLayout()
         capture_metadata.addWidget(self.capture_favorite)
         capture_metadata.addWidget(self.capture_rating)

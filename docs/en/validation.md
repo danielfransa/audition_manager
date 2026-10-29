@@ -15,7 +15,7 @@ python -m compileall -q src tests
 git diff --check
 ```
 
-Current baseline: **87 tests passing**.
+Current baseline: **89 tests passing**.
 
 ## Common functional checklist
 

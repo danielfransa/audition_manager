@@ -334,6 +334,18 @@ validado em Windows real. PyInstaller não é um cross-compiler.
   por `/WX-`, equivalente no MSVC, e valida a quantidade antes de alterar o
   arquivo do commit fixado.
 
+### Retorno prático da interface Windows — 2026-10-29
+
+- A janela inicial passou para 960 × 900, com mínimo de 110 px e distribuição de
+  espaço equivalente para as listas de capturas e IRs.
+- `nam-render.exe` usa `CREATE_NO_WINDOW`; a troca de captura não deve mais abrir
+  uma janela de console. O tempo de inferência A2 continua real e deve ser
+  comparado nos modos Full e Lite.
+- O ZIP copia somente arquivos de `samples/` rastreados pelo Git. Assim inclui os
+  exemplos redistribuíveis sem capturas TONE3000 ou arquivos pessoais locais.
+- A suíte local passa com **89 testes**. Interface, tempo de troca e conteúdo do
+  novo ZIP aguardam a próxima validação no Windows.
+
 ## Avaliação por estrelas clicáveis
 
 - O teste Qt clica nas estrelas 2 e 4, confirma a atualização visual, consulta o
