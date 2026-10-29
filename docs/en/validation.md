@@ -33,7 +33,7 @@ Current baseline: **87 tests passing**.
 ## Windows 10/11
 
 1. Build with `scripts/build-windows.ps1` on Windows, not WSL. Alternatively,
-   run the manual **Windows portable package** GitHub workflow.
+   use the **Windows portable package** GitHub workflow.
 2. Extract the complete ZIP into a clean path without a development venv.
 3. Run `AuditionManager.exe` and repeat the common checklist using WASAPI.
 4. Confirm the bundled NAM runtime is found and no console-only dependency is

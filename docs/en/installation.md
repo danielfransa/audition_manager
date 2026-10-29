@@ -81,9 +81,10 @@ Set-ExecutionPolicy -Scope Process Bypass
 The result is `dist\AuditionManager-Windows-x64.zip`. It must be built on
 Windows and still requires validation on a real Windows machine.
 
-Alternatively, open **Actions → Windows portable package → Run workflow** on
-GitHub, then download the `AuditionManager-Windows-x64` artifact. Development
-artifacts are not signed releases and expire after 14 days.
+On `develop`, package-related changes trigger the workflow automatically. The
+**Run workflow** button becomes available once the workflow exists on the
+default branch. Download the `AuditionManager-Windows-x64` artifact when the run
+finishes. Development artifacts are not signed releases and expire after 14 days.
 
 ## Arch on WSL/WSLg
 

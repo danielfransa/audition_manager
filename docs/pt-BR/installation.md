@@ -82,9 +82,10 @@ Set-ExecutionPolicy -Scope Process Bypass
 O resultado fica em `dist\AuditionManager-Windows-x64.zip`. A geração precisa
 ser feita no Windows; o pacote ainda aguarda validação em uma máquina Windows real.
 
-Também é possível abrir **Actions → Windows portable package → Run workflow** no
-GitHub. Ao final, baixe o artefato `AuditionManager-Windows-x64`. Artefatos de
-desenvolvimento não são uma release assinada e expiram após 14 dias.
+Na `develop`, alterações relacionadas ao pacote iniciam o workflow
+automaticamente. O botão **Run workflow** fica disponível quando o workflow está
+na branch padrão. Ao final, baixe o artefato `AuditionManager-Windows-x64`.
+Artefatos de desenvolvimento não são uma release assinada e expiram após 14 dias.
 
 ## WSL/WSLg com Arch
 

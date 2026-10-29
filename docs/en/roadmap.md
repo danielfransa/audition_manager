@@ -41,7 +41,7 @@ Listening and compilation still need native Linux and Windows validation.
 
 Build and validate the portable package on real Windows with both languages and
 the NAM runtime. Evaluate installer, signing, and GitHub Releases afterward.
-The PowerShell build, frozen-executable smoke test, and manual GitHub Actions
+The PowerShell build, frozen-executable smoke test, and GitHub Actions
 workflow are implemented; a successful artifact and listening test are pending.
 
 ### Live guitar input

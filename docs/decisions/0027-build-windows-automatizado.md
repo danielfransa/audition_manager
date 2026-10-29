@@ -14,8 +14,10 @@ começasse em uma máquina Windows configurada para desenvolvimento.
   para confirmar imports e a localização do runtime NAM no pacote congelado.
 - Fazer `build-windows.ps1` interromper a geração se o autoteste falhar.
 - Incluir no ZIP um README bilíngue específico para o pacote portátil.
-- Disponibilizar um workflow manual em `windows-latest`, com permissões somente
-  de leitura e retenção do artefato por 14 dias.
+- Disponibilizar um workflow em `windows-latest`, com permissões somente de
+  leitura e retenção do artefato por 14 dias. Enquanto ele não estiver na branch
+  padrão, alterações relevantes na `develop` iniciam o build automaticamente;
+  `workflow_dispatch` permanece disponível após o merge.
 - Não incluir os áudios locais ou capturas TONE3000 no pacote.
 
 ## Consequências

@@ -2,6 +2,16 @@ name: Windows portable package
 
 on:
   workflow_dispatch:
+  push:
+    branches:
+      - develop
+    paths:
+      - ".github/workflows/windows-portable.yml"
+      - "pyproject.toml"
+      - "scripts/build-nam-runtime.ps1"
+      - "scripts/build-windows.ps1"
+      - "src/**"
+      - "tests/**"
 
 permissions:
   contents: read
