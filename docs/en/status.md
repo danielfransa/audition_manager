@@ -25,7 +25,7 @@ limitations that have since been resolved.
 - Two DIs, four IRs, and two MIT-licensed RiffSmith NAM A2 captures for testing.
 - Portuguese/English interface with immediate switching and persistence.
 - PowerShell script for building a portable PyInstaller package on Windows.
-- GitHub Actions workflow that builds on `windows-latest` and
+- GitHub Actions workflow that builds on `windows-2022` and
   smoke-tests imports and the bundled NAM runtime before uploading the ZIP.
 - Offline `DI → NAM → IR` chain with independent NAM and IR bypasses.
 - Independent NAM gain, processed peak meter, and peak protection.

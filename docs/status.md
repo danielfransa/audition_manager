@@ -32,7 +32,7 @@ o histórico de cada incremento e podem mencionar limitações já resolvidas.
 - Documentação técnica navegável nos dois idiomas, incluindo status,
   desenvolvimento, validação, plano e registro das 25 decisões anteriores.
 - Script PowerShell para gerar pacote portátil Windows com PyInstaller.
-- Workflow do GitHub Actions para compilar o ZIP em `windows-latest`,
+- Workflow do GitHub Actions para compilar o ZIP em `windows-2022`,
   com autoteste de imports e presença do runtime NAM no executável congelado.
 - Capturas NAM A2 combinadas com IR na cadeia offline `DI → NAM → IR`.
 - Bypasses independentes para captura NAM e IR, com atalhos `N` e `B`.

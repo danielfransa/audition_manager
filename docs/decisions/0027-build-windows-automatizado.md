@@ -14,10 +14,15 @@ começasse em uma máquina Windows configurada para desenvolvimento.
   para confirmar imports e a localização do runtime NAM no pacote congelado.
 - Fazer `build-windows.ps1` interromper a geração se o autoteste falhar.
 - Incluir no ZIP um README bilíngue específico para o pacote portátil.
-- Disponibilizar um workflow em `windows-latest`, com permissões somente de
+- Disponibilizar um workflow em `windows-2022`, com permissões somente de
   leitura e retenção do artefato por 14 dias. Enquanto ele não estiver na branch
   padrão, alterações relevantes na `develop` iniciam o build automaticamente;
   `workflow_dispatch` permanece disponível após o merge.
+- Fixar o runner em `windows-2022`, que inclui Visual Studio 2022, evitando que a
+  migração de `windows-latest` para Visual Studio 2026 altere o compilador sem
+  uma decisão explícita.
+- Verificar o código de saída de cada comando Git e CMake e interromper no ponto
+  da causa, em vez de continuar até faltar o arquivo final.
 - Não incluir os áudios locais ou capturas TONE3000 no pacote.
 
 ## Consequências
