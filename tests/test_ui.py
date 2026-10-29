@@ -131,6 +131,28 @@ def test_export_options_default_to_both_and_require_one_category() -> None:
         dialog.close()
 
 
+def test_language_switch_updates_interface_and_persists(tmp_path: Path) -> None:
+    app = QApplication.instance() or QApplication([])
+    store = PreferencesStore(tmp_path / "preferences.json")
+    window = MainWindow(
+        FakeOutput(), ImpulseResponseRepository(tmp_path / "library.sqlite3"), store
+    )
+    try:
+        window.language.setCurrentIndex(window.language.findData("en"))
+        assert window.di_button.text() == "Open DI WAV"
+        assert window.folder_button.text() == "Select IR folder"
+        assert window.capture_button.text() == "Select NAM capture folder"
+        assert window.export_button.text() == "Export favorites…"
+        assert window.play_button.text() == "Process and play"
+        assert window.language_label.text() == "Language:"
+        assert store.load().language == "en"
+        window.language.setCurrentIndex(window.language.findData("pt_BR"))
+        assert window.di_button.text() == "Abrir DI WAV"
+        assert store.load().language == "pt_BR"
+    finally:
+        window.close()
+
+
 def test_restores_and_updates_application_preferences(tmp_path: Path) -> None:
     app = QApplication.instance() or QApplication([])
     di = tmp_path / "di.wav"

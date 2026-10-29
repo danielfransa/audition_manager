@@ -19,6 +19,7 @@ class UserPreferences:
     capture_gain_db: int = 0
     nam_quality: str = "full"
     loop_enabled: bool = True
+    language: str = "pt_BR"
 
 
 class PreferencesStore:
@@ -43,6 +44,9 @@ class PreferencesStore:
         nam_quality = payload.get("nam_quality", "full")
         if nam_quality not in {"full", "lite"}:
             nam_quality = "full"
+        language = payload.get("language", "pt_BR")
+        if language not in {"pt_BR", "en"}:
+            language = "pt_BR"
         return UserPreferences(
             last_di_file=self._path(payload.get("last_di_file")),
             last_ir_directory=self._path(payload.get("last_ir_directory")),
@@ -54,6 +58,7 @@ class PreferencesStore:
             output_gain_db=max(-24, min(0, gain)),
             capture_gain_db=max(-24, min(12, capture_gain)),
             nam_quality=nam_quality,
+            language=language,
             loop_enabled=(
                 payload["loop_enabled"]
                 if isinstance(payload.get("loop_enabled"), bool)

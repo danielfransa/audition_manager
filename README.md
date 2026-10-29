@@ -8,7 +8,7 @@ de capturas de amplificadores **NAM A2** e a preparação de bibliotecas para
 equipamentos como M-VAVE BlackBox e IR-Box. Windows e Linux são os sistemas alvo.
 
 > **Estado do projeto:** o player e a biblioteca de IRs estão funcionais e têm
-> 84 testes automatizados. A reprodução offline de NAM está em validação;
+> 85 testes automatizados. A reprodução offline de NAM está em validação;
 > transferência direta para pedaleiras e o
 > instalador ainda estão em desenvolvimento. Consulte o [status completo](docs/status.md).
 
@@ -30,6 +30,7 @@ equipamentos como M-VAVE BlackBox e IR-Box. Windows e Linux são os sistemas alv
 - Ganho NAM de -24 a +12 dB, medidor de pico e indicação da cadeia ativa.
 - Seleção A2 Full/Lite e leitura de arquiteturas NAM legadas suportadas pelo
   NeuralAmpModelerCore: WaveNet, LSTM, ConvNet, Linear e Sequential.
+- Interface com escolha entre Português e English, persistida entre execuções.
 
 ## Instalação rápida
 

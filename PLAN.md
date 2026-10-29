@@ -98,14 +98,28 @@ cadeia e dos bypasses. O ganho é persistido e participa da chave do cache.
 modelos legados WaveNet, LSTM, ConvNet, Linear e Sequential são encaminhados ao
 runtime sem parâmetro de slimming. Arquitetura e versão aparecem na biblioteca.
 
-## 3 — Entrada ao vivo
+## 3 — Internacionalização
+
+1. Catálogo i18n da aplicação, seletor Português/English, troca em tempo de
+   execução e persistência. **Implementado para auditoria.**
+2. README público bilíngue curto com links para guias completos de instalação e
+   uso em PT e EN. **Pendente.**
+3. Espelhar documentação técnica, status e decisões nos dois idiomas, com
+   navegação clara. **Pendente.**
+
+## 4 — Distribuição Windows
+
+Gerar e validar o pacote portátil em Windows real já com os dois idiomas e o
+runtime NAM. Depois avaliar instalador, assinatura e publicação em Releases.
+
+## 5 — Entrada ao vivo
 
 Investigar WASAPI/ASIO, buffers, taxas, concorrência e latência. Medir antes de
 migrar DSP. Meta exploratória: 48 kHz, 64/128 amostras; não é compromisso desta
 fase. Callbacks não devem fazer I/O, carregar modelos ou alocar grandes buffers.
 Convolução por blocos e eventual backend C++/JUCE exigem contrato próprio.
 
-## 4 — AM4DATA / Blackbox / IR-Box
+## 6 — AM4DATA / Blackbox / IR-Box
 
 Pesquisar separadamente formatos e ferramentas; classificação por extensão
 não comprova compatibilidade. Não inventar parsers ou conversores proprietários.
@@ -114,10 +128,10 @@ Usar inicialmente o conversor oficial NAM → AM4DATA da M-VAVE. Tratar Blackbox
 e IR-Box como destinos independentes: pesquisar protocolos,
 limites, formatos e ferramentas de cada equipamento antes de transferência direta.
 
-## 5 — Biblioteca e distribuição
+## 7 — Biblioteca em escala
 
-Comparação de centenas de capturas/IRs, instalador Windows,
-reprodutibilidade das dependências e revisão das licenças redistribuídas.
+Comparação de centenas de capturas/IRs, reprodutibilidade das dependências e
+revisão das licenças redistribuídas.
 
 ## Riscos técnicos
 

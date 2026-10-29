@@ -25,6 +25,8 @@ o histórico de cada incremento e podem mencionar limitações já resolvidas.
 - Duas DIs e quatro IRs de exemplo para o primeiro teste após o clone.
 - Duas capturas A2 de guitarra do RiffSmith, redistribuídas sob licença MIT com
   origem e commit documentados.
+- Seletor Português/English na aplicação, com troca imediata dos principais
+  controles e persistência da preferência.
 - Script PowerShell para gerar pacote portátil Windows com PyInstaller.
 - Capturas NAM A2 combinadas com IR na cadeia offline `DI → NAM → IR`.
 - Bypasses independentes para captura NAM e IR, com atalhos `N` e `B`.
@@ -37,7 +39,7 @@ o histórico de cada incremento e podem mencionar limitações já resolvidas.
 
 ## Verificação atual
 
-- Suíte automatizada: **84 testes passando**.
+- Suíte automatizada: **85 testes passando**.
 - Compilação de bytecode e `git diff --check`: sem erros na última entrega.
 - Reprodução e interface: confirmadas no WSL/WSLg pelo usuário.
 - Saída PortAudio no WSLg: validada com a ponte ALSA/PulseAudio.

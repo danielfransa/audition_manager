@@ -32,6 +32,7 @@ from audition_manager.audio.output import AudioOutput, OutputDevice
 from audition_manager.audio.render_cache import RenderCache
 from audition_manager.audio.transport import PlaybackState
 from audition_manager.config.preferences import PreferencesStore
+from audition_manager.i18n import set_language, tr
 from audition_manager.library.scanner import inspect_wav, scan_wavs
 from audition_manager.library.repository import ImpulseResponseRepository
 from audition_manager.library.models import Capture
@@ -46,13 +47,13 @@ def format_time(seconds: float) -> str:
 
 
 def create_ir_directory_dialog(parent: QWidget, initial: str) -> QFileDialog:
-    dialog = QFileDialog(parent, "Pasta de IRs", initial)
+    dialog = QFileDialog(parent, tr("Pasta de IRs"), initial)
     dialog.setFileMode(QFileDialog.FileMode.Directory)
     dialog.setOption(QFileDialog.Option.ShowDirsOnly, False)
     dialog.setOption(QFileDialog.Option.DontUseNativeDialog, True)
     dialog.setNameFilter("Impulse Responses WAV (*.wav *.WAV)")
     dialog.setLabelText(
-        QFileDialog.DialogLabel.Accept, "Escolher esta pasta"
+        QFileDialog.DialogLabel.Accept, tr("Escolher esta pasta")
     )
     return dialog
 
@@ -66,12 +67,12 @@ def choose_ir_directory(parent: QWidget, initial: str) -> str:
 
 
 def choose_nam_directory(parent: QWidget, initial: str) -> str:
-    dialog = QFileDialog(parent, "Pasta de capturas NAM", initial)
+    dialog = QFileDialog(parent, tr("Pasta de capturas NAM"), initial)
     dialog.setFileMode(QFileDialog.FileMode.Directory)
     dialog.setOption(QFileDialog.Option.ShowDirsOnly, False)
     dialog.setOption(QFileDialog.Option.DontUseNativeDialog, True)
     dialog.setNameFilter("Capturas NAM (*.nam *.NAM)")
-    dialog.setLabelText(QFileDialog.DialogLabel.Accept, "Escolher esta pasta")
+    dialog.setLabelText(QFileDialog.DialogLabel.Accept, tr("Escolher esta pasta"))
     if not dialog.exec():
         return ""
     selected = dialog.selectedFiles()
@@ -81,20 +82,20 @@ def choose_nam_directory(parent: QWidget, initial: str) -> str:
 class ExportOptionsDialog(QDialog):
     def __init__(self, parent: QWidget | None = None) -> None:
         super().__init__(parent)
-        self.setWindowTitle("Exportar favoritos")
+        self.setWindowTitle(tr("Exportar favoritos"))
         self.folder_name = QLineEdit("Audition Manager Favorites")
-        self.export_captures = QCheckBox("Capturas")
+        self.export_captures = QCheckBox(tr("Capturas"))
         self.export_captures.setChecked(True)
-        self.export_irs = QCheckBox("IRs")
+        self.export_irs = QCheckBox(tr("IRs"))
         self.export_irs.setChecked(True)
         self.buttons = QDialogButtonBox(
             QDialogButtonBox.StandardButton.Ok
             | QDialogButtonBox.StandardButton.Cancel
         )
         layout = QVBoxLayout(self)
-        layout.addWidget(QLabel("Nome da nova pasta:"))
+        layout.addWidget(QLabel(tr("Nome da nova pasta:")))
         layout.addWidget(self.folder_name)
-        layout.addWidget(QLabel("Incluir favoritos de:"))
+        layout.addWidget(QLabel(tr("Incluir favoritos de:")))
         layout.addWidget(self.export_captures)
         layout.addWidget(self.export_irs)
         layout.addWidget(self.buttons)
@@ -131,7 +132,8 @@ class StarRating(QWidget):
         layout = QHBoxLayout(self)
         layout.setContentsMargins(0, 0, 0, 0)
         layout.setSpacing(0)
-        layout.addWidget(QLabel("Avaliação:"))
+        self.label = QLabel(tr("Avaliação:"))
+        layout.addWidget(self.label)
         self.buttons: list[QPushButton] = []
         for value in range(1, 6):
             button = QPushButton("☆")
@@ -151,7 +153,10 @@ class StarRating(QWidget):
             button.setText("★" if index <= value else "☆")
 
     def text(self) -> str:
-        return f"Avaliação: {'★' * self._value}{'☆' * (5 - self._value)}"
+        return tr("Avaliação: {stars}", stars=f"{'★' * self._value}{'☆' * (5 - self._value)}")
+
+    def retranslate(self) -> None:
+        self.label.setText(tr("Avaliação:"))
 
 
 class RenderWorker(QThread):
@@ -245,6 +250,7 @@ class MainWindow(QMainWindow):
         self.repository = repository
         self.preferences_store = preferences_store
         self.preferences = preferences_store.load()
+        set_language(self.preferences.language)
         self.nam_renderer = nam_renderer or NamRenderer()
         self.di_path: Path | None = None
         self.ir_root: Path | None = None
@@ -266,6 +272,11 @@ class MainWindow(QMainWindow):
         self.setWindowTitle("Audition Manager")
         self.resize(820, 700)
         self.di_label = QLabel("Nenhuma DI selecionada")
+        self.language_label = QLabel("Idioma:")
+        self.language = QComboBox()
+        self.language.addItem("Português", "pt_BR")
+        self.language.addItem("English", "en")
+        self.language.setCurrentIndex(self.language.findData(self.preferences.language))
         self.di_button = QPushButton("Abrir DI WAV")
         self.folder_button = QPushButton("Selecionar pasta de IRs")
         self.capture_button = QPushButton("Selecionar pasta de capturas NAM")
@@ -338,7 +349,7 @@ class MainWindow(QMainWindow):
         self.peak_meter = QProgressBar()
         self.peak_meter.setRange(0, 60)
         self.peak_meter.setValue(0)
-        self.peak_meter.setFormat("Pico: sem áudio")
+        self.peak_meter.setFormat(tr("Pico: sem áudio"))
         self.peak_meter.setToolTip("Pico do áudio processado, antes do ganho de saída")
         self.favorite = QCheckBox("Favorito (F)")
         self.favorite.setEnabled(False)
@@ -356,6 +367,11 @@ class MainWindow(QMainWindow):
         container = QWidget()
         layout = QVBoxLayout(container)
         layout.addWidget(self.di_label)
+        language_row = QHBoxLayout()
+        language_row.addStretch(1)
+        language_row.addWidget(self.language_label)
+        language_row.addWidget(self.language)
+        layout.addLayout(language_row)
         file_buttons = QHBoxLayout()
         file_buttons.addWidget(self.di_button)
         file_buttons.addWidget(self.folder_button)
@@ -363,7 +379,8 @@ class MainWindow(QMainWindow):
         file_buttons.addWidget(self.cancel_scan_button)
         layout.addLayout(file_buttons)
         layout.addWidget(self.capture_button)
-        layout.addWidget(QLabel("Captura NAM (opcional):"))
+        self.capture_section_label = QLabel("Captura NAM (opcional):")
+        layout.addWidget(self.capture_section_label)
         capture_filters = QHBoxLayout()
         capture_filters.addWidget(self.capture_search, 1)
         capture_filters.addWidget(self.capture_favorites_only)
@@ -415,6 +432,7 @@ class MainWindow(QMainWindow):
         layout.addWidget(self.status)
         self.setCentralWidget(container)
         self.di_button.clicked.connect(self.choose_di)
+        self.language.currentIndexChanged.connect(self.change_language)
         self.folder_button.clicked.connect(self.choose_folder)
         self.capture_button.clicked.connect(self.choose_capture_folder)
         self.capture_list.currentRowChanged.connect(self.selection_changed)
@@ -479,6 +497,7 @@ class MainWindow(QMainWindow):
             shortcut.activated.connect(lambda value=value: self.set_rating(value))
             self.shortcuts.append(shortcut)
         self.restore_paths()
+        self.retranslate_ui()
 
     @Slot()
     def choose_di(self) -> None:
@@ -489,7 +508,7 @@ class MainWindow(QMainWindow):
         if filename:
             self.reset_audio()
             self.di_path = Path(filename)
-            self.di_label.setText(f"DI: {self.di_path.name}")
+            self.di_label.setText(tr("DI: {name}", name=self.di_path.name))
             self.preferences.last_di_file = self.di_path.resolve()
             self.save_preferences()
             self.selection_changed()
@@ -525,8 +544,11 @@ class MainWindow(QMainWindow):
         self.preferences.last_capture_directory = root
         self.save_preferences()
         self.apply_capture_filters()
-        skipped = f"; {len(errors)} inválidas ignoradas" if errors else ""
-        self.status.setText(f"{len(models)} capturas NAM encontradas{skipped}.")
+        skipped = tr("; {count} inválidas ignoradas", count=len(errors)) if errors else ""
+        self.status.setText(tr(
+            "{count} capturas NAM encontradas{skipped}.",
+            count=len(models), skipped=skipped,
+        ))
         saved = self.preferences.last_capture_file
         if saved in self.capture_paths:
             self.capture_list.setCurrentRow(self.capture_paths.index(saved))
@@ -583,7 +605,7 @@ class MainWindow(QMainWindow):
         self.desired_scan_root = resolved
         if self.scan_worker is not None:
             self.scan_worker.requestInterruption()
-            self.status.setText("Cancelando scan anterior para abrir a nova pasta…")
+            self.status.setText(tr("Cancelando scan anterior para abrir a nova pasta…"))
             return
         self.start_scan(resolved)
 
@@ -597,7 +619,7 @@ class MainWindow(QMainWindow):
         self.cancel_scan_button.setEnabled(True)
         self.scan_progress.setRange(0, 0)
         self.scan_progress.setVisible(True)
-        self.status.setText(f"Escaneando IRs em {root}…")
+        self.status.setText(tr("Escaneando IRs em {root}…", root=root))
         self.scan_worker.start()
 
     @Slot(int, int)
@@ -605,7 +627,9 @@ class MainWindow(QMainWindow):
         self.scan_progress.setRange(0, total or 0)
         if total:
             self.scan_progress.setValue(current)
-            self.scan_progress.setFormat(f"Analisando IRs: {current}/{total}")
+            self.scan_progress.setFormat(tr(
+                "Analisando IRs: {current}/{total}", current=current, total=total
+            ))
 
     @Slot(object, object, object)
     def scan_completed(self, root: Path, metadata: list, errors: list) -> None:
@@ -624,10 +648,11 @@ class MainWindow(QMainWindow):
         self.preferences.last_ir_directory = root
         self.save_preferences()
         self.apply_filters()
-        skipped = f"; {len(errors)} inválidos ignorados" if errors else ""
-        self.status.setText(
-            f"{len(metadata)} IRs válidos encontrados{skipped}; selecione um IR."
-        )
+        skipped = tr("; {count} inválidos ignorados", count=len(errors)) if errors else ""
+        self.status.setText(tr(
+            "{count} IRs válidos encontrados{skipped}; selecione um IR.",
+            count=len(metadata), skipped=skipped,
+        ))
 
     @Slot(object, str)
     def scan_failed(self, root: Path, message: str) -> None:
@@ -638,7 +663,7 @@ class MainWindow(QMainWindow):
     @Slot(object)
     def scan_cancelled(self, root: Path) -> None:
         if self.desired_scan_root is None or root == self.desired_scan_root:
-            self.status.setText("Scan cancelado; a biblioteca anterior foi mantida.")
+            self.status.setText(tr("Scan cancelado; a biblioteca anterior foi mantida."))
 
     @Slot()
     def scan_finished(self) -> None:
@@ -662,16 +687,16 @@ class MainWindow(QMainWindow):
         self.desired_scan_root = None
         if self.scan_worker is not None:
             self.scan_worker.requestInterruption()
-            self.status.setText("Cancelando scan…")
+            self.status.setText(tr("Cancelando scan…"))
 
     def reset_audio(self) -> None:
         self.cache = RenderCache()
         self.output.close()
         self.has_rendered_audio = False
         self.autoplay = True
-        self.active_ir.setText("IR em reprodução: nenhum")
+        self.active_ir.setText(tr("IR em reprodução: nenhum"))
         self.peak_meter.setValue(0)
-        self.peak_meter.setFormat("Pico: sem áudio")
+        self.peak_meter.setFormat(tr("Pico: sem áudio"))
 
     def move_ir(self, step: int) -> None:
         if self.notes.hasFocus():
@@ -760,7 +785,7 @@ class MainWindow(QMainWindow):
         ir_favorites = self.favorite_paths()
         capture_favorites = self.capture_favorite_paths()
         if not ir_favorites and not capture_favorites:
-            self.status.setText("Marque ao menos um IR ou captura como favorito.")
+            self.status.setText(tr("Marque ao menos um IR ou captura como favorito."))
             return
         parent = QFileDialog.getExistingDirectory(
             self,
@@ -775,9 +800,9 @@ class MainWindow(QMainWindow):
         selected_irs = ir_favorites if include_irs else []
         selected_captures = capture_favorites if include_captures else []
         if not selected_irs and not selected_captures:
-            self.status.setText(
+            self.status.setText(tr(
                 "As categorias escolhidas não possuem favoritos para exportar."
-            )
+            ))
             return
         try:
             result = export_library_favorites(
@@ -789,16 +814,17 @@ class MainWindow(QMainWindow):
         except (OSError, ValueError) as error:
             self.show_error(str(error))
             return
-        capture_word = "captura" if result.capture_count == 1 else "capturas"
-        message = (
-            f"{result.file_count} favoritos exportados "
-            f"({result.capture_count} {capture_word}, {result.ir_count} IRs) "
-            f"para {result.directory}"
+        capture_word = tr("captura" if result.capture_count == 1 else "capturas")
+        message = tr(
+            "{count} favoritos exportados ({captures} {capture_word}, {irs} IRs) para {directory}",
+            count=result.file_count, captures=result.capture_count,
+            capture_word=capture_word, irs=result.ir_count,
+            directory=result.directory,
         )
         self.preferences.last_export_directory = Path(parent).resolve()
         self.save_preferences()
         self.status.setText(message)
-        QMessageBox.information(self, "Exportação concluída", message)
+        QMessageBox.information(self, tr("Exportação concluída"), message)
 
     def refresh_devices(self) -> None:
         blocker = QSignalBlocker(self.device)
@@ -817,7 +843,9 @@ class MainWindow(QMainWindow):
                     selected_index = self.device.count() - 1
         except Exception as error:
             logger.exception("Unable to enumerate output devices")
-            self.status.setText(f"Não foi possível listar saídas de áudio: {error}")
+            self.status.setText(tr(
+                "Não foi possível listar saídas de áudio: {error}", error=error
+            ))
         self.device.setCurrentIndex(selected_index)
         del blocker
         if selected_index == 0 and self.preferences.output_device_name is not None:
@@ -834,7 +862,7 @@ class MainWindow(QMainWindow):
         device: OutputDevice | None = self.device.currentData()
         try:
             self.output.set_device(device.index if device else None)
-            self.status.setText(f"Saída: {self.device.currentText()}.")
+            self.status.setText(tr("Saída: {device}.", device=self.device.currentText()))
             if save:
                 self.preferences.output_device_name = device.name if device else None
                 self.preferences.output_host_api = device.host_api if device else None
@@ -848,7 +876,7 @@ class MainWindow(QMainWindow):
     def change_gain(self, gain_db: int) -> None:
         try:
             self.output.set_gain_db(gain_db)
-            self.gain_label.setText(f"Ganho de saída: {gain_db} dB")
+            self.gain_label.setText(tr("Ganho de saída: {value} dB", value=gain_db))
             self.preferences.output_gain_db = gain_db
             self.save_preferences()
         except ValueError as error:
@@ -856,7 +884,7 @@ class MainWindow(QMainWindow):
 
     @Slot(int)
     def change_capture_gain(self, gain_db: int) -> None:
-        self.capture_gain_label.setText(f"Ganho NAM: {gain_db:+d} dB")
+        self.capture_gain_label.setText(tr("Ganho NAM: {value:+d} dB", value=gain_db))
         self.preferences.capture_gain_db = gain_db
         self.save_preferences()
         if self.selected_capture_path() is not None and not self.capture_bypass.isChecked():
@@ -887,7 +915,7 @@ class MainWindow(QMainWindow):
         di_path = self.preferences.last_di_file
         if di_path is not None and di_path.is_file():
             self.di_path = di_path.resolve()
-            self.di_label.setText(f"DI: {self.di_path.name}")
+            self.di_label.setText(tr("DI: {name}", name=self.di_path.name))
         elif di_path is not None:
             self.preferences.last_di_file = None
             changed = True
@@ -916,7 +944,81 @@ class MainWindow(QMainWindow):
             self.preferences_store.save(self.preferences)
         except OSError as error:
             logger.exception("Unable to save preferences")
-            self.status.setText(f"Não foi possível salvar as preferências: {error}")
+            self.status.setText(tr(
+                "Não foi possível salvar as preferências: {error}", error=error
+            ))
+
+    @Slot(int)
+    def change_language(self, _index: int) -> None:
+        language = self.language.currentData() or "pt_BR"
+        set_language(language)
+        self.preferences.language = language
+        self.save_preferences()
+        self.retranslate_ui()
+        self.status.setText(
+            "Idioma alterado para Português."
+            if language == "pt_BR" else "Language changed to English."
+        )
+
+    def retranslate_ui(self) -> None:
+        self.language_label.setText(tr("Idioma:"))
+        self.language.setItemText(0, tr("Português"))
+        self.di_button.setText(tr("Abrir DI WAV"))
+        self.folder_button.setText(tr("Selecionar pasta de IRs"))
+        self.capture_button.setText(tr("Selecionar pasta de capturas NAM"))
+        self.capture_section_label.setText(tr("Captura NAM (opcional):"))
+        if self.di_path is None:
+            self.di_label.setText(tr("Nenhuma DI selecionada"))
+        self.capture_list.setToolTip(
+            tr("Opcional: selecione uma captura antes do IR")
+        )
+        self.capture_search.setPlaceholderText(
+            tr("Buscar captura por nome ou caminho…")
+        )
+        self.capture_favorites_only.setText(tr("Somente capturas favoritas"))
+        self.capture_favorite.setText(tr("Captura favorita"))
+        self.capture_notes.setPlaceholderText(
+            tr("Notas sobre a captura selecionada…")
+        )
+        self.save_capture_notes_button.setText(tr("Salvar notas da captura"))
+        self.export_button.setText(tr("Exportar favoritos…"))
+        self.cancel_scan_button.setText(tr("Cancelar scan"))
+        self.search.setPlaceholderText(tr("Buscar IR por nome ou caminho…"))
+        self.favorites_only.setText(tr("Somente favoritos"))
+        for combo in (self.minimum_rating, self.capture_minimum_rating):
+            combo.setItemText(0, tr("Todas as avaliações"))
+            for value in range(1, 6):
+                combo.setItemText(value, tr("{value}+ estrelas", value=value))
+        self.gain_label.setText(
+            tr("Ganho de saída: {value} dB", value=self.gain.value())
+        )
+        self.capture_gain_label.setText(
+            tr("Ganho NAM: {value:+d} dB", value=self.capture_gain.value())
+        )
+        self.capture_gain.setToolTip(
+            tr("Ganho após a captura NAM e antes do IR")
+        )
+        self.nam_quality.setItemText(0, tr("A2 Full — maior qualidade"))
+        self.nam_quality.setItemText(1, tr("A2 Lite — processamento mais rápido"))
+        self.bypass.setText(tr("Bypass IR (B)"))
+        self.capture_bypass.setText(tr("Bypass captura NAM (N)"))
+        self.play_button.setText(
+            tr("Play") if self.has_rendered_audio else tr("Processar e reproduzir")
+        )
+        self.stop_button.setText(tr("Stop"))
+        if self.device.count():
+            self.device.setItemText(0, tr("Saída padrão do sistema"))
+        self.favorite.setText(tr("Favorito (F)"))
+        self.rating.retranslate()
+        self.capture_rating.retranslate()
+        self.notes.setPlaceholderText(tr("Notas sobre o IR selecionado…"))
+        self.save_notes_button.setText(tr("Salvar notas"))
+        self.peak_meter.setToolTip(
+            tr("Pico do áudio processado, antes do ganho de saída")
+        )
+        if not self.has_rendered_audio:
+            self.active_ir.setText(tr("IR em reprodução: nenhum"))
+            self.peak_meter.setFormat(tr("Pico: sem áudio"))
 
     @Slot()
     def selection_changed(self) -> None:
@@ -982,7 +1084,7 @@ class MainWindow(QMainWindow):
             return
         try:
             self.repository.set_capture_favorite(path, favorite)
-            self.status.setText("Favorito da captura atualizado.")
+            self.status.setText(tr("Favorito da captura atualizado."))
         except (KeyError, OSError) as error:
             self.show_error(str(error))
         self.apply_capture_filters()
@@ -993,7 +1095,9 @@ class MainWindow(QMainWindow):
             return
         try:
             self.repository.set_capture_rating(path, rating)
-            self.status.setText(f"Avaliação da captura definida como {rating}/5.")
+            self.status.setText(tr(
+                "Avaliação da captura definida como {rating}/5.", rating=rating
+            ))
         except (KeyError, OSError, ValueError) as error:
             self.show_error(str(error))
         self.apply_capture_filters()
@@ -1005,7 +1109,7 @@ class MainWindow(QMainWindow):
             return
         try:
             self.repository.set_capture_notes(path, self.capture_notes.toPlainText())
-            self.status.setText("Notas da captura salvas.")
+            self.status.setText(tr("Notas da captura salvas."))
         except (KeyError, OSError) as error:
             self.show_error(str(error))
 
@@ -1021,7 +1125,7 @@ class MainWindow(QMainWindow):
             return
         try:
             self.repository.set_favorite(path, favorite)
-            self.status.setText("Favorito atualizado.")
+            self.status.setText(tr("Favorito atualizado."))
         except (KeyError, OSError) as error:
             self.show_error(str(error))
         self.apply_filters()
@@ -1034,7 +1138,7 @@ class MainWindow(QMainWindow):
             return
         try:
             self.repository.set_rating(path, rating)
-            self.status.setText(f"Avaliação definida como {rating}/5.")
+            self.status.setText(tr("Avaliação definida como {rating}/5.", rating=rating))
         except (KeyError, OSError, ValueError) as error:
             self.show_error(str(error))
         self.apply_filters()
@@ -1046,7 +1150,7 @@ class MainWindow(QMainWindow):
             return
         try:
             self.repository.set_notes(path, self.notes.toPlainText())
-            self.status.setText("Notas salvas.")
+            self.status.setText(tr("Notas salvas."))
         except (KeyError, OSError) as error:
             self.show_error(str(error))
 
@@ -1054,17 +1158,17 @@ class MainWindow(QMainWindow):
     def refresh_playback(self) -> None:
         state, position, duration = self.output.transport.snapshot()
         labels = {
-            PlaybackState.EMPTY: "Sem áudio", PlaybackState.STOPPED: "Parado",
-            PlaybackState.PLAYING: "Reproduzindo", PlaybackState.PAUSED: "Pausado",
-            PlaybackState.FINISHED: "Finalizado",
+            PlaybackState.EMPTY: tr("Sem áudio"), PlaybackState.STOPPED: tr("Parado"),
+            PlaybackState.PLAYING: tr("Reproduzindo"), PlaybackState.PAUSED: tr("Pausado"),
+            PlaybackState.FINISHED: tr("Finalizado"),
         }
         self.position_label.setText(
             f"{format_time(position)} / {format_time(duration)} — {labels[state]}"
         )
         self.progress.setValue(round(1000 * position / duration) if duration else 0)
         self.play_button.setText(
-            "Pause" if state == PlaybackState.PLAYING else
-            "Play" if self.has_rendered_audio else "Processar e reproduzir"
+            tr("Pause") if state == PlaybackState.PLAYING else
+            tr("Play") if self.has_rendered_audio else tr("Processar e reproduzir")
         )
 
     @Slot()
@@ -1088,7 +1192,7 @@ class MainWindow(QMainWindow):
                     self.output.pause()
                 else:
                     self.output.play(loop=self.loop.isChecked())
-                self.status.setText("Player pronto.")
+                self.status.setText(tr("Player pronto."))
                 self.refresh_playback()
             except Exception as error:
                 logger.exception("Unable to control playback")
@@ -1120,7 +1224,7 @@ class MainWindow(QMainWindow):
             stages.append("NAM")
         if ir_path is not None:
             stages.append("IR")
-        self.status.setText(f"Processando {' + '.join(stages)}…")
+        self.status.setText(tr("Processando {stages}…", stages=" + ".join(stages)))
         self.worker.start()
 
     @Slot(object)
@@ -1142,7 +1246,7 @@ class MainWindow(QMainWindow):
         self.has_rendered_audio = True
         peak = peak_dbfs(audio)
         self.peak_meter.setValue(max(0, min(60, round(peak + 60))))
-        self.peak_meter.setFormat(f"Pico: {peak:.1f} dBFS")
+        self.peak_meter.setFormat(tr("Pico: {value:.1f} dBFS", value=peak))
         stages = ["DI"]
         if self.worker.capture_path is not None:
             item = self.repository.get_capture(self.worker.capture_path)
@@ -1159,9 +1263,11 @@ class MainWindow(QMainWindow):
             bypassed.append("NAM")
         if self.selected_ir_path() is not None and self.worker.ir_path is None:
             bypassed.append("IR")
-        suffix = f" — Bypass ativo: {', '.join(bypassed)}" if bypassed else ""
-        self.active_ir.setText(f"Cadeia ativa: {' → '.join(stages)}{suffix}")
-        self.status.setText("Pause mantém a posição; Stop volta ao início.")
+        suffix = tr(" — Bypass ativo: {items}", items=", ".join(bypassed)) if bypassed else ""
+        self.active_ir.setText(
+            tr("Cadeia ativa: {chain}{suffix}", chain=" → ".join(stages), suffix=suffix)
+        )
+        self.status.setText(tr("Pause mantém a posição; Stop volta ao início."))
 
     @Slot(str)
     def render_failed(self, message: str) -> None:
@@ -1188,7 +1294,7 @@ class MainWindow(QMainWindow):
         self.autoplay = False
         try:
             self.output.stop()
-            self.status.setText("Reprodução parada.")
+            self.status.setText(tr("Reprodução parada."))
             self.refresh_playback()
         except Exception as error:
             logger.exception("Unable to stop audio output")
@@ -1196,18 +1302,18 @@ class MainWindow(QMainWindow):
 
     @Slot(str)
     def show_error(self, message: str) -> None:
-        self.status.setText("Não foi possível concluir a operação.")
+        self.status.setText(tr("Não foi possível concluir a operação."))
         QMessageBox.warning(self, "Audition Manager", message)
 
     def closeEvent(self, event: QCloseEvent) -> None:
         if self.worker is not None:
-            self.status.setText("Aguarde o processamento terminar antes de fechar.")
+            self.status.setText(tr("Aguarde o processamento terminar antes de fechar."))
             event.ignore()
             return
         if self.scan_worker is not None:
             self.close_after_scan = True
             self.cancel_scan()
-            self.status.setText("Cancelando scan antes de fechar…")
+            self.status.setText(tr("Cancelando scan antes de fechar…"))
             event.ignore()
             return
         self.save_preferences()
