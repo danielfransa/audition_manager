@@ -18,6 +18,8 @@ levava os exemplos usados no roteiro inicial.
   Arquivos locais não rastreados não podem entrar no artefato por acidente.
 - Não confundir ocultar o console com reduzir inferência: A2 Full/Lite continuará
   sendo medido no Windows antes de decidir otimizações de processo ou cache.
+- Publicar o ZIP como arquivo direto no GitHub Actions (`archive: false`), pois o
+  modo padrão criava uma segunda camada ZIP ao redor do pacote já compactado.
 
 ## Consequências
 

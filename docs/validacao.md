@@ -345,6 +345,10 @@ validado em Windows real. PyInstaller não é um cross-compiler.
   exemplos redistribuíveis sem capturas TONE3000 ou arquivos pessoais locais.
 - A suíte local passa com **89 testes**. Interface, tempo de troca e conteúdo do
   novo ZIP aguardam a próxima validação no Windows.
+- O primeiro download do artefato continha o ZIP portátil dentro de outro ZIP,
+  pois o GitHub compactava novamente o arquivo. O upload passou a usar o modo
+  direto (`archive: false`): o download agora deve ser o próprio
+  `AuditionManager-Windows-x64.zip`, contendo a pasta `AuditionManager`.
 
 ## Avaliação por estrelas clicáveis
 
