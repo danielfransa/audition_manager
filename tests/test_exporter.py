@@ -99,7 +99,7 @@ def test_exports_ir_and_capture_favorites_into_separate_directories(
     assert (result.ir_count, result.capture_count, result.file_count) == (1, 1, 2)
 
 
-def test_combined_export_keeps_both_category_directories_when_one_is_empty(
+def test_combined_export_omits_empty_category_directory(
     tmp_path: Path,
 ) -> None:
     capture_root = tmp_path / "captures"
@@ -112,5 +112,5 @@ def test_combined_export_keeps_both_category_directories_when_one_is_empty(
         destination, "Favoritos",
         capture_root=capture_root, capture_sources=[capture],
     )
-    assert (result.directory / "IRs").is_dir()
+    assert not (result.directory / "IRs").exists()
     assert (result.directory / "Capturas" / "Amp.nam").exists()

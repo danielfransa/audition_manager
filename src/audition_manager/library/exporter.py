@@ -136,13 +136,13 @@ def export_library_favorites(
     )
     with TemporaryDirectory(prefix=".audition-manager-export-", dir=parent) as staging:
         payload = Path(staging) / name
-        ir_directory = payload / "IRs"
-        capture_directory = payload / "Capturas"
-        ir_directory.mkdir(parents=True)
-        capture_directory.mkdir(parents=True)
         for directory, entries in (
-            (ir_directory, ir_entries), (capture_directory, capture_entries)
+            (payload / "IRs", ir_entries),
+            (payload / "Capturas", capture_entries),
         ):
+            if not entries:
+                continue
+            directory.mkdir(parents=True)
             for source, relative in entries:
                 destination = directory / relative
                 destination.parent.mkdir(parents=True, exist_ok=True)

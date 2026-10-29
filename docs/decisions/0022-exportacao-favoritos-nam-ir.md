@@ -16,9 +16,9 @@ Nome escolhido/
 └── IRs/
 ```
 
-Cada categoria preserva suas subpastas relativas. As duas pastas são criadas
-mesmo quando uma categoria está vazia, deixando o pacote previsível. É possível
-exportar apenas capturas, apenas IRs ou ambos.
+Cada categoria preserva suas subpastas relativas. Uma pasta de categoria só é
+criada quando há favoritos daquele tipo na exportação. É possível exportar
+apenas capturas, apenas IRs ou ambos, sem deixar diretórios vazios.
 
 O diálogo que solicita o nome contém as opções **Capturas** e **IRs**, ambas
 marcadas inicialmente. O usuário pode excluir uma categoria da exportação; a

@@ -691,7 +691,7 @@ def test_exports_all_favorites_from_current_root_regardless_of_filters(
         assert (exported / "IRs" / "Mesa" / "V30.wav").exists()
         assert (exported / "IRs" / "Clean.wav").exists()
         assert not (exported / "IRs" / "Other.wav").exists()
-        assert list((exported / "Capturas").iterdir()) == []
+        assert not (exported / "Capturas").exists()
         assert "2 favoritos exportados (0 capturas, 2 IRs)" in window.status.text()
         assert messages == [window.status.text()]
     finally:

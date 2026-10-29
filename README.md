@@ -21,8 +21,8 @@ equipamentos como M-VAVE BlackBox e IR-Box. Windows e Linux são os sistemas alv
 - Navegação com mouse, teclado e setas, sem bloquear a interface.
 - Busca, filtros, favoritos, estrelas clicáveis, notas e persistência em SQLite.
 - Seleção do dispositivo de áudio e ganho de saída de -24 a 0 dB.
-- Exportação conjunta dos favoritos em subpastas separadas `Capturas` e `IRs`,
-  preservando a organização interna e permitindo escolher quais tipos incluir.
+- Exportação dos favoritos em subpastas separadas `Capturas` e `IRs`, criando
+  somente as categorias escolhidas e preservando sua organização interna.
 - Restauração da última DI, biblioteca, dispositivo, ganho, Loop e destino.
 - Cadeia offline **DI → captura NAM A2 → IR**, com troca automática do IR.
 - Biblioteca NAM com busca, filtros, favoritos, estrelas, notas e restauração da

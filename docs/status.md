@@ -28,7 +28,7 @@ o histórico de cada incremento e podem mencionar limitações já resolvidas.
 - Bypasses independentes para captura NAM e IR, com atalhos `N` e `B`.
 - Biblioteca NAM com busca, filtros, favoritos, avaliação, notas e persistência.
 - Exportação conjunta implementada com separação em `Favoritos/Capturas` e
-  `Favoritos/IRs` e seleção das categorias antes de copiar.
+  `Favoritos/IRs`, seleção das categorias e sem criar pastas vazias.
 - Ganho NAM independente, medidor de pico e proteção de pico em toda a cadeia.
 
 ## Verificação atual
