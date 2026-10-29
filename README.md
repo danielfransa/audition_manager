@@ -8,7 +8,7 @@ de capturas de amplificadores **NAM A2** e a preparação de bibliotecas para
 equipamentos como M-VAVE BlackBox e IR-Box. Windows e Linux são os sistemas alvo.
 
 > **Estado do projeto:** o player e a biblioteca de IRs estão funcionais e têm
-> 82 testes automatizados. A reprodução offline de NAM A2 está em validação;
+> 84 testes automatizados. A reprodução offline de NAM está em validação;
 > transferência direta para pedaleiras e o
 > instalador ainda estão em desenvolvimento. Consulte o [status completo](docs/status.md).
 
@@ -28,6 +28,8 @@ equipamentos como M-VAVE BlackBox e IR-Box. Windows e Linux são os sistemas alv
 - Biblioteca NAM com busca, filtros, favoritos, estrelas, notas e restauração da
   última pasta e captura selecionada.
 - Ganho NAM de -24 a +12 dB, medidor de pico e indicação da cadeia ativa.
+- Seleção A2 Full/Lite e leitura de arquiteturas NAM legadas suportadas pelo
+  NeuralAmpModelerCore: WaveNet, LSTM, ConvNet, Linear e Sequential.
 
 ## Instalação rápida
 
@@ -123,8 +125,9 @@ limpar a nota. Use `Ctrl+←/→` para navegar entre capturas NAM.
 
 - São aceitos WAVs mono/estéreo de até 192 kHz, DI de até 5 minutos e IR de até
   2 segundos. O processamento é offline e mantém a cauda da convolução.
-- Capturas NAM A2 `SlimmableContainer` são processadas offline a 48 kHz pelo
-  NeuralAmpModelerCore. Outras arquiteturas NAM ainda não são aceitas.
+- Capturas A2 `SlimmableContainer` e modelos NAM legados WaveNet, LSTM, ConvNet,
+  Linear e Sequential são aceitos. A compatibilidade final também depende da
+  versão e configuração do arquivo ser compreendida pelo runtime fixado.
 - AM4DATA e transferência direta para BlackBox/IR-Box ainda não estão implementados.
 - O pacote Windows portátil ainda precisa de validação em Windows real.
 - A aplicação foi validada no WSL/WSLg; Linux nativo continua no roteiro de teste.

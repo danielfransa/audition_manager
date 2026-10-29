@@ -17,6 +17,9 @@ Para testar uma captura, compile antes o runtime NAM conforme o README, escolha
 processará `DI → NAM → IR`. Os bypasses independentes permitem comparar a
 captura sem gabinete, somente o IR e a DI limpa.
 
+Em capturas A2, escolha **Full** para maior fidelidade ou **Lite** para processar
+mais rápido. O seletor não se aplica a capturas NAM legadas.
+
 Os áudios de exemplo são materiais de teste e não são cobertos automaticamente
 pela licença MIT do código. Preserve os direitos e condições associados aos
 arquivos de áudio ao redistribuí-los.

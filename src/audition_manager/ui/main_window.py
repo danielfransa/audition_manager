@@ -162,6 +162,7 @@ class RenderWorker(QThread):
         self, di_path: Path, ir_path: Path | None, cache: RenderCache, parent: QWidget,
         capture_path: Path | None = None, nam_renderer: NamRenderer | None = None,
         capture_gain_db: int = 0,
+        nam_quality: str = "full",
     ) -> None:
         super().__init__(parent)
         self.di_path = di_path
@@ -170,6 +171,7 @@ class RenderWorker(QThread):
         self.capture_path = capture_path
         self.nam_renderer = nam_renderer
         self.capture_gain_db = capture_gain_db
+        self.nam_quality = nam_quality
 
     def run(self) -> None:
         try:
@@ -184,9 +186,10 @@ class RenderWorker(QThread):
                     lambda di, ir: render_capture_chain(
                         di, self.capture_path, ir, self.nam_renderer,
                         self.capture_gain_db,
+                        self.nam_quality,
                     ),
                     dependencies=(self.capture_path,),
-                    variant=(self.capture_gain_db,),
+                    variant=(self.capture_gain_db, self.nam_quality),
                 )
             self.rendered.emit(audio)
         except Exception as error:
@@ -315,6 +318,11 @@ class MainWindow(QMainWindow):
         self.capture_gain_label = QLabel(
             f"Ganho NAM: {self.preferences.capture_gain_db:+d} dB"
         )
+        self.nam_quality = QComboBox()
+        self.nam_quality.addItem("A2 Full — maior qualidade", "full")
+        self.nam_quality.addItem("A2 Lite — processamento mais rápido", "lite")
+        quality_index = self.nam_quality.findData(self.preferences.nam_quality)
+        self.nam_quality.setCurrentIndex(max(0, quality_index))
         self.bypass = QCheckBox("Bypass IR (B)")
         self.capture_bypass = QCheckBox("Bypass captura NAM (N)")
         self.loop = QCheckBox("Loop")
@@ -378,6 +386,7 @@ class MainWindow(QMainWindow):
         capture_gain_row = QHBoxLayout()
         capture_gain_row.addWidget(self.capture_gain_label)
         capture_gain_row.addWidget(self.capture_gain, 1)
+        capture_gain_row.addWidget(self.nam_quality)
         layout.addLayout(capture_gain_row)
         filters = QHBoxLayout()
         filters.addWidget(self.search, 1)
@@ -422,6 +431,7 @@ class MainWindow(QMainWindow):
         self.device.currentIndexChanged.connect(self.change_device)
         self.gain.valueChanged.connect(self.change_gain)
         self.capture_gain.valueChanged.connect(self.change_capture_gain)
+        self.nam_quality.currentIndexChanged.connect(self.change_nam_quality)
         self.search.textChanged.connect(self.apply_filters)
         self.favorites_only.toggled.connect(self.apply_filters)
         self.minimum_rating.currentIndexChanged.connect(self.apply_filters)
@@ -516,9 +526,7 @@ class MainWindow(QMainWindow):
         self.save_preferences()
         self.apply_capture_filters()
         skipped = f"; {len(errors)} inválidas ignoradas" if errors else ""
-        self.status.setText(
-            f"{len(models)} capturas NAM A2 encontradas{skipped}."
-        )
+        self.status.setText(f"{len(models)} capturas NAM encontradas{skipped}.")
         saved = self.preferences.last_capture_file
         if saved in self.capture_paths:
             self.capture_list.setCurrentRow(self.capture_paths.index(saved))
@@ -530,7 +538,8 @@ class MainWindow(QMainWindow):
             return relative
         favorite = "★ " if item.favorite else ""
         rating = f" [{'★' * item.rating}{'☆' * (5 - item.rating)}]"
-        return f"{favorite}{relative}{rating}"
+        kind = "A2 Full/Lite" if item.architecture == "SlimmableContainer" else item.architecture
+        return f"{favorite}{relative} — {kind} v{item.version}{rating}"
 
     @Slot()
     def apply_capture_filters(self) -> None:
@@ -853,6 +862,20 @@ class MainWindow(QMainWindow):
         if self.selected_capture_path() is not None and not self.capture_bypass.isChecked():
             self.selection_changed()
 
+    @Slot(int)
+    def change_nam_quality(self, _index: int) -> None:
+        quality = self.nam_quality.currentData() or "full"
+        self.preferences.nam_quality = quality
+        self.save_preferences()
+        path = self.selected_capture_path()
+        item = self.repository.get_capture(path) if path else None
+        if (
+            item is not None
+            and item.architecture == "SlimmableContainer"
+            and not self.capture_bypass.isChecked()
+        ):
+            self.selection_changed()
+
     @Slot(bool)
     def change_loop(self, enabled: bool) -> None:
         self.output.set_loop(enabled)
@@ -948,6 +971,9 @@ class MainWindow(QMainWindow):
         del notes_blocker
         self.capture_notes.setEnabled(item is not None)
         self.save_capture_notes_button.setEnabled(item is not None)
+        self.nam_quality.setEnabled(
+            item is not None and item.architecture == "SlimmableContainer"
+        )
 
     @Slot(bool)
     def set_capture_favorite(self, favorite: bool) -> None:
@@ -1083,7 +1109,7 @@ class MainWindow(QMainWindow):
         )
         self.worker = RenderWorker(
             self.di_path, ir_path, self.cache, self, capture_path, self.nam_renderer,
-            self.capture_gain.value(),
+            self.capture_gain.value(), self.nam_quality.currentData() or "full",
         )
         self.worker.rendered.connect(self.play_rendered)
         self.worker.failed.connect(self.render_failed)
@@ -1119,7 +1145,13 @@ class MainWindow(QMainWindow):
         self.peak_meter.setFormat(f"Pico: {peak:.1f} dBFS")
         stages = ["DI"]
         if self.worker.capture_path is not None:
-            stages.append(f"NAM ({self.worker.capture_path.name})")
+            item = self.repository.get_capture(self.worker.capture_path)
+            mode = (
+                f"A2 {self.worker.nam_quality.title()}"
+                if item is not None and item.architecture == "SlimmableContainer"
+                else item.architecture if item is not None else "NAM"
+            )
+            stages.append(f"NAM {mode} ({self.worker.capture_path.name})")
         if self.worker.ir_path is not None:
             stages.append(f"IR ({self.worker.ir_path.name})")
         bypassed = []

@@ -30,10 +30,12 @@ o histórico de cada incremento e podem mencionar limitações já resolvidas.
 - Exportação conjunta implementada com separação em `Favoritos/Capturas` e
   `Favoritos/IRs`, seleção das categorias e sem criar pastas vazias.
 - Ganho NAM independente, medidor de pico e proteção de pico em toda a cadeia.
+- Modos A2 Full/Lite e suporte estrutural a NAM legado WaveNet, LSTM, ConvNet,
+  Linear e Sequential.
 
 ## Verificação atual
 
-- Suíte automatizada: **82 testes passando**.
+- Suíte automatizada: **84 testes passando**.
 - Compilação de bytecode e `git diff --check`: sem erros na última entrega.
 - Reprodução e interface: confirmadas no WSL/WSLg pelo usuário.
 - Saída PortAudio no WSLg: validada com a ponte ALSA/PulseAudio.

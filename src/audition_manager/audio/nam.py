@@ -1,4 +1,4 @@
-"""NAM A2 inspection and offline rendering through NeuralAmpModelerCore."""
+"""NAM model inspection and offline rendering through NeuralAmpModelerCore."""
 
 import json
 import os
@@ -25,6 +25,15 @@ class NamModelInfo:
     sample_rate: int
     submodel_count: int
 
+    @property
+    def is_a2(self) -> bool:
+        return self.architecture == "SlimmableContainer"
+
+
+SUPPORTED_ARCHITECTURES = {
+    "ConvNet", "LSTM", "Linear", "Sequential", "SlimmableContainer", "WaveNet",
+}
+
 
 def inspect_nam(path: Path) -> NamModelInfo:
     if path.suffix.lower() != ".nam":
@@ -42,7 +51,7 @@ def inspect_nam(path: Path) -> NamModelInfo:
     sample_rate = payload.get("sample_rate", 48_000)
     if not isinstance(version, str) or not version:
         raise ValueError("A captura NAM não informa uma versão válida.")
-    if architecture != "SlimmableContainer":
+    if architecture not in SUPPORTED_ARCHITECTURES:
         raise ValueError(
             f"Arquitetura NAM ainda não suportada: {architecture or 'ausente'}."
         )
@@ -52,15 +61,22 @@ def inspect_nam(path: Path) -> NamModelInfo:
     if rounded_rate <= 0 or abs(sample_rate - rounded_rate) > 0.01:
         raise ValueError("A captura NAM não informa uma taxa inteira válida.")
     config = payload.get("config")
-    submodels = config.get("submodels") if isinstance(config, dict) else None
-    if not isinstance(submodels, list) or not submodels:
-        raise ValueError("O SlimmableContainer não contém submodelos.")
-    for submodel in submodels:
-        model = submodel.get("model") if isinstance(submodel, dict) else None
-        if not isinstance(model, dict) or model.get("architecture") != "WaveNet":
-            raise ValueError("O container possui um submodelo incompatível.")
+    if not isinstance(config, dict):
+        raise ValueError("A captura NAM não contém uma configuração válida.")
+    submodel_count = 1
+    if architecture == "SlimmableContainer":
+        submodels = config.get("submodels")
+        if not isinstance(submodels, list) or not submodels:
+            raise ValueError("O SlimmableContainer não contém submodelos.")
+        for submodel in submodels:
+            model = submodel.get("model") if isinstance(submodel, dict) else None
+            if not isinstance(model, dict) or model.get("architecture") != "WaveNet":
+                raise ValueError("O container possui um submodelo incompatível.")
+        submodel_count = len(submodels)
+    elif not isinstance(payload.get("weights"), list):
+        raise ValueError("A captura NAM legada não contém pesos válidos.")
     return NamModelInfo(
-        path.resolve(), version, architecture, rounded_rate, len(submodels)
+        path.resolve(), version, architecture, rounded_rate, submodel_count
     )
 
 
@@ -93,8 +109,12 @@ class NamRenderer:
         project_root = Path(__file__).resolve().parents[3]
         return project_root / "build" / "nam-runtime" / name
 
-    def render(self, source: AudioBuffer, model_path: Path) -> AudioBuffer:
+    def render(
+        self, source: AudioBuffer, model_path: Path, quality: str = "full"
+    ) -> AudioBuffer:
         model = inspect_nam(model_path)
+        if quality not in {"full", "lite"}:
+            raise ValueError("O modo NAM deve ser Full ou Lite.")
         if not self.executable.is_file():
             raise RuntimeError(
                 "Runtime NAM não encontrado. Execute scripts/build-nam-runtime.sh "
@@ -108,10 +128,7 @@ class NamRenderer:
             sf.write(input_path, prepared.samples, prepared.sample_rate, subtype="FLOAT")
             try:
                 result = subprocess.run(
-                    [
-                        str(self.executable), "--slim", "1.0", str(model.path),
-                        str(input_path), str(output_path),
-                    ],
+                    self.build_command(model, input_path, output_path, quality),
                     capture_output=True,
                     text=True,
                     timeout=self.timeout_seconds,
@@ -123,6 +140,15 @@ class NamRenderer:
                 detail = result.stderr.strip() or result.stdout.strip()
                 raise RuntimeError(f"O runtime NAM recusou a captura.\n\n{detail}")
             return load_wav(output_path)
+
+    def build_command(
+        self, model: NamModelInfo, input_path: Path, output_path: Path, quality: str
+    ) -> list[str]:
+        command = [str(self.executable)]
+        if model.is_a2:
+            command.extend(["--slim", "1.0" if quality == "full" else "0.0"])
+        command.extend([str(model.path), str(input_path), str(output_path)])
+        return command
 
 
 def prepare_nam_input(source: AudioBuffer, sample_rate: int) -> AudioBuffer:
@@ -140,10 +166,10 @@ def prepare_nam_input(source: AudioBuffer, sample_rate: int) -> AudioBuffer:
 
 def render_capture_chain(
     di_path: Path, capture_path: Path, ir_path: Path | None, renderer: NamRenderer,
-    gain_db: float = 0,
+    gain_db: float = 0, quality: str = "full",
 ) -> AudioBuffer:
     source = load_wav(di_path)
-    captured = apply_gain_db(renderer.render(source, capture_path), gain_db)
+    captured = apply_gain_db(renderer.render(source, capture_path, quality), gain_db)
     if ir_path is None:
         return limit_peak(captured)
     impulse = load_wav(ir_path, max_seconds=2)

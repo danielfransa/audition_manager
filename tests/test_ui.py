@@ -79,9 +79,13 @@ class FakeOutput:
 class FakeNamRenderer:
     def __init__(self) -> None:
         self.models: list[Path] = []
+        self.qualities: list[str] = []
 
-    def render(self, source: AudioBuffer, model_path: Path) -> AudioBuffer:
+    def render(
+        self, source: AudioBuffer, model_path: Path, quality: str = "full"
+    ) -> AudioBuffer:
         self.models.append(model_path)
+        self.qualities.append(quality)
         mono = np.mean(source.samples, axis=1, keepdims=True, dtype=np.float32)
         return AudioBuffer(mono * 2, source.sample_rate)
 
@@ -336,8 +340,15 @@ def test_capture_and_ir_are_processed_as_one_chain(tmp_path: Path, monkeypatch) 
         assert renderer.models == [model.resolve()]
         assert output.audio is not None
         assert output.audio.samples[:, 0] == pytest.approx([0.2, 0.4])
-        assert "NAM (amp.nam) → IR (cab.wav)" in window.active_ir.text()
+        assert "NAM A2 Full (amp.nam) → IR (cab.wav)" in window.active_ir.text()
         assert window.peak_meter.format().startswith("Pico: ")
+        window.nam_quality.setCurrentIndex(window.nam_quality.findData("lite"))
+        deadline = monotonic() + 5
+        while window.worker is not None and monotonic() < deadline:
+            app.processEvents()
+            sleep(0.01)
+        assert renderer.qualities == ["full", "lite"]
+        assert "NAM A2 Lite" in window.active_ir.text()
         window.capture_gain.setValue(6)
         deadline = monotonic() + 5
         while window.worker is not None and monotonic() < deadline:
@@ -351,7 +362,7 @@ def test_capture_and_ir_are_processed_as_one_chain(tmp_path: Path, monkeypatch) 
         while window.worker is not None and monotonic() < deadline:
             app.processEvents()
             sleep(0.01)
-        assert renderer.models == [model.resolve(), model.resolve()]
+        assert renderer.models == [model.resolve(), model.resolve(), model.resolve()]
         assert output.audio.samples[:, 0] == pytest.approx([0.1, 0.2])
         assert window.active_ir.text() == (
             "Cadeia ativa: DI → IR (cab.wav) — Bypass ativo: NAM"
@@ -366,6 +377,35 @@ def test_capture_and_ir_are_processed_as_one_chain(tmp_path: Path, monkeypatch) 
         if window.worker is not None:
             window.worker.wait()
             app.processEvents()
+        window.close()
+
+
+def test_legacy_nam_is_listed_and_disables_a2_quality_selector(
+    tmp_path: Path, monkeypatch
+) -> None:
+    app = QApplication.instance() or QApplication([])
+    folder = tmp_path / "captures"
+    folder.mkdir()
+    model = folder / "legacy.nam"
+    model.write_text(json.dumps({
+        "version": "0.5.4", "architecture": "WaveNet",
+        "sample_rate": 48000, "config": {}, "weights": [],
+    }), encoding="utf-8")
+    monkeypatch.setattr(
+        "audition_manager.ui.main_window.choose_nam_directory",
+        lambda *args: str(folder),
+    )
+    window = MainWindow(
+        FakeOutput(), ImpulseResponseRepository(tmp_path / "library.sqlite3"),
+        PreferencesStore(tmp_path / "preferences.json"), FakeNamRenderer(),
+    )
+    try:
+        window.choose_capture_folder()
+        assert window.capture_list.count() == 1
+        assert "WaveNet v0.5.4" in window.capture_list.item(0).text()
+        window.capture_list.setCurrentRow(0)
+        assert not window.nam_quality.isEnabled()
+    finally:
         window.close()
 
 

@@ -54,6 +54,8 @@ confirmam driver, som audível ou latência do hardware.
 - Picos acima de 0,95 são atenuados, sem normalização perceptual.
 - O ganho NAM ocorre após a captura e antes do IR; o medidor mostra o pico do
   resultado antes do ganho geral de saída.
+- A2 Full envia `--slim 1.0`, A2 Lite envia `--slim 0.0`; modelos NAM legados
+  não recebem o argumento `--slim`.
 - A posição representa amostras entregues ao dispositivo e pode adiantar o som
   pela latência do buffer. A barra ainda não permite buscar uma posição.
 - Crossfade exige a mesma quantidade de canais; mono/estéreo reabre o stream.

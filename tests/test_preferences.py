@@ -23,6 +23,7 @@ def test_preferences_round_trip_and_atomic_write(tmp_path: Path) -> None:
         output_host_api="WASAPI",
         output_gain_db=-12,
         capture_gain_db=6,
+        nam_quality="lite",
         loop_enabled=False,
     )
     store.save(expected)
@@ -40,6 +41,7 @@ def test_invalid_values_use_safe_defaults_and_gain_is_clamped(tmp_path: Path) ->
                 "last_di_file": 123,
                 "output_device_name": [],
                 "output_gain_db": -80,
+                "nam_quality": "ultra",
                 "loop_enabled": "yes",
             }
         ),
@@ -49,4 +51,5 @@ def test_invalid_values_use_safe_defaults_and_gain_is_clamped(tmp_path: Path) ->
     assert preferences.last_di_file is None
     assert preferences.output_device_name is None
     assert preferences.output_gain_db == -24
+    assert preferences.nam_quality == "full"
     assert preferences.loop_enabled

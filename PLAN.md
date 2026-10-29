@@ -94,6 +94,10 @@ SQLite versão 2 preserva os metadados em novos scans.
 medidor do pico processado, proteção contra clipping e descrição explícita da
 cadeia e dos bypasses. O ganho é persistido e participa da chave do cache.
 
+**Compatibilidade ampliada para auditoria:** A2 permite escolher Full ou Lite;
+modelos legados WaveNet, LSTM, ConvNet, Linear e Sequential são encaminhados ao
+runtime sem parâmetro de slimming. Arquitetura e versão aparecem na biblioteca.
+
 ## 3 — Entrada ao vivo
 
 Investigar WASAPI/ASIO, buffers, taxas, concorrência e latência. Medir antes de

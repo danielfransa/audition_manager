@@ -17,6 +17,7 @@ class UserPreferences:
     output_host_api: str | None = None
     output_gain_db: int = 0
     capture_gain_db: int = 0
+    nam_quality: str = "full"
     loop_enabled: bool = True
 
 
@@ -39,6 +40,9 @@ class PreferencesStore:
         capture_gain = payload.get("capture_gain_db", 0)
         if not isinstance(capture_gain, int) or isinstance(capture_gain, bool):
             capture_gain = 0
+        nam_quality = payload.get("nam_quality", "full")
+        if nam_quality not in {"full", "lite"}:
+            nam_quality = "full"
         return UserPreferences(
             last_di_file=self._path(payload.get("last_di_file")),
             last_ir_directory=self._path(payload.get("last_ir_directory")),
@@ -49,6 +53,7 @@ class PreferencesStore:
             output_host_api=self._text(payload.get("output_host_api")),
             output_gain_db=max(-24, min(0, gain)),
             capture_gain_db=max(-24, min(12, capture_gain)),
+            nam_quality=nam_quality,
             loop_enabled=(
                 payload["loop_enabled"]
                 if isinstance(payload.get("loop_enabled"), bool)
