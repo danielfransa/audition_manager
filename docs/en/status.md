@@ -25,6 +25,8 @@ limitations that have since been resolved.
 - Two DIs, four IRs, and two MIT-licensed RiffSmith NAM A2 captures for testing.
 - Portuguese/English interface with immediate switching and persistence.
 - PowerShell script for building a portable PyInstaller package on Windows.
+- Manually triggered GitHub Actions workflow that builds on `windows-latest` and
+  smoke-tests imports and the bundled NAM runtime before uploading the ZIP.
 - Offline `DI → NAM → IR` chain with independent NAM and IR bypasses.
 - Independent NAM gain, processed peak meter, and peak protection.
 - A2 Full/Lite modes and structural support for legacy WaveNet, LSTM, ConvNet,
@@ -32,7 +34,7 @@ limitations that have since been resolved.
 
 ## Current verification
 
-- Automated suite: **85 tests passing**.
+- Automated suite: **87 tests passing**.
 - Bytecode compilation and `git diff --check`: clean in the latest delivery.
 - Interface, playback, and PortAudio output confirmed under WSL/WSLg.
 - Current integration branch: `develop`.

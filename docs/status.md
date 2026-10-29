@@ -32,6 +32,8 @@ o histórico de cada incremento e podem mencionar limitações já resolvidas.
 - Documentação técnica navegável nos dois idiomas, incluindo status,
   desenvolvimento, validação, plano e registro das 25 decisões anteriores.
 - Script PowerShell para gerar pacote portátil Windows com PyInstaller.
+- Workflow manual do GitHub Actions para compilar o ZIP em `windows-latest`,
+  com autoteste de imports e presença do runtime NAM no executável congelado.
 - Capturas NAM A2 combinadas com IR na cadeia offline `DI → NAM → IR`.
 - Bypasses independentes para captura NAM e IR, com atalhos `N` e `B`.
 - Biblioteca NAM com busca, filtros, favoritos, avaliação, notas e persistência.
@@ -43,7 +45,7 @@ o histórico de cada incremento e podem mencionar limitações já resolvidas.
 
 ## Verificação atual
 
-- Suíte automatizada: **85 testes passando**.
+- Suíte automatizada: **87 testes passando**.
 - Compilação de bytecode e `git diff --check`: sem erros na última entrega.
 - Reprodução e interface: confirmadas no WSL/WSLg pelo usuário.
 - Saída PortAudio no WSLg: validada com a ponte ALSA/PulseAudio.

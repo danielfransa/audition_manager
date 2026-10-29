@@ -81,6 +81,10 @@ Set-ExecutionPolicy -Scope Process Bypass
 The result is `dist\AuditionManager-Windows-x64.zip`. It must be built on
 Windows and still requires validation on a real Windows machine.
 
+Alternatively, open **Actions → Windows portable package → Run workflow** on
+GitHub, then download the `AuditionManager-Windows-x64` artifact. Development
+artifacts are not signed releases and expire after 14 days.
+
 ## Arch on WSL/WSLg
 
 Install the audio bridge in addition to the Arch packages:

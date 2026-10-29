@@ -112,6 +112,10 @@ runtime sem parâmetro de slimming. Arquitetura e versão aparecem na biblioteca
 Gerar e validar o pacote portátil em Windows real já com os dois idiomas e o
 runtime NAM. Depois avaliar instalador, assinatura e publicação em Releases.
 
+**Em implementação:** o script executa um autoteste no `.exe` congelado e um
+workflow manual do GitHub Actions gera o ZIP em `windows-latest`. O artefato
+ainda precisa ser gerado com sucesso e validado auditivamente em Windows real.
+
 ## 5 — Entrada ao vivo
 
 Investigar WASAPI/ASIO, buffers, taxas, concorrência e latência. Medir antes de

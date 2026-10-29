@@ -33,3 +33,4 @@ Portuguese, while this register provides their English titles and outcomes.
 | [0024](../decisions/0024-i18n-aplicacao.md) | Application i18n: use a small runtime catalog, immediate language switching, and persisted locale. |
 | [0025](../decisions/0025-documentacao-publica-bilingue.md) | Bilingual public docs: keep the root README short and route readers to complete PT/EN guides. |
 | [0026](../decisions/0026-documentacao-tecnica-bilingue.md) | Bilingual technical docs: publish current English references while keeping immutable Portuguese history and bilingual ADR navigation. |
+| [0027](../decisions/0027-build-windows-automatizado.md) | Verifiable Windows build: smoke-test the frozen executable and generate a short-lived ZIP through a read-only manual workflow. |

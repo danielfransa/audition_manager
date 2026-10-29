@@ -82,6 +82,10 @@ Set-ExecutionPolicy -Scope Process Bypass
 O resultado fica em `dist\AuditionManager-Windows-x64.zip`. A geração precisa
 ser feita no Windows; o pacote ainda aguarda validação em uma máquina Windows real.
 
+Também é possível abrir **Actions → Windows portable package → Run workflow** no
+GitHub. Ao final, baixe o artefato `AuditionManager-Windows-x64`. Artefatos de
+desenvolvimento não são uma release assinada e expiram após 14 dias.
+
 ## WSL/WSLg com Arch
 
 Além das dependências do Arch, instale a ponte de áudio:

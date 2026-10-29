@@ -315,6 +315,17 @@ validado em Windows real. PyInstaller não é um cross-compiler.
 5. Registre versão do Windows, dispositivo/driver, tamanho do ZIP, aviso do
    SmartScreen e qualquer DLL ausente antes de decidir o instalador.
 
+### Automação do pacote — 2026-10-29
+
+- `scripts/build-windows.ps1` agora executa o `.exe` com
+  `--packaging-smoke-test` antes de compactar o ZIP. O teste confirma imports e
+  a presença de `nam-render.exe` no caminho usado pela aplicação congelada.
+- `.github/workflows/windows-portable.yml` permite gerar manualmente o pacote em
+  `windows-latest` e mantê-lo como artefato por 14 dias.
+- Os dois caminhos do autoteste têm cobertura automatizada; a suíte local passa
+  com **87 testes**.
+- A execução real do workflow e o teste auditivo do ZIP continuam pendentes.
+
 ## Avaliação por estrelas clicáveis
 
 - O teste Qt clica nas estrelas 2 e 4, confirma a atualização visual, consulta o
