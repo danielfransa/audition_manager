@@ -1,6 +1,6 @@
 # Status atual do projeto
 
-Atualizado em **28 de outubro de 2026**. Este arquivo é o resumo vigente; os
+Atualizado em **29 de outubro de 2026**. Este arquivo é o resumo vigente; os
 registros em `docs/decisions/` e as seções antigas de `docs/validacao.md` formam
 o histórico de cada incremento e podem mencionar limitações já resolvidas.
 
@@ -27,6 +27,8 @@ o histórico de cada incremento e podem mencionar limitações já resolvidas.
   origem e commit documentados.
 - Seletor Português/English na aplicação, com troca imediata dos principais
   controles e persistência da preferência.
+- README público bilíngue e guias completos de instalação e uso em Português e
+  Inglês, com navegação separada por idioma.
 - Script PowerShell para gerar pacote portátil Windows com PyInstaller.
 - Capturas NAM A2 combinadas com IR na cadeia offline `DI → NAM → IR`.
 - Bypasses independentes para captura NAM e IR, com atalhos `N` e `B`.
@@ -77,6 +79,7 @@ o histórico de cada incremento e podem mencionar limitações já resolvidas.
 - `PLAN.md`: etapas, ordem de implementação e riscos.
 - `docs/validacao.md`: resultados e roteiros manuais acumulados.
 - `docs/decisions/`: decisões técnicas numeradas e fontes consultadas.
-- `README.md`: visão pública, instalação rápida e primeiro uso.
-- `docs/installation.md`: instalação completa, build e solução de problemas.
+- `README.md`: apresentação bilíngue e acesso à documentação de cada idioma.
+- `docs/pt-BR/` e `docs/en/`: visão, instalação e guia de uso completos.
+- `docs/installation.md`: seletor de idioma para os guias de instalação.
 - `docs/development.md`: arquitetura, testes e limites internos.

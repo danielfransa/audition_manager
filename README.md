@@ -1,152 +1,30 @@
 # Audition Manager
 
-Aplicação desktop open source para guitarristas ouvirem, compararem e organizarem
-Impulse Responses antes de copiá-los para pedaleiras e modeladores.
+**Português**
 
-O projeto busca reunir em um único fluxo a audição de IRs, a futura comparação
-de capturas de amplificadores **NAM A2** e a preparação de bibliotecas para
-equipamentos como M-VAVE BlackBox e IR-Box. Windows e Linux são os sistemas alvo.
+Aplicação desktop open source para ouvir, comparar, organizar e exportar Impulse
+Responses e capturas de amplificadores NAM. Linux e Windows são os sistemas
+alvo, e o projeto está em desenvolvimento ativo.
 
-> **Estado do projeto:** o player e a biblioteca de IRs estão funcionais e têm
-> 85 testes automatizados. A reprodução offline de NAM está em validação;
-> transferência direta para pedaleiras e o
-> instalador ainda estão em desenvolvimento. Consulte o [status completo](docs/status.md).
+- [Visão completa em Português](docs/pt-BR/README.md)
+- [Instalação em Português](docs/pt-BR/installation.md)
+- [Como usar em Português](docs/pt-BR/usage.md)
 
-## O que já funciona
+**English**
 
-- Seleção de uma DI WAV e scan recursivo de pastas de IRs; o seletor exibe os
-  arquivos WAV antes de confirmar a pasta.
-- Processamento e reprodução automática ao selecionar ou trocar um IR.
-- Play, Pause, Stop, Loop, bypass, posição e crossfade curto entre IRs.
-- Navegação com mouse, teclado e setas, sem bloquear a interface.
-- Busca, filtros, favoritos, estrelas clicáveis, notas e persistência em SQLite.
-- Seleção do dispositivo de áudio e ganho de saída de -24 a 0 dB.
-- Exportação dos favoritos em subpastas separadas `Capturas` e `IRs`, criando
-  somente as categorias escolhidas e preservando sua organização interna.
-- Restauração da última DI, biblioteca, dispositivo, ganho, Loop e destino.
-- Cadeia offline **DI → captura NAM A2 → IR**, com troca automática do IR.
-- Biblioteca NAM com busca, filtros, favoritos, estrelas, notas e restauração da
-  última pasta e captura selecionada.
-- Ganho NAM de -24 a +12 dB, medidor de pico e indicação da cadeia ativa.
-- Seleção A2 Full/Lite e leitura de arquiteturas NAM legadas suportadas pelo
-  NeuralAmpModelerCore: WaveNet, LSTM, ConvNet, Linear e Sequential.
-- Interface com escolha entre Português e English, persistida entre execuções.
+Open-source desktop application for auditioning, comparing, organizing, and
+exporting Impulse Responses and NAM amplifier captures. The project targets
+Linux and Windows and is under active development.
 
-## Instalação rápida
+- [Full overview in English](docs/en/README.md)
+- [Installation in English](docs/en/installation.md)
+- [User guide in English](docs/en/usage.md)
 
-Ainda não há binários publicados em Releases. Para testar agora, clone o código
-e execute a aplicação com Python 3.12. Na página do GitHub, abra **Code → HTTPS**,
-copie a URL e use:
+## Status
 
-```bash
-git clone URL_HTTPS_DESTE_REPOSITORIO
-cd audition_manager
-```
+IR and NAM A1/A2 offline auditioning, metadata libraries, favorites, ratings,
+notes, gain controls, and organized export are available. The interface supports
+Português and English. Windows packaging and live guitar input remain pending.
 
-### Linux com mise
-
-Instale primeiro as bibliotecas nativas correspondentes à sua distribuição.
-
-**Debian, Ubuntu, Mint e derivados:**
-
-```bash
-sudo apt update
-sudo apt install -y git curl libxkbcommon-x11-0 libxcb-cursor0 libgl1 libegl1 fontconfig fonts-dejavu-core libportaudio2 libsndfile1
-```
-
-**Fedora e derivados:**
-
-```bash
-sudo dnf install -y git curl libxkbcommon-x11 xcb-util-cursor mesa-libGL mesa-libEGL fontconfig dejavu-sans-fonts portaudio libsndfile
-```
-
-**Arch, Manjaro, EndeavourOS e derivados:**
-
-```bash
-sudo pacman -Syu --needed git curl libxkbcommon libxkbcommon-x11 libxcb xcb-util-cursor mesa fontconfig ttf-dejavu portaudio libsndfile
-```
-
-Depois de [instalar e ativar o mise](https://mise.jdx.dev/getting-started.html):
-
-```bash
-mise trust
-mise install
-mise run install
-./scripts/build-nam-runtime.sh
-mise run run
-```
-
-O `mise.toml` instala Python 3.12.13 e cria a `.venv` do projeto. Para usar uma
-venv manual ou resolver problemas de áudio/Qt, veja a
-[instalação detalhada](docs/installation.md).
-
-### Windows 10/11
-
-Instale [Python 3.12 para Windows](https://www.python.org/downloads/windows/)
-com o launcher `py`, clone o repositório e abra PowerShell na pasta do projeto:
-
-```powershell
-py -3.12 -m venv .venv-win
-.\.venv-win\Scripts\python.exe -m pip install -e "."
-.\.venv-win\Scripts\audition-manager.exe
-```
-
-Também existe um script que executa os testes e produz um pacote portátil:
-
-```powershell
-Set-ExecutionPolicy -Scope Process Bypass
-.\scripts\build-windows.ps1
-```
-
-O resultado fica em `dist\AuditionManager-Windows-x64.zip`. O script também
-compila o runtime NAM e requer CMake, Git e o compilador C++ do Visual Studio
-Build Tools. Extraia o ZIP
-inteiro antes de abrir `AuditionManager.exe`; um instalador ainda não é necessário
-para testar. O build precisa ocorrer no Windows, pois PyInstaller não gera o
-executável Windows oficialmente a partir do Linux/WSL.
-
-## Primeiro teste
-
-O repositório inclui [duas DIs e quatro IRs de exemplo](samples/README.md),
-além de duas capturas NAM A2 redistribuíveis, portanto é possível testar sem
-procurar outros arquivos:
-
-1. Em **Abrir DI WAV**, abra `samples/di/clean_guitar.wav`.
-2. Opcionalmente, escolha `samples/captures` e selecione uma captura `.nam`.
-3. Em **Selecionar pasta de IRs**, escolha `samples/ir`.
-4. Clique em um IR para processar e reproduzir automaticamente.
-5. Troque de IR com o mouse ou ←/→ e ajuste Loop, bypass, saída e ganho.
-6. Clique nas estrelas para avaliar e marque seus favoritos.
-7. Use **Exportar favoritos…** para criar uma pasta com `Capturas` e `IRs`.
-
-Atalhos principais: `Espaço` para Play/Pause, `B` para bypass do IR, `N` para
-bypass da captura NAM, `F` para favorito, `1–5` para avaliação e `0` para
-limpar a nota. Use `Ctrl+←/→` para navegar entre capturas NAM.
-
-## Limites atuais
-
-- São aceitos WAVs mono/estéreo de até 192 kHz, DI de até 5 minutos e IR de até
-  2 segundos. O processamento é offline e mantém a cauda da convolução.
-- Capturas A2 `SlimmableContainer` e modelos NAM legados WaveNet, LSTM, ConvNet,
-  Linear e Sequential são aceitos. A compatibilidade final também depende da
-  versão e configuração do arquivo ser compreendida pelo runtime fixado.
-- AM4DATA e transferência direta para BlackBox/IR-Box ainda não estão implementados.
-- O pacote Windows portátil ainda precisa de validação em Windows real.
-- A aplicação foi validada no WSL/WSLg; Linux nativo continua no roteiro de teste.
-
-## Documentação
-
-- [Instalação detalhada — Linux, Windows e WSL](docs/installation.md)
-- [Status atual e pendências](docs/status.md)
-- [Plano de execução](PLAN.md)
-- [Desenvolvimento, arquitetura e dados locais](docs/development.md)
-- [Validação automática e roteiros manuais](docs/validacao.md)
-- [Decisões técnicas](docs/decisions/)
-- [Origem e licença das capturas de exemplo](samples/captures/SOURCES.md)
-- [Prompt que iniciou o projeto](docs/prompt-inicial.md)
-
-## Licença
-
-O Audition Manager é distribuído sob a [licença MIT](LICENSE). Dependências,
-capturas e arquivos de áudio, incluindo `samples/`, mantêm suas próprias
-licenças e condições de redistribuição.
+Licensed under [MIT](LICENSE). Example audio and captures retain the licenses
+documented under [`samples/`](samples/README.md).

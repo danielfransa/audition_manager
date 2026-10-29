@@ -103,7 +103,7 @@ runtime sem parâmetro de slimming. Arquitetura e versão aparecem na biblioteca
 1. Catálogo i18n da aplicação, seletor Português/English, troca em tempo de
    execução e persistência. **Implementado para auditoria.**
 2. README público bilíngue curto com links para guias completos de instalação e
-   uso em PT e EN. **Pendente.**
+   uso em PT e EN. **Implementado para auditoria.**
 3. Espelhar documentação técnica, status e decisões nos dois idiomas, com
    navegação clara. **Pendente.**
 
