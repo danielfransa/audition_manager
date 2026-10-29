@@ -23,6 +23,8 @@ o histórico de cada incremento e podem mencionar limitações já resolvidas.
 - Configuração `mise`/venv, licença MIT, documentação técnica e versionamento
   Git em commits pequenos.
 - Duas DIs e quatro IRs de exemplo para o primeiro teste após o clone.
+- Duas capturas A2 de guitarra do RiffSmith, redistribuídas sob licença MIT com
+  origem e commit documentados.
 - Script PowerShell para gerar pacote portátil Windows com PyInstaller.
 - Capturas NAM A2 combinadas com IR na cadeia offline `DI → NAM → IR`.
 - Bypasses independentes para captura NAM e IR, com atalhos `N` e `B`.

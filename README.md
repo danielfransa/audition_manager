@@ -107,7 +107,8 @@ executável Windows oficialmente a partir do Linux/WSL.
 ## Primeiro teste
 
 O repositório inclui [duas DIs e quatro IRs de exemplo](samples/README.md),
-portanto é possível testar sem procurar outros áudios:
+além de duas capturas NAM A2 redistribuíveis, portanto é possível testar sem
+procurar outros arquivos:
 
 1. Em **Abrir DI WAV**, abra `samples/di/clean_guitar.wav`.
 2. Opcionalmente, escolha `samples/captures` e selecione uma captura `.nam`.
@@ -140,6 +141,7 @@ limpar a nota. Use `Ctrl+←/→` para navegar entre capturas NAM.
 - [Desenvolvimento, arquitetura e dados locais](docs/development.md)
 - [Validação automática e roteiros manuais](docs/validacao.md)
 - [Decisões técnicas](docs/decisions/)
+- [Origem e licença das capturas de exemplo](samples/captures/SOURCES.md)
 - [Prompt que iniciou o projeto](docs/prompt-inicial.md)
 
 ## Licença
