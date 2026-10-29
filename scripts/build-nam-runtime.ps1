@@ -29,6 +29,24 @@ if ($LASTEXITCODE -ne 0) {
     throw "Falha ao baixar os submodulos do runtime NAM (codigo $LASTEXITCODE)."
 }
 
+# This pinned upstream commit applies the GCC/Clang flag -Wno-error to three
+# source files even when CMake generates an MSVC project. MSVC rewrites it as
+# /Wno-error and aborts with D8021. Use the equivalent MSVC flag reproducibly.
+$ToolsCMake = Join-Path $SourceDir "tools\CMakeLists.txt"
+$CMakeText = [System.IO.File]::ReadAllText($ToolsCMake)
+$GnuFlagCount = ([regex]::Matches($CMakeText, 'COMPILE_FLAGS "-Wno-error"')).Count
+$MsvcFlagCount = ([regex]::Matches($CMakeText, 'COMPILE_FLAGS "/WX-"')).Count
+if ($GnuFlagCount -eq 3) {
+    $CMakeText = $CMakeText.Replace(
+        'COMPILE_FLAGS "-Wno-error"', 'COMPILE_FLAGS "/WX-"'
+    )
+    [System.IO.File]::WriteAllText(
+        $ToolsCMake, $CMakeText, [System.Text.UTF8Encoding]::new($false)
+    )
+} elseif ($MsvcFlagCount -ne 3) {
+    throw "Nao foi possivel aplicar a correcao MSVC no CMake do runtime NAM."
+}
+
 $BuildDir = Join-Path $SourceDir "cmake-build"
 cmake -S $SourceDir -B $BuildDir -G "Visual Studio 17 2022" -A x64 -DNAM_ENABLE_A2_FAST=ON
 if ($LASTEXITCODE -ne 0) {

@@ -23,6 +23,9 @@ começasse em uma máquina Windows configurada para desenvolvimento.
   uma decisão explícita.
 - Verificar o código de saída de cada comando Git e CMake e interromper no ponto
   da causa, em vez de continuar até faltar o arquivo final.
+- Corrigir localmente, durante o build, as três ocorrências upstream de
+  `COMPILE_FLAGS "-Wno-error"` para o equivalente MSVC `/WX-`. O commit do Core
+  permanece fixado e a substituição falha se a estrutura esperada mudar.
 - Não incluir os áudios locais ou capturas TONE3000 no pacote.
 
 ## Consequências

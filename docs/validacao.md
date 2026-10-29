@@ -329,6 +329,10 @@ validado em Windows real. PyInstaller não é um cross-compiler.
 - A primeira execução encontrou a migração de `windows-latest` para Visual Studio
   2026. O runner foi fixado em `windows-2022`, compatível com o gerador CMake do
   Visual Studio 2022; o script agora para imediatamente no comando que falhar.
+- A segunda execução chegou ao compilador MSVC e revelou três usos upstream de
+  `-Wno-error`, opção exclusiva de GCC/Clang. O build substitui essas ocorrências
+  por `/WX-`, equivalente no MSVC, e valida a quantidade antes de alterar o
+  arquivo do commit fixado.
 
 ## Avaliação por estrelas clicáveis
 
