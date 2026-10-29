@@ -613,17 +613,29 @@ def test_exports_all_favorites_from_current_root_regardless_of_filters(
 ) -> None:
     app = QApplication.instance() or QApplication([])
     source = tmp_path / "irs"
+    capture_source = tmp_path / "captures"
     nested = source / "Mesa"
     nested.mkdir(parents=True)
     favorites = [nested / "V30.wav", source / "Clean.wav"]
     other = source / "Other.wav"
     for path in [*favorites, other]:
         sf.write(path, [1.0], 48000, subtype="FLOAT")
+    capture_source.mkdir()
+    capture = capture_source / "Favorite Amp.nam"
+    capture.write_text(json.dumps({
+        "version": "0.7.0", "architecture": "SlimmableContainer",
+        "sample_rate": 48000,
+        "config": {"submodels": [{"model": {"architecture": "WaveNet"}}]},
+    }), encoding="utf-8")
     destination = tmp_path / "exports"
     destination.mkdir()
     monkeypatch.setattr(
         "audition_manager.ui.main_window.choose_ir_directory",
         lambda *args: str(source),
+    )
+    monkeypatch.setattr(
+        "audition_manager.ui.main_window.choose_nam_directory",
+        lambda *args: str(capture_source),
     )
     monkeypatch.setattr(
         "audition_manager.ui.main_window.QFileDialog.getExistingDirectory",
@@ -645,18 +657,22 @@ def test_exports_all_favorites_from_current_root_regardless_of_filters(
     try:
         window.choose_folder()
         wait_for_scan(window, app)
+        window.choose_capture_folder()
         for path in favorites:
             repository.set_favorite(path, True)
+        repository.set_capture_favorite(capture, True)
         window.apply_filters()
+        window.apply_capture_filters()
         assert window.export_button.isEnabled()
         window.search.setText("V30")
         assert window.ir_list.count() == 1
         window.export_button.click()
         exported = destination / "My Pedal IRs"
-        assert (exported / "Mesa" / "V30.wav").exists()
-        assert (exported / "Clean.wav").exists()
-        assert not (exported / "Other.wav").exists()
-        assert "2 favoritos exportados" in window.status.text()
+        assert (exported / "IRs" / "Mesa" / "V30.wav").exists()
+        assert (exported / "IRs" / "Clean.wav").exists()
+        assert not (exported / "IRs" / "Other.wav").exists()
+        assert (exported / "Capturas" / "Favorite Amp.nam").exists()
+        assert "3 favoritos exportados (1 captura, 2 IRs)" in window.status.text()
         assert messages == [window.status.text()]
     finally:
         window.close()

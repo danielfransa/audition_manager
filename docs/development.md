@@ -23,7 +23,7 @@ Também é possível trabalhar com uma venv manual conforme
 - `audio/output.py`: stream sounddevice/PortAudio.
 - `library/scanner.py`: descoberta e metadados WAV.
 - `library/repository.py`: migrações e persistência SQLite para IRs e capturas.
-- `library/exporter.py`: exportação transacional dos favoritos.
+- `library/exporter.py`: exportação transacional de IRs e capturas favoritos.
 - `config/settings.py`: caminhos de dados por sistema.
 - `config/preferences.py`: preferências JSON com escrita atômica.
 - `ui/main_window.py`: janela e coordenação de workers.

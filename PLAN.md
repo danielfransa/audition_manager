@@ -51,10 +51,9 @@ DI em loop, navegação contínua entre IRs e metadados persistentes.
 
 5. Exportar os IRs favoritos da pasta aberta para uma nova pasta escolhida pelo
    usuário, preservando subpastas e sem sobrescrever exportações existentes.
-   **Implementado para auditoria. Exportação de capturas será adicionada quando
-   a biblioteca de capturas existir.**
-   **Ampliação definida:** a exportação conjunta criará subpastas separadas,
-   `Favoritos/Capturas` e `Favoritos/IRs`.
+   **Implementado para auditoria:** a exportação conjunta inclui favoritos das
+   duas bibliotecas em subpastas separadas, `Favoritos/Capturas` e
+   `Favoritos/IRs`, preserva subpastas e não sobrescreve destinos existentes.
 
 ## 1.1 — Polimento do MVP
 

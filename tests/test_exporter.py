@@ -2,7 +2,9 @@ from pathlib import Path
 
 import pytest
 
-from audition_manager.library.exporter import export_files, validate_folder_name
+from audition_manager.library.exporter import (
+    export_files, export_library_favorites, validate_folder_name,
+)
 
 
 def test_exports_files_preserving_relative_directories_and_metadata(tmp_path: Path) -> None:
@@ -72,3 +74,43 @@ def test_refuses_destination_inside_scanned_library(tmp_path: Path) -> None:
     with pytest.raises(ValueError, match="fora da pasta de IRs"):
         export_files(root, [favorite], root, "Favorites")
     assert not (root / "Favorites").exists()
+
+
+def test_exports_ir_and_capture_favorites_into_separate_directories(
+    tmp_path: Path,
+) -> None:
+    ir_root = tmp_path / "irs"
+    capture_root = tmp_path / "captures"
+    destination = tmp_path / "exports"
+    (ir_root / "Mesa").mkdir(parents=True)
+    (capture_root / "Fender").mkdir(parents=True)
+    destination.mkdir()
+    ir = ir_root / "Mesa" / "V30.wav"
+    capture = capture_root / "Fender" / "Clean.nam"
+    ir.write_bytes(b"impulse")
+    capture.write_bytes(b"capture")
+    result = export_library_favorites(
+        destination, "Favoritos",
+        ir_root=ir_root, ir_sources=[ir],
+        capture_root=capture_root, capture_sources=[capture],
+    )
+    assert (result.directory / "IRs" / "Mesa" / "V30.wav").read_bytes() == b"impulse"
+    assert (result.directory / "Capturas" / "Fender" / "Clean.nam").read_bytes() == b"capture"
+    assert (result.ir_count, result.capture_count, result.file_count) == (1, 1, 2)
+
+
+def test_combined_export_keeps_both_category_directories_when_one_is_empty(
+    tmp_path: Path,
+) -> None:
+    capture_root = tmp_path / "captures"
+    destination = tmp_path / "exports"
+    capture_root.mkdir()
+    destination.mkdir()
+    capture = capture_root / "Amp.nam"
+    capture.write_bytes(b"capture")
+    result = export_library_favorites(
+        destination, "Favoritos",
+        capture_root=capture_root, capture_sources=[capture],
+    )
+    assert (result.directory / "IRs").is_dir()
+    assert (result.directory / "Capturas" / "Amp.nam").exists()

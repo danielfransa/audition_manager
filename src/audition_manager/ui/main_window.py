@@ -34,7 +34,7 @@ from audition_manager.config.preferences import PreferencesStore
 from audition_manager.library.scanner import inspect_wav, scan_wavs
 from audition_manager.library.repository import ImpulseResponseRepository
 from audition_manager.library.models import Capture
-from audition_manager.library.exporter import export_files
+from audition_manager.library.exporter import export_library_favorites
 
 logger = logging.getLogger(__name__)
 
@@ -513,6 +513,7 @@ class MainWindow(QMainWindow):
             self.capture_list.setCurrentRow(visible.index(selected))
         del blocker
         self.refresh_capture_metadata()
+        self.update_export_button()
         if selected is not None and selected not in visible:
             self.selection_changed()
 
@@ -679,7 +680,7 @@ class MainWindow(QMainWindow):
             self.ir_list.setCurrentRow(visible.index(selected))
         del blocker
         self.refresh_metadata()
-        self.export_button.setEnabled(bool(self.favorite_paths()))
+        self.update_export_button()
         self.update_play_button()
 
     def favorite_paths(self) -> list[Path]:
@@ -688,14 +689,24 @@ class MainWindow(QMainWindow):
             if (item := self.repository.get(path)) is not None and item.favorite
         ]
 
+    def capture_favorite_paths(self) -> list[Path]:
+        return [
+            path for path in self.all_capture_paths
+            if (item := self.repository.get_capture(path)) is not None
+            and item.favorite
+        ]
+
+    def update_export_button(self) -> None:
+        self.export_button.setEnabled(
+            bool(self.favorite_paths() or self.capture_favorite_paths())
+        )
+
     @Slot()
     def export_favorites(self) -> None:
-        if self.ir_root is None:
-            self.status.setText("Selecione uma pasta de IRs antes de exportar.")
-            return
-        favorites = self.favorite_paths()
-        if not favorites:
-            self.status.setText("Marque ao menos um IR como favorito.")
+        ir_favorites = self.favorite_paths()
+        capture_favorites = self.capture_favorite_paths()
+        if not ir_favorites and not capture_favorites:
+            self.status.setText("Marque ao menos um IR ou captura como favorito.")
             return
         parent = QFileDialog.getExistingDirectory(
             self,
@@ -711,11 +722,21 @@ class MainWindow(QMainWindow):
         if not accepted:
             return
         try:
-            result = export_files(self.ir_root, favorites, Path(parent), name)
+            result = export_library_favorites(
+                Path(parent), name,
+                ir_root=self.ir_root, ir_sources=ir_favorites,
+                capture_root=self.capture_root,
+                capture_sources=capture_favorites,
+            )
         except (OSError, ValueError) as error:
             self.show_error(str(error))
             return
-        message = f"{result.file_count} favoritos exportados para {result.directory}"
+        capture_word = "captura" if result.capture_count == 1 else "capturas"
+        message = (
+            f"{result.file_count} favoritos exportados "
+            f"({result.capture_count} {capture_word}, {result.ir_count} IRs) "
+            f"para {result.directory}"
+        )
         self.preferences.last_export_directory = Path(parent).resolve()
         self.save_preferences()
         self.status.setText(message)

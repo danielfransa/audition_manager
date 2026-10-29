@@ -21,6 +21,18 @@ class ExportResult:
     total_bytes: int
 
 
+@dataclass(frozen=True)
+class FavoriteExportResult:
+    directory: Path
+    ir_count: int
+    capture_count: int
+    total_bytes: int
+
+    @property
+    def file_count(self) -> int:
+        return self.ir_count + self.capture_count
+
+
 def validate_folder_name(name: str) -> str:
     candidate = name.strip()
     if not candidate or candidate in {".", ".."}:
@@ -83,3 +95,82 @@ def export_files(
             copy2(source, destination)
         payload.rename(target)
     return ExportResult(target, len(entries), total_bytes)
+
+
+def export_library_favorites(
+    destination_parent: Path,
+    folder_name: str,
+    *,
+    ir_root: Path | None = None,
+    ir_sources: list[Path] | None = None,
+    capture_root: Path | None = None,
+    capture_sources: list[Path] | None = None,
+) -> FavoriteExportResult:
+    """Export favorites atomically into separate IRs and Capturas directories."""
+    name = validate_folder_name(folder_name)
+    parent = destination_parent.resolve(strict=True)
+    if not parent.is_dir():
+        raise ValueError("Selecione um diretório de destino existente.")
+    target = parent / name
+    if target.exists():
+        raise FileExistsError(f"A pasta de exportação já existe: {target}")
+
+    ir_entries = _collect_entries(ir_root, ir_sources or [], "IR")
+    capture_entries = _collect_entries(
+        capture_root, capture_sources or [], "captura"
+    )
+    if not ir_entries and not capture_entries:
+        raise ValueError("Nenhum IR ou captura favorito disponível para exportação.")
+    for root in (ir_root, capture_root):
+        if root is None:
+            continue
+        try:
+            target.relative_to(root.resolve(strict=True))
+        except ValueError:
+            continue
+        raise ValueError("Escolha um destino fora das bibliotecas abertas.")
+
+    total_bytes = sum(
+        source.stat().st_size
+        for source, _relative in [*ir_entries, *capture_entries]
+    )
+    with TemporaryDirectory(prefix=".audition-manager-export-", dir=parent) as staging:
+        payload = Path(staging) / name
+        ir_directory = payload / "IRs"
+        capture_directory = payload / "Capturas"
+        ir_directory.mkdir(parents=True)
+        capture_directory.mkdir(parents=True)
+        for directory, entries in (
+            (ir_directory, ir_entries), (capture_directory, capture_entries)
+        ):
+            for source, relative in entries:
+                destination = directory / relative
+                destination.parent.mkdir(parents=True, exist_ok=True)
+                copy2(source, destination)
+        payload.rename(target)
+    return FavoriteExportResult(
+        target, len(ir_entries), len(capture_entries), total_bytes
+    )
+
+
+def _collect_entries(
+    root: Path | None, sources: list[Path], kind: str
+) -> list[tuple[Path, Path]]:
+    if not sources:
+        return []
+    if root is None:
+        raise ValueError(f"A pasta de {kind}s não está aberta.")
+    resolved_root = root.resolve(strict=True)
+    entries = []
+    for source in sources:
+        resolved = source.resolve(strict=True)
+        if not resolved.is_file():
+            raise ValueError(f"O favorito não é um arquivo: {resolved}")
+        try:
+            relative = resolved.relative_to(resolved_root)
+        except ValueError as error:
+            raise ValueError(
+                f"O favorito está fora da pasta de {kind}s: {resolved}"
+            ) from error
+        entries.append((resolved, relative))
+    return entries
