@@ -54,6 +54,7 @@ DI em loop, navegação contínua entre IRs e metadados persistentes.
    **Implementado para auditoria:** a exportação conjunta inclui favoritos das
    duas bibliotecas em subpastas separadas, `Favoritos/Capturas` e
    `Favoritos/IRs`, preserva subpastas e não sobrescreve destinos existentes.
+   O diálogo permite incluir ambos os tipos ou somente um deles.
 
 ## 1.1 — Polimento do MVP
 

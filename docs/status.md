@@ -28,12 +28,12 @@ o histórico de cada incremento e podem mencionar limitações já resolvidas.
 - Bypasses independentes para captura NAM e IR, com atalhos `N` e `B`.
 - Biblioteca NAM com busca, filtros, favoritos, avaliação, notas e persistência.
 - Exportação conjunta implementada com separação em `Favoritos/Capturas` e
-  `Favoritos/IRs`.
+  `Favoritos/IRs` e seleção das categorias antes de copiar.
 - Ganho NAM independente, medidor de pico e proteção de pico em toda a cadeia.
 
 ## Verificação atual
 
-- Suíte automatizada: **81 testes passando**.
+- Suíte automatizada: **82 testes passando**.
 - Compilação de bytecode e `git diff --check`: sem erros na última entrega.
 - Reprodução e interface: confirmadas no WSL/WSLg pelo usuário.
 - Saída PortAudio no WSLg: validada com a ponte ALSA/PulseAudio.

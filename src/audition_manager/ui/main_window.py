@@ -6,6 +6,8 @@ from PySide6.QtGui import QCloseEvent, QKeySequence, QShortcut
 from PySide6.QtWidgets import (
     QCheckBox,
     QComboBox,
+    QDialog,
+    QDialogButtonBox,
     QFileDialog,
     QLabel,
     QLineEdit,
@@ -17,7 +19,6 @@ from PySide6.QtWidgets import (
     QPlainTextEdit,
     QSlider,
     QHBoxLayout,
-    QInputDialog,
     QVBoxLayout,
     QWidget,
 )
@@ -75,6 +76,50 @@ def choose_nam_directory(parent: QWidget, initial: str) -> str:
         return ""
     selected = dialog.selectedFiles()
     return selected[0] if selected else ""
+
+
+class ExportOptionsDialog(QDialog):
+    def __init__(self, parent: QWidget | None = None) -> None:
+        super().__init__(parent)
+        self.setWindowTitle("Exportar favoritos")
+        self.folder_name = QLineEdit("Audition Manager Favorites")
+        self.export_captures = QCheckBox("Capturas")
+        self.export_captures.setChecked(True)
+        self.export_irs = QCheckBox("IRs")
+        self.export_irs.setChecked(True)
+        self.buttons = QDialogButtonBox(
+            QDialogButtonBox.StandardButton.Ok
+            | QDialogButtonBox.StandardButton.Cancel
+        )
+        layout = QVBoxLayout(self)
+        layout.addWidget(QLabel("Nome da nova pasta:"))
+        layout.addWidget(self.folder_name)
+        layout.addWidget(QLabel("Incluir favoritos de:"))
+        layout.addWidget(self.export_captures)
+        layout.addWidget(self.export_irs)
+        layout.addWidget(self.buttons)
+        self.buttons.accepted.connect(self.accept)
+        self.buttons.rejected.connect(self.reject)
+        self.export_captures.toggled.connect(self.update_accept_button)
+        self.export_irs.toggled.connect(self.update_accept_button)
+
+    @Slot()
+    def update_accept_button(self) -> None:
+        button = self.buttons.button(QDialogButtonBox.StandardButton.Ok)
+        button.setEnabled(
+            self.export_captures.isChecked() or self.export_irs.isChecked()
+        )
+
+
+def choose_export_options(parent: QWidget) -> tuple[str, bool, bool, bool]:
+    dialog = ExportOptionsDialog(parent)
+    accepted = dialog.exec() == QDialog.DialogCode.Accepted
+    return (
+        dialog.folder_name.text(),
+        dialog.export_captures.isChecked(),
+        dialog.export_irs.isChecked(),
+        accepted,
+    )
 
 
 class StarRating(QWidget):
@@ -715,18 +760,22 @@ class MainWindow(QMainWindow):
         )
         if not parent:
             return
-        name, accepted = QInputDialog.getText(
-            self, "Nome da pasta", "Nome da nova pasta:",
-            text="Audition Manager Favorites",
-        )
+        name, include_captures, include_irs, accepted = choose_export_options(self)
         if not accepted:
+            return
+        selected_irs = ir_favorites if include_irs else []
+        selected_captures = capture_favorites if include_captures else []
+        if not selected_irs and not selected_captures:
+            self.status.setText(
+                "As categorias escolhidas não possuem favoritos para exportar."
+            )
             return
         try:
             result = export_library_favorites(
                 Path(parent), name,
-                ir_root=self.ir_root, ir_sources=ir_favorites,
+                ir_root=self.ir_root, ir_sources=selected_irs,
                 capture_root=self.capture_root,
-                capture_sources=capture_favorites,
+                capture_sources=selected_captures,
             )
         except (OSError, ValueError) as error:
             self.show_error(str(error))

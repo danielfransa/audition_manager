@@ -18,7 +18,9 @@ from audition_manager.audio.transport import PlaybackTransport, PlaybackState
 from audition_manager.config.preferences import PreferencesStore, UserPreferences
 from audition_manager.library.repository import ImpulseResponseRepository
 from audition_manager.library.models import ImpulseResponse
-from audition_manager.ui.main_window import MainWindow, create_ir_directory_dialog
+from audition_manager.ui.main_window import (
+    ExportOptionsDialog, MainWindow, create_ir_directory_dialog,
+)
 
 
 class FakeOutput:
@@ -103,6 +105,24 @@ def test_ir_directory_dialog_shows_wav_files_and_selects_directory() -> None:
         assert (
             dialog.labelText(dialog.DialogLabel.Accept) == "Escolher esta pasta"
         )
+    finally:
+        dialog.close()
+
+
+def test_export_options_default_to_both_and_require_one_category() -> None:
+    app = QApplication.instance() or QApplication([])
+    dialog = ExportOptionsDialog()
+    try:
+        ok = dialog.buttons.button(dialog.buttons.StandardButton.Ok)
+        assert dialog.folder_name.text() == "Audition Manager Favorites"
+        assert dialog.export_captures.isChecked()
+        assert dialog.export_irs.isChecked()
+        assert ok.isEnabled()
+        dialog.export_captures.setChecked(False)
+        dialog.export_irs.setChecked(False)
+        assert not ok.isEnabled()
+        dialog.export_irs.setChecked(True)
+        assert ok.isEnabled()
     finally:
         dialog.close()
 
@@ -642,8 +662,8 @@ def test_exports_all_favorites_from_current_root_regardless_of_filters(
         lambda *args: str(destination),
     )
     monkeypatch.setattr(
-        "audition_manager.ui.main_window.QInputDialog.getText",
-        lambda *args, **kwargs: ("My Pedal IRs", True),
+        "audition_manager.ui.main_window.choose_export_options",
+        lambda *args: ("My Pedal IRs", False, True, True),
     )
     messages = []
     monkeypatch.setattr(
@@ -671,8 +691,8 @@ def test_exports_all_favorites_from_current_root_regardless_of_filters(
         assert (exported / "IRs" / "Mesa" / "V30.wav").exists()
         assert (exported / "IRs" / "Clean.wav").exists()
         assert not (exported / "IRs" / "Other.wav").exists()
-        assert (exported / "Capturas" / "Favorite Amp.nam").exists()
-        assert "3 favoritos exportados (1 captura, 2 IRs)" in window.status.text()
+        assert list((exported / "Capturas").iterdir()) == []
+        assert "2 favoritos exportados (0 capturas, 2 IRs)" in window.status.text()
         assert messages == [window.status.text()]
     finally:
         window.close()

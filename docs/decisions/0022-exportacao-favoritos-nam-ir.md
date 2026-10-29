@@ -20,6 +20,10 @@ Cada categoria preserva suas subpastas relativas. As duas pastas são criadas
 mesmo quando uma categoria está vazia, deixando o pacote previsível. É possível
 exportar apenas capturas, apenas IRs ou ambos.
 
+O diálogo que solicita o nome contém as opções **Capturas** e **IRs**, ambas
+marcadas inicialmente. O usuário pode excluir uma categoria da exportação; a
+confirmação fica desativada quando as duas opções estão desmarcadas.
+
 A preparação ocorre em uma pasta temporária e só depois é renomeada para o nome
 final. Destinos existentes não são sobrescritos e destinos dentro das bibliotecas
 abertas são recusados para evitar que um novo scan encontre cópias exportadas.
