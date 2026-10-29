@@ -354,6 +354,15 @@ validado em Windows real. PyInstaller não é um cross-compiler.
   direto (`archive: false`): o download agora deve ser o próprio
   `AuditionManager-Windows-x64.zip`, contendo a pasta `AuditionManager`.
 
+### Aceite do pacote portátil — 2026-10-29
+
+O usuário confirmou que o ZIP da revisão `eeed30f` funciona corretamente em
+Windows após os ajustes. O workflow terminou com sucesso e publicou um arquivo
+direto de aproximadamente 107 MB, incluindo aplicação, runtime e samples.
+Interface, ausência de console e organização do pacote foram aprovadas. O pacote
+está liberado para a pré-release `v0.1.0-alpha`; instalador e assinatura ficam
+para uma etapa posterior.
+
 ## Avaliação por estrelas clicáveis
 
 - O teste Qt clica nas estrelas 2 e 4, confirma a atualização visual, consulta o

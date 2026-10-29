@@ -39,6 +39,8 @@ limitations that have since been resolved.
 - Automated suite: **89 tests passing**.
 - Bytecode compilation and `git diff --check`: clean in the latest delivery.
 - Interface, playback, and PortAudio output confirmed under WSL/WSLg.
+- Portable package, UI, NAM runtime, samples, and playback confirmed by the
+  maintainer on real Windows at revision `eeed30f`.
 - Current integration branch: `develop`.
 
 ## NAM A2 in progress
@@ -60,10 +62,9 @@ reliable format or protocol documentation and are not implemented.
 
 ## Pending validation
 
-- Build `AuditionManager-Windows-x64.zip` on Windows and validate UI, WASAPI,
-  preferences, export, NAM runtime, and shutdown.
 - Run the complete native-Linux checklist; WSLg is not a substitute.
-- Consider an installer and signing only after the portable package is approved.
+- Expand public prerelease validation before considering an installer and code
+  signing.
 - Evaluate clickable ratings and crossfade during regular listening.
 - Review third-party notices and redistributed licenses before binary releases.
 

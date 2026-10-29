@@ -51,6 +51,8 @@ o histórico de cada incremento e podem mencionar limitações já resolvidas.
 - Compilação de bytecode e `git diff --check`: sem erros na última entrega.
 - Reprodução e interface: confirmadas no WSL/WSLg pelo usuário.
 - Saída PortAudio no WSLg: validada com a ponte ALSA/PulseAudio.
+- Pacote portátil, interface, runtime NAM, samples e reprodução: validados pelo
+  usuário em Windows real na revisão `eeed30f`.
 - Branch local: `develop`.
 
 ## Em andamento — NAM A2
@@ -73,10 +75,9 @@ o histórico de cada incremento e podem mencionar limitações já resolvidas.
 
 ## Validações pendentes
 
-- Gerar `AuditionManager-Windows-x64.zip` em Windows real e executar o roteiro
-  de interface, WASAPI, preferências, exportação e encerramento.
 - Executar o roteiro completo em Linux nativo; WSLg não substitui essa validação.
-- Avaliar instalador e assinatura somente após aprovar o pacote portátil.
+- Ampliar a validação pública da pré-release antes de avaliar instalador e
+  assinatura digital.
 - Validar auditivamente as estrelas clicáveis e o crossfade no uso cotidiano.
 - Revisar licenças e avisos das dependências antes de distribuir binários.
 
