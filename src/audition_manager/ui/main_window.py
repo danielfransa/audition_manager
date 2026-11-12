@@ -198,8 +198,10 @@ class RenderWorker(QThread):
         self.measurement: LoudnessMeasurement | None = None
         self.match_source = "disabled"
         self.applied_compensation_db = 0.0
+        self.processed_for_matching = False
 
     def finish_audio(self, raw: AudioBuffer) -> AudioBuffer:
+        self.processed_for_matching = True
         compensation = 0.0
         if self.level_matching_enabled:
             if self.cached_compensation_db is not None:
@@ -1400,7 +1402,10 @@ class MainWindow(QMainWindow):
 
     @Slot(object)
     def play_rendered(self, audio: AudioBuffer) -> None:
-        if self.worker.measurement_key is not None:
+        if (
+            self.worker.measurement_key is not None
+            and self.worker.processed_for_matching
+        ):
             measurement = self.worker.measurement
             self.repository.upsert_level_measurement(
                 self.worker.measurement_key,

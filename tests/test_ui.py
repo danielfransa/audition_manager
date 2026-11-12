@@ -470,6 +470,23 @@ def test_full_chain_measurement_is_persisted_and_displayed(tmp_path: Path) -> No
         assert measurement is not None
         assert measurement.method == "bs1770-v1"
         assert "LUFS; compensação" in window.level_match_status.text()
+
+        # Re-entering the same variant hits the in-memory audio cache. It must
+        # not overwrite the valid SQLite measurement with an empty worker result.
+        window.level_matching.setChecked(False)
+        deadline = monotonic() + 5
+        while window.worker is not None and monotonic() < deadline:
+            app.processEvents()
+            sleep(0.01)
+        window.level_matching.setChecked(True)
+        deadline = monotonic() + 5
+        while window.worker is not None and monotonic() < deadline:
+            app.processEvents()
+            sleep(0.01)
+        cached = repository.get_level_measurement(key)
+        assert cached is not None
+        assert cached.loudness_lufs is not None
+        assert cached.method == "bs1770-v1"
     finally:
         if window.worker is not None:
             window.worker.wait()

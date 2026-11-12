@@ -38,7 +38,7 @@ limitations that have since been resolved.
 
 ## Current verification
 
-- Automated suite: **101 tests passing**.
+- Automated suite: **102 tests passing**.
 - Bytecode compilation and `git diff --check`: clean in the latest delivery.
 - Interface, playback, and PortAudio output confirmed under WSL/WSLg.
 - Portable package, UI, NAM runtime, samples, and playback confirmed by the

@@ -116,3 +116,10 @@ def test_level_measurement_survives_reopen_and_can_be_updated(tmp_path: Path) ->
         measurement.method,
     ) == (-20.0, 2.0, "bs1770-v1")
     reopened.close()
+
+
+def test_invalid_null_measurement_from_old_cache_is_ignored(tmp_path: Path) -> None:
+    repository = ImpulseResponseRepository(tmp_path / "library.sqlite3")
+    repository.upsert_level_measurement("broken", None, 0.0, "disabled")
+    assert repository.get_level_measurement("broken") is None
+    repository.close()

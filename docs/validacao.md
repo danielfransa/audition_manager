@@ -430,7 +430,7 @@ Roteiro prático:
 
 ## Medição da cadeia completa — 2026-11-12
 
-- A suíte completa passa com **101 testes**.
+- A suíte completa passa com **102 testes**.
 - Testes verificam BS.1770, diferença de 6 dB, silêncio, áudio curto, saída bruta
   antes do limitador, SQLite v4, cache e invalidação por arquivo/modo.
 - Um teste Qt mede `DI → IR`, persiste o resultado e confirma LUFS e compensação
@@ -448,3 +448,11 @@ Roteiro auditivo antes da `v0.2.0-alpha`:
 5. Teste NAM + IR, NAM com bypass de IR, apenas IR e captura sem loudness.
 6. Reinicie a aplicação e confirme que as medições continuam disponíveis.
 7. Repita no ZIP Windows antes de publicar a nova alpha.
+
+### Correção do cache antes do ZIP develop
+
+Um segundo acesso ao cache de áudio podia substituir uma medição válida por um
+registro sem LUFS. Ao formatar esse valor, a interface gerava `TypeError` tanto
+em Português quanto em Inglês. O worker agora só grava quando realmente executa
+a medição/fallback, e registros antigos inválidos são ignorados e recalculados.
+Testes reproduzem o ciclo de cache e a recuperação do banco contaminado.

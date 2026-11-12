@@ -18,6 +18,48 @@ Essa etapa melhora a comparação entre capturas com metadados compatíveis, mas
 não considera a mudança de volume provocada pelo IR nem o conteúdo específico da
 DI. Portanto, ela não é a normalização final.
 
+## O que é LUFS
+
+LUFS significa *Loudness Units relative to Full Scale*. Diferentemente do pico
+dBFS, que observa apenas a maior amostra, LUFS estima quão alto um sinal é
+percebido ao longo do tempo. Dois sons podem atingir o mesmo pico e ainda parecer
+ter volumes muito diferentes por causa da duração, densidade e distribuição de
+frequências.
+
+A medição integrada usada aqui considera todo o loop de DI processado. O
+algoritmo BS.1770 aplica ponderação de frequência (*K-weighting*) e combina a
+energia dos canais. O gating descarta trechos muito silenciosos da média, evitando
+que pausas longas façam uma captura parecer artificialmente mais baixa.
+
+Termos importantes:
+
+- **dBFS de pico:** maior amplitude digital; é usado para evitar clipping, não
+  para decidir se dois sons parecem igualmente altos.
+- **RMS:** energia média simples; é útil, mas não inclui a ponderação e o gating
+  usados na estimativa perceptiva escolhida.
+- **LUFS integrado:** estimativa de loudness durante o programa/loop completo;
+  é a medida principal do Audition Manager.
+- **LU:** diferença relativa de loudness. Uma correção de `+3 dB` equivale, para
+  este controle de ganho, a elevar o resultado medido em aproximadamente `3 LU`.
+
+## Por que -18 LUFS
+
+`-18 LUFS` é o alvo interno de comparação do projeto, não a recomendação de
+distribuição da EBU R128, cujo contexto principal é broadcast. O alvo foi mantido
+próximo da convenção de normalização usada pelo ecossistema NAM e oferece margem
+antes de 0 dBFS para material de guitarra com transientes.
+
+O valor do alvo não escolhe qual timbre é melhor: ele apenas define o ponto comum
+de reprodução. A compensação é calculada por:
+
+```text
+compensação em dB = -18 LUFS - loudness integrado medido
+```
+
+Exemplo: uma cadeia medida em `-12 LUFS` recebe `-6 dB`; uma cadeia em
+`-22 LUFS` recebe `+4 dB`. A correção é limitada entre `-24` e `+12 dB`. O ganho
+manual é aplicado separadamente, e o checkbox permite ouvir o nível original.
+
 ## Medição implementada para a próxima alpha
 
 A aplicação agora mede a saída real da cadeia selecionada:
@@ -75,5 +117,15 @@ medição de um NAM com outro IR.
 - Não confundir proteção de pico com loudness medido.
 - Cobrir NAM com e sem metadado, somente IR, NAM sem IR e cadeia NAM + IR.
 
-Referências técnicas: [ITU-R BS.1770](https://www.itu.int/rec/R-REC-BS.1770/en)
-e [EBU R128](https://tech.ebu.ch/publications/r128).
+## Referências usadas
+
+- [ITU-R BS.1770](https://www.itu.int/rec/R-REC-BS.1770/en): algoritmo de
+  loudness e referência para ponderação, canais e gating.
+- [EBU R128](https://tech.ebu.ch/publications/r128): uso de loudness integrado e
+  gating para normalização; o alvo broadcast não é copiado como alvo do app.
+- [pyloudnorm](https://github.com/csteinmetz1/pyloudnorm): implementação MIT de
+  BS.1770 usada pelo projeto.
+- [Especificação do arquivo NAM](https://github.com/sdatkinson/neural-amp-modeler/blob/main/docs/source/model-file.rst):
+  campos opcionais de loudness e calibração.
+- [Plugin oficial NeuralAmpModeler](https://github.com/sdatkinson/NeuralAmpModelerPlugin/blob/main/NeuralAmpModeler/NeuralAmpModeler.cpp):
+  referência do uso do loudness do modelo no ecossistema NAM.

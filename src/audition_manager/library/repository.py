@@ -208,6 +208,10 @@ class ImpulseResponseRepository:
         ).fetchone()
         if row is None:
             return None
+        if row["loudness_lufs"] is None and row["method"] not in {
+            "nam_metadata", "unavailable",
+        }:
+            return None
         return StoredLevelMeasurement(
             key=row["key"], loudness_lufs=row["loudness_lufs"],
             compensation_db=row["compensation_db"], method=row["method"],

@@ -15,7 +15,7 @@ python -m compileall -q src tests
 git diff --check
 ```
 
-Current baseline: **101 tests passing**.
+Current baseline: **102 tests passing**.
 
 ## NAM level metadata — 2026-11-12
 
@@ -40,6 +40,10 @@ Current baseline: **101 tests passing**.
   LUFS and compensation display.
 - Listening validation under WSL/Linux and in the Windows ZIP remains required
   before `v0.2.0-alpha`.
+
+An audio-cache hit previously could overwrite a valid measurement with a null
+LUFS value and trigger a formatting `TypeError` in either language. Cache hits no
+longer write empty worker state; invalid legacy rows are ignored and recalculated.
 
 ## Common functional checklist
 
