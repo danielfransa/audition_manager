@@ -24,7 +24,7 @@ Native Linux and real-Windows acceptance remain open platform checks.
 - Offline `DI → NAM → IR` processing with independent bypasses and NAM gain.
 - Capture library, metadata, filters, ratings, notes, preferences, and export.
 
-Listening and compilation still need native Linux and Windows validation.
+Listening and compilation are validated on Windows; native Linux remains open.
 
 ## Internationalization
 

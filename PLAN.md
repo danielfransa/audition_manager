@@ -84,7 +84,8 @@ em um protótipo isolado antes da interface.
 **Implementado para auditoria:** validação de A2 `SlimmableContainer`, runtime
 oficial fixado por commit, downmix/reamostragem para 48 kHz e cadeia offline
 `DI → NAM → IR`. A interface lista capturas separadamente e preserva o fluxo
-somente com IR. Falta a validação prática e auditiva em Windows e Linux nativo.
+somente com IR. A validação prática no Windows foi concluída; Linux nativo
+permanece pendente.
 
 **Biblioteca implementada para auditoria:** busca, filtros, favoritos, estrelas,
 notas, navegação `Ctrl+←/→` e restauração da última pasta/seleção. A migração
@@ -150,8 +151,8 @@ em uma nova versão alpha somente após a validação prática do conjunto:
    [`docs/comparacao-nivel.md`](docs/comparacao-nivel.md).
    **Implementado para auditoria:** loudness integrado BS.1770, SQLite v4,
    medição por cadeia completa, cache/invalidação, fallback NAM identificado e
-   estados explícitos para áudio curto ou silencioso. A validação auditiva ainda
-   deve ser feita antes da nova alpha.
+   estados explícitos para áudio curto ou silencioso. **Validado pelo usuário no
+   ZIP Windows da branch `develop`; liberado para `v0.2.0-alpha`.**
 
 Critérios gerais: evitar que “mais alto” seja confundido com “melhor”, manter
 proteção de pico, indicar claramente quando a compensação está ativa e nunca

@@ -456,3 +456,10 @@ registro sem LUFS. Ao formatar esse valor, a interface gerava `TypeError` tanto
 em Português quanto em Inglês. O worker agora só grava quando realmente executa
 a medição/fallback, e registros antigos inválidos são ignorados e recalculados.
 Testes reproduzem o ciclo de cache e a recuperação do banco contaminado.
+
+### Aceite do ZIP de nivelamento — 2026-11-12
+
+O usuário validou no Windows o ZIP da branch `develop` produzido pelo workflow
+7, revisão `1dcedd7`. A medição LUFS, cache, traduções e fluxo com capturas/IRs
+foram aprovados. O incremento está liberado para merge em `main`, tag
+`v0.2.0-alpha` e publicação como pré-release.

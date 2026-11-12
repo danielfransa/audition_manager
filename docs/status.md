@@ -63,7 +63,8 @@ o histórico de cada incremento e podem mencionar limitações já resolvidas.
   commit `0b3d3c9`. O renderer oficial carregou uma captura A2 real no WSL.
 - A interface aceita uma pasta de capturas, valida `SlimmableContainer`, converte
   a DI para mono/48 kHz e combina a saída com o IR selecionado.
-- A compilação e audição ainda precisam ser validadas em Windows e Linux nativo.
+- Compilação e audição foram validadas no Windows; Linux nativo permanece
+  pendente.
 - O pacote Python de treinamento, com PyTorch, não será adicionado sem necessidade.
 
 ## BlackBox e AM4DATA
@@ -128,8 +129,8 @@ etapa final do instalador. Detalhes e critérios estão no `PLAN.md` e na decis�
 
 O desenho do terceiro incremento e seus critérios de aceite estão em
 [`docs/comparacao-nivel.md`](comparacao-nivel.md). As mudanças entre a versão
-atual e a próxima alpha serão mantidas no rascunho
-[`docs/releases/v0.2.0-alpha.md`](releases/v0.2.0-alpha.md) até a publicação.
+anterior e a nova alpha estão nas notas finais
+[`docs/releases/v0.2.0-alpha.md`](releases/v0.2.0-alpha.md).
 
 ## Referências de acompanhamento
 

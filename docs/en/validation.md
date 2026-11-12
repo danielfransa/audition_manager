@@ -38,8 +38,8 @@ Current baseline: **102 tests passing**.
   output, SQLite v4, cache reuse, and file/mode invalidation.
 - An offscreen Qt test measures `DI → IR`, persists the result, and verifies the
   LUFS and compensation display.
-- Listening validation under WSL/Linux and in the Windows ZIP remains required
-  before `v0.2.0-alpha`.
+- The maintainer validated the `develop` ZIP on real Windows hardware. Native
+  Linux validation remains open and does not block this alpha prerelease.
 
 An audio-cache hit previously could overwrite a valid measurement with a null
 LUFS value and trigger a formatting `TypeError` in either language. Cache hits no

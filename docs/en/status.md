@@ -52,8 +52,8 @@ limitations that have since been resolved.
   commit `0b3d3c9`; its official renderer loaded a real A2 capture under WSL.
 - The application validates `SlimmableContainer`, converts DI audio to mono at
   48 kHz, and combines the NAM result with the selected IR.
-- Compilation and listening still require validation on native Linux and a real
-  Windows machine. The PyTorch training package is intentionally not bundled.
+- Compilation and listening are validated on real Windows hardware; native Linux
+  remains open. The PyTorch training package is intentionally not bundled.
 
 ## BlackBox and AM4DATA
 
@@ -114,7 +114,7 @@ remains the official Windows distribution until the final installer stage. See
 
 The third increment design and acceptance criteria are documented in
 [fair level comparison](level-matching.md). Changes from the current release are
-tracked in the [`v0.2.0-alpha` draft](../releases/v0.2.0-alpha.md) until release.
+documented in the final [`v0.2.0-alpha` notes](../releases/v0.2.0-alpha.md).
 
 ## Tracking references
 

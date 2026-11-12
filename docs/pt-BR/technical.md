@@ -8,7 +8,7 @@ de `docs/`, preservando seus links e o histórico Git:
 - [Desenvolvimento e arquitetura](../development.md)
 - [Validação e histórico de testes](../validacao.md)
 - [Plano de comparação justa de volume](../comparacao-nivel.md)
-- [Rascunho da próxima alpha](../releases/v0.2.0-alpha.md)
+- [Notas da v0.2.0-alpha](../releases/v0.2.0-alpha.md)
 - [Registro das decisões](decisions.md)
 - [Prompt inicial, preservado sem alterações](../prompt-inicial.md)
 
