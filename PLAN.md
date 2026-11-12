@@ -121,17 +121,51 @@ mínima equilibrada, subprocesso NAM sem console no Windows e `samples` rastread
 pelo Git incluídos no ZIP. O tempo de inferência Full/Lite ainda será medido no
 teste prático; remover a janela de console não elimina o custo do modelo A2.
 
-**Próximo marco:** publicar `v0.1.0-alpha` como pré-release. Instalador e
-assinatura digital continuam adiados até haver mais validação pública.
+**Marco concluído:** `v0.1.0-alpha` foi publicada como pré-release e o ZIP
+portátil foi validado em Windows real. Instalador e assinatura digital continuam
+adiados até a conclusão dos marcos abaixo.
 
-## 5 — Entrada ao vivo
+## 5 — Comparação com nível equilibrado (próxima alpha)
+
+Entregar os itens abaixo em incrementos separados e auditáveis, consolidando-os
+em uma nova versão alpha somente após a validação prática do conjunto:
+
+1. Ler dos arquivos NAM os metadados disponíveis de `loudness`,
+   `input_level_dbu` e `output_level_dbu`; persistir no SQLite e apresentar os
+   valores sem alterar o áudio. Arquivos sem esses campos continuam válidos.
+2. Adicionar equalização automática de volume como opção desativável. Quando
+   ligada, a comparação usa o metadado confiável disponível; quando desligada,
+   preserva o nível original e o ganho manual existente.
+3. Para capturas sem metadado e para IRs, medir o nível usando a DI de referência,
+   calcular a compensação e armazená-la no SQLite. A medição não deve ser refeita
+   enquanto o arquivo e a referência não mudarem.
+
+Critérios gerais: evitar que “mais alto” seja confundido com “melhor”, manter
+proteção de pico, indicar claramente quando a compensação está ativa e nunca
+substituir silenciosamente o ganho original do arquivo.
+
+## 6 — Entrada ao vivo
 
 Investigar WASAPI/ASIO, buffers, taxas, concorrência e latência. Medir antes de
 migrar DSP. Meta exploratória: 48 kHz, 64/128 amostras; não é compromisso desta
 fase. Callbacks não devem fazer I/O, carregar modelos ou alocar grandes buffers.
 Convolução por blocos e eventual backend C++/JUCE exigem contrato próprio.
 
-## 6 — AM4DATA / Blackbox / IR-Box
+## 7 — Comparação cega
+
+Ocultar nome do arquivo, pacote/origem, favorito e avaliação anterior enquanto
+o usuário compara. Revelar essas informações depois de registrar a nova
+avaliação ou encerrar o modo. Esta etapa foi deliberadamente movida para depois
+da consolidação da entrada ao vivo.
+
+## 8 — Instalador Windows
+
+Criar o instalador somente depois de consolidar a nova alpha, a entrada ao vivo
+e a comparação cega. O ZIP portátil permanece como formato de distribuição e
+diagnóstico até lá. Avaliar atalhos, desinstalação, atualização, avisos de
+terceiros, assinatura de código e comportamento do SmartScreen.
+
+## 9 — AM4DATA / Blackbox / IR-Box
 
 Pesquisar separadamente formatos e ferramentas; classificação por extensão
 não comprova compatibilidade. Não inventar parsers ou conversores proprietários.
@@ -140,7 +174,7 @@ Usar inicialmente o conversor oficial NAM → AM4DATA da M-VAVE. Tratar Blackbox
 e IR-Box como destinos independentes: pesquisar protocolos,
 limites, formatos e ferramentas de cada equipamento antes de transferência direta.
 
-## 7 — Biblioteca em escala
+## 10 — Biblioteca em escala
 
 Comparação de centenas de capturas/IRs, reprodutibilidade das dependências e
 revisão das licenças redistribuídas.

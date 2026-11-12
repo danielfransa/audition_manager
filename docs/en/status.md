@@ -1,6 +1,6 @@
 # Current project status
 
-Updated on **October 29, 2026**. This is the current summary. Decision records
+Updated on **November 12, 2026**. This is the current summary. Decision records
 and older sections of the validation log preserve the history and may describe
 limitations that have since been resolved.
 
@@ -33,6 +33,8 @@ limitations that have since been resolved.
 - Independent NAM gain, processed peak meter, and peak protection.
 - A2 Full/Lite modes and structural support for legacy WaveNet, LSTM, ConvNet,
   Linear, and Sequential NAM models.
+- Published `v0.1.0-alpha` prerelease with a portable ZIP validated on real
+  Windows hardware.
 
 ## Current verification
 
@@ -67,6 +69,18 @@ reliable format or protocol documentation and are not implemented.
   signing.
 - Evaluate clickable ratings and crossfade during regular listening.
 - Review third-party notices and redistributed licenses before binary releases.
+
+## Approved next milestones
+
+1. A new level-matching alpha: NAM level metadata, optional automatic matching,
+   and measured/cached compensation for NAMs without metadata and for IRs.
+2. Live guitar input, with measured latency and stability.
+3. Blind comparison, hiding identity and previous ratings until a new rating.
+4. A Windows installer after the previous three milestones are consolidated.
+
+Blind comparison is intentionally scheduled after live input. The portable ZIP
+remains the official Windows distribution until the final installer stage. See
+`PLAN.md` and decision 0030 for the detailed scope and acceptance criteria.
 
 ## Tracking references
 

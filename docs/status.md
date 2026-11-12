@@ -1,6 +1,6 @@
 # Status atual do projeto
 
-Atualizado em **29 de outubro de 2026**. Este arquivo é o resumo vigente; os
+Atualizado em **12 de novembro de 2026**. Este arquivo é o resumo vigente; os
 registros em `docs/decisions/` e as seções antigas de `docs/validacao.md` formam
 o histórico de cada incremento e podem mencionar limitações já resolvidas.
 
@@ -44,6 +44,7 @@ o histórico de cada incremento e podem mencionar limitações já resolvidas.
 - Ganho NAM independente, medidor de pico e proteção de pico em toda a cadeia.
 - Modos A2 Full/Lite e suporte estrutural a NAM legado WaveNet, LSTM, ConvNet,
   Linear e Sequential.
+- Pré-release `v0.1.0-alpha` publicada com ZIP portátil validado em Windows real.
 
 ## Verificação atual
 
@@ -80,6 +81,19 @@ o histórico de cada incremento e podem mencionar limitações já resolvidas.
   assinatura digital.
 - Validar auditivamente as estrelas clicáveis e o crossfade no uso cotidiano.
 - Revisar licenças e avisos das dependências antes de distribuir binários.
+
+## Próximos marcos aprovados
+
+1. Nova alpha de comparação equilibrada: leitura dos metadados de nível NAM,
+   equalização automática opcional e medição/cache para NAMs sem metadados e IRs.
+2. Entrada de guitarra ao vivo, com latência e estabilidade medidas.
+3. Comparação cega, ocultando identidade e avaliações até a nova classificação.
+4. Instalador Windows, depois da consolidação dos três marcos anteriores.
+
+O modo de comparação cega foi deliberadamente deixado para depois da entrada ao
+vivo. O ZIP portátil continua sendo a distribuição oficial para Windows até a
+etapa final do instalador. Detalhes e critérios estão no `PLAN.md` e na decisão
+0030.
 
 ## Referências de acompanhamento
 

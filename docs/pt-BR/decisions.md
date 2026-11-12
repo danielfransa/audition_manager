@@ -35,3 +35,4 @@ antigas já foram resolvidas; consulte primeiro o [status atual](../status.md).
 | [0027](../decisions/0027-build-windows-automatizado.md) | Build Windows automatizado e verificável |
 | [0028](../decisions/0028-polimento-windows.md) | Polimento da interface e execução no Windows |
 | [0029](../decisions/0029-prerelease-windows.md) | Primeira pré-release Windows |
+| [0030](../decisions/0030-ordem-nivel-live-cega-instalador.md) | Ordem dos próximos marcos: nivelamento, entrada ao vivo, comparação cega e instalador Windows |

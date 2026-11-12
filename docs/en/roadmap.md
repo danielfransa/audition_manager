@@ -35,22 +35,45 @@ Listening and compilation still need native Linux and Windows validation.
 3. Bilingual technical status, development, validation, roadmap, and decision
    navigation — **implemented for review**.
 
-## Next stages
+## Next stages (approved order)
 
-### Windows distribution
+### 1. Level-matched comparison — next alpha
 
-Build and validate the portable package on real Windows with both languages and
-the NAM runtime. Evaluate installer, signing, and GitHub Releases afterward.
-The PowerShell build, frozen-executable smoke test, and GitHub Actions
-workflow are implemented; a successful artifact and listening test are pending.
+Deliver each item as a separate, auditable increment, then publish a new alpha
+after practical validation of the complete set:
 
-### Live guitar input
+1. Read `loudness`, `input_level_dbu`, and `output_level_dbu` from NAM metadata,
+   persist them in SQLite, and display them without changing the audio.
+2. Add optional automatic level matching. Turning it off must preserve the
+   original level and the existing manual gain workflow.
+3. For NAM files without loudness metadata and for IRs, measure a reference
+   level with the DI loop and cache the resulting compensation in SQLite until
+   either the source file or reference changes.
+
+The feature must clearly indicate when compensation is active, retain peak
+protection, and never silently overwrite the source's original level.
+
+### 2. Live guitar input
 
 Research WASAPI/ASIO, buffers, rates, concurrency, and latency before changing
 the DSP architecture. The exploratory target is 48 kHz at 64/128 frames. Audio
 callbacks must not perform I/O, model loading, or large allocation.
 
-### AM4DATA, BlackBox, and IR-Box
+### 3. Blind comparison
+
+Hide filenames, pack/source information, favorites, and previous ratings during
+comparison. Reveal them after the user submits a new rating or leaves blind
+mode. This stage is intentionally scheduled after live input is consolidated.
+
+### 4. Windows installer
+
+The portable Windows ZIP has already been built, published, and validated on a
+real Windows machine. Keep it as the distribution and diagnostic format until
+the new alpha, live input, and blind comparison are consolidated. Then evaluate
+shortcuts, uninstall support, upgrades, third-party notices, code signing, and
+SmartScreen behavior.
+
+### Later: AM4DATA, BlackBox, and IR-Box
 
 Treat each device and format independently. Do not invent proprietary parsers or
 USB/MIDI/SysEx protocols. Initially use M-VAVE's official NAM-to-AM4DATA
