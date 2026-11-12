@@ -143,7 +143,11 @@ em uma nova versão alpha somente após a validação prática do conjunto:
    rodada, somente capturas com `metadata.loudness` recebem compensação.
 3. Para capturas sem metadado e para IRs, medir o nível usando a DI de referência,
    calcular a compensação e armazená-la no SQLite. A medição não deve ser refeita
-   enquanto o arquivo e a referência não mudarem.
+   enquanto o arquivo e a referência não mudarem. A medição final será feita na
+   saída completa da cadeia selecionada, por loudness integrado com gating de
+   silêncio, e não por pico. O cache será identificado pela DI, captura, IR,
+   modo Full/Lite e versões dos arquivos. Detalhes em
+   [`docs/comparacao-nivel.md`](docs/comparacao-nivel.md).
 
 Critérios gerais: evitar que “mais alto” seja confundido com “melhor”, manter
 proteção de pico, indicar claramente quando a compensação está ativa e nunca

@@ -50,6 +50,8 @@ remains future research.
 - [Roadmap](roadmap.md)
 - [Development and architecture](development.md)
 - [Validation](validation.md)
+- [Fair level-comparison design](level-matching.md)
+- [Next alpha draft](../releases/v0.2.0-alpha.md)
 - [Decision register](decisions.md)
 
 ## License

@@ -102,6 +102,10 @@ remains the official Windows distribution until the final installer stage. See
   UI reports that matching is unavailable and preserves the original level.
 - Manual NAM gain remains independent and peak protection stays active.
 
+The third increment design and acceptance criteria are documented in
+[fair level comparison](level-matching.md). Changes from the current release are
+tracked in the [`v0.2.0-alpha` draft](../releases/v0.2.0-alpha.md) until release.
+
 ## Tracking references
 
 - [Roadmap](roadmap.md)

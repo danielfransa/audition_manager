@@ -115,6 +115,11 @@ etapa final do instalador. Detalhes e critérios estão no `PLAN.md` e na decis�
   que a compensação está indisponível e mantém o nível original.
 - O ganho NAM manual continua independente e a proteção de pico permanece ativa.
 
+O desenho do terceiro incremento e seus critérios de aceite estão em
+[`docs/comparacao-nivel.md`](comparacao-nivel.md). As mudanças entre a versão
+atual e a próxima alpha serão mantidas no rascunho
+[`docs/releases/v0.2.0-alpha.md`](releases/v0.2.0-alpha.md) até a publicação.
+
 ## Referências de acompanhamento
 
 - `PLAN.md`: etapas, ordem de implementação e riscos.
