@@ -4,7 +4,9 @@ import sqlite3
 from collections.abc import Iterable
 from pathlib import Path
 
-from audition_manager.library.models import Capture, ImpulseResponse
+from audition_manager.library.models import (
+    Capture, ImpulseResponse, StoredLevelMeasurement,
+)
 
 
 class ImpulseResponseRepository:
@@ -75,6 +77,20 @@ class ImpulseResponseRepository:
                     "ALTER TABLE capture ADD COLUMN output_level_dbu REAL"
                 )
                 self._connection.execute("INSERT INTO schema_version(version) VALUES (3)")
+            if version < 4:
+                self._connection.execute(
+                    """
+                    CREATE TABLE level_measurement (
+                        key TEXT PRIMARY KEY,
+                        loudness_lufs REAL,
+                        compensation_db REAL NOT NULL,
+                        method TEXT NOT NULL,
+                        created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                        updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+                    )
+                    """
+                )
+                self._connection.execute("INSERT INTO schema_version(version) VALUES (4)")
 
     def upsert_many(self, items: Iterable[ImpulseResponse]) -> None:
         values = [
@@ -181,6 +197,40 @@ class ImpulseResponseRepository:
 
     def set_capture_notes(self, path: Path, notes: str) -> None:
         self._update_capture(path, "notes", notes)
+
+    def get_level_measurement(self, key: str) -> StoredLevelMeasurement | None:
+        row = self._connection.execute(
+            """
+            SELECT key, loudness_lufs, compensation_db, method
+            FROM level_measurement WHERE key = ?
+            """,
+            (key,),
+        ).fetchone()
+        if row is None:
+            return None
+        return StoredLevelMeasurement(
+            key=row["key"], loudness_lufs=row["loudness_lufs"],
+            compensation_db=row["compensation_db"], method=row["method"],
+        )
+
+    def upsert_level_measurement(
+        self, key: str, loudness_lufs: float | None,
+        compensation_db: float, method: str,
+    ) -> None:
+        with self._connection:
+            self._connection.execute(
+                """
+                INSERT INTO level_measurement(
+                    key, loudness_lufs, compensation_db, method
+                ) VALUES (?, ?, ?, ?)
+                ON CONFLICT(key) DO UPDATE SET
+                    loudness_lufs = excluded.loudness_lufs,
+                    compensation_db = excluded.compensation_db,
+                    method = excluded.method,
+                    updated_at = CURRENT_TIMESTAMP
+                """,
+                (key, loudness_lufs, compensation_db, method),
+            )
 
     def _update(self, path: Path, column: str, value: object) -> None:
         with self._connection:

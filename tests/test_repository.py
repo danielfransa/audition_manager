@@ -97,3 +97,22 @@ def test_existing_version_one_database_migrates_capture_library(tmp_path: Path) 
     ])
     assert repository.get_capture(path) is not None
     repository.close()
+
+
+def test_level_measurement_survives_reopen_and_can_be_updated(tmp_path: Path) -> None:
+    database = tmp_path / "library.sqlite3"
+    repository = ImpulseResponseRepository(database)
+    assert repository.get_level_measurement("chain-key") is None
+    repository.upsert_level_measurement("chain-key", -21.5, 3.5, "bs1770-v1")
+    repository.upsert_level_measurement("chain-key", -20.0, 2.0, "bs1770-v1")
+    repository.close()
+
+    reopened = ImpulseResponseRepository(database)
+    measurement = reopened.get_level_measurement("chain-key")
+    assert measurement is not None
+    assert (
+        measurement.loudness_lufs,
+        measurement.compensation_db,
+        measurement.method,
+    ) == (-20.0, 2.0, "bs1770-v1")
+    reopened.close()

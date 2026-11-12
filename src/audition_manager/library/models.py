@@ -28,3 +28,11 @@ class Capture:
     rating: int = 0
     notes: str = ""
 
+
+@dataclass(frozen=True)
+class StoredLevelMeasurement:
+    key: str
+    loudness_lufs: float | None
+    compensation_db: float
+    method: str
+

@@ -18,9 +18,9 @@ This improves comparisons between captures with compatible metadata, but does
 not account for level changes caused by an IR or the specific DI content. It is
 therefore not the final normalization method.
 
-## Measurement planned for the next alpha
+## Measurement implemented for the next alpha
 
-The next increment will measure the actual selected chain output:
+The application now measures the actual selected chain output:
 
 ```text
 reference DI → optional NAM → optional IR → measurement → compensation → peak protection
@@ -35,9 +35,9 @@ reference DI → optional NAM → optional IR → measurement → compensation �
 6. Display the method, measured loudness, calculated correction, and any limit.
 
 Peak is not the primary measurement because equal peaks can have very different
-perceived loudness. RMS may only be an explicitly identified fallback when
-integrated measurement is invalid. Empty, silent, too-short, or non-finite audio
-will receive no automatic compensation.
+perceived loudness. This version has no RMS fallback. Empty, silent, too-short,
+or non-finite audio uses NAM metadata when available and otherwise receives
+0 dB; both outcomes are identified and cached.
 
 ## Cache, UI, and acceptance
 

@@ -15,7 +15,7 @@ python -m compileall -q src tests
 git diff --check
 ```
 
-Current baseline: **93 tests passing**.
+Current baseline: **101 tests passing**.
 
 ## NAM level metadata — 2026-11-12
 
@@ -31,6 +31,15 @@ Current baseline: **93 tests passing**.
   gain, preference persistence, and distinct cache variants.
 - Compensation is opt-in and is not applied when loudness metadata is absent.
 - The UI displays the applied compensation or explains why it is unavailable.
+
+## Full-chain measurement — 2026-11-12
+
+- Tests cover BS.1770, a 6 dB difference, silence, short audio, pre-limiter raw
+  output, SQLite v4, cache reuse, and file/mode invalidation.
+- An offscreen Qt test measures `DI → IR`, persists the result, and verifies the
+  LUFS and compensation display.
+- Listening validation under WSL/Linux and in the Windows ZIP remains required
+  before `v0.2.0-alpha`.
 
 ## Common functional checklist
 

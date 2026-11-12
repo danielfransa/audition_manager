@@ -148,6 +148,10 @@ em uma nova versão alpha somente após a validação prática do conjunto:
    silêncio, e não por pico. O cache será identificado pela DI, captura, IR,
    modo Full/Lite e versões dos arquivos. Detalhes em
    [`docs/comparacao-nivel.md`](docs/comparacao-nivel.md).
+   **Implementado para auditoria:** loudness integrado BS.1770, SQLite v4,
+   medição por cadeia completa, cache/invalidação, fallback NAM identificado e
+   estados explícitos para áudio curto ou silencioso. A validação auditiva ainda
+   deve ser feita antes da nova alpha.
 
 Critérios gerais: evitar que “mais alto” seja confundido com “melhor”, manter
 proteção de pico, indicar claramente quando a compensação está ativa e nunca

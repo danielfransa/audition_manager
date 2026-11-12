@@ -427,3 +427,24 @@ Roteiro prático:
    equilibrada sem alterar o ganho NAM manual.
 4. Selecione uma captura sem loudness e confirme “indisponível sem loudness”.
 5. Reinicie o aplicativo e confirme que o estado do checkbox foi restaurado.
+
+## Medição da cadeia completa — 2026-11-12
+
+- A suíte completa passa com **101 testes**.
+- Testes verificam BS.1770, diferença de 6 dB, silêncio, áudio curto, saída bruta
+  antes do limitador, SQLite v4, cache e invalidação por arquivo/modo.
+- Um teste Qt mede `DI → IR`, persiste o resultado e confirma LUFS e compensação
+  na interface.
+
+Roteiro auditivo antes da `v0.2.0-alpha`:
+
+1. Zere o ganho NAM manual e marque **Igualar volume automaticamente**.
+2. Alterne entre pelo menos três capturas e três IRs; na primeira reprodução deve
+   aparecer “medição pendente” e depois o valor em LUFS.
+3. Volte a uma combinação anterior e confirme que o valor reaparece sem nova
+   demora de medição.
+4. Compare checkbox ligado e desligado. O timbre deve permanecer igual; somente
+   o nível deve mudar.
+5. Teste NAM + IR, NAM com bypass de IR, apenas IR e captura sem loudness.
+6. Reinicie a aplicação e confirme que as medições continuam disponíveis.
+7. Repita no ZIP Windows antes de publicar a nova alpha.

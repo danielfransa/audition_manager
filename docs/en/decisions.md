@@ -40,3 +40,4 @@ Portuguese, while this register provides their English titles and outcomes.
 | [0031](../decisions/0031-metadados-nivel-nam.md) | Read and persist NAM level metadata without changing audio. |
 | [0032](../decisions/0032-equalizacao-loudness-nam.md) | Optional level matching from loudness reported by the NAM capture. |
 | [0033](../decisions/0033-medicao-cadeia-completa.md) | Measure full-chain loudness for a fairer comparison. |
+| [0034](../decisions/0034-loudness-bs1770-cache-sqlite.md) | Implement BS.1770 and a full-chain SQLite measurement cache. |

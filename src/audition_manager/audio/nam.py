@@ -15,6 +15,7 @@ from scipy.signal import resample_poly
 
 from audition_manager.audio.files import AudioBuffer, load_wav
 from audition_manager.audio.ir_processor import convolve_ir, limit_peak
+from audition_manager.audio.loudness import compensation_db
 
 
 @dataclass(frozen=True)
@@ -36,9 +37,6 @@ class NamModelInfo:
 SUPPORTED_ARCHITECTURES = {
     "ConvNet", "LSTM", "Linear", "Sequential", "SlimmableContainer", "WaveNet",
 }
-TARGET_LOUDNESS_DB = -18.0
-
-
 def inspect_nam(path: Path) -> NamModelInfo:
     if path.suffix.lower() != ".nam":
         raise ValueError("A captura deve usar a extensão .nam.")
@@ -193,15 +191,16 @@ def prepare_nam_input(source: AudioBuffer, sample_rate: int) -> AudioBuffer:
 def render_capture_chain(
     di_path: Path, capture_path: Path, ir_path: Path | None, renderer: NamRenderer,
     gain_db: float = 0, quality: str = "full", level_match_db: float = 0,
+    *, protect_peak: bool = True,
 ) -> AudioBuffer:
     source = load_wav(di_path)
     captured = renderer.render(source, capture_path, quality)
     captured = apply_gain_db(captured, level_match_db)
     captured = apply_gain_db(captured, gain_db)
     if ir_path is None:
-        return limit_peak(captured)
+        return limit_peak(captured) if protect_peak else captured
     impulse = load_wav(ir_path, max_seconds=2)
-    return convolve_ir(captured, impulse)
+    return convolve_ir(captured, impulse, protect_peak=protect_peak)
 
 
 def apply_gain_db(audio: AudioBuffer, gain_db: float) -> AudioBuffer:
@@ -216,9 +215,7 @@ def apply_gain_db(audio: AudioBuffer, gain_db: float) -> AudioBuffer:
 
 def level_match_gain_db(loudness: float | None) -> float:
     """Return a bounded gain that moves NAM metadata loudness toward -18 dB."""
-    if loudness is None or not isfinite(loudness):
-        return 0.0
-    return max(-24.0, min(12.0, TARGET_LOUDNESS_DB - loudness))
+    return compensation_db(loudness)
 
 
 def peak_dbfs(audio: AudioBuffer) -> float:

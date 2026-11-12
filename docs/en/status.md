@@ -38,7 +38,7 @@ limitations that have since been resolved.
 
 ## Current verification
 
-- Automated suite: **93 tests passing**.
+- Automated suite: **101 tests passing**.
 - Bytecode compilation and `git diff --check`: clean in the latest delivery.
 - Interface, playback, and PortAudio output confirmed under WSL/WSLg.
 - Portable package, UI, NAM runtime, samples, and playback confirmed by the
@@ -101,6 +101,16 @@ remains the official Windows distribution until the final installer stage. See
 - The applied value is shown beside the checkbox. Without loudness metadata, the
   UI reports that matching is unavailable and preserves the original level.
 - Manual NAM gain remains independent and peak protection stays active.
+
+### Next alpha — increment 3 under review
+
+- The unlimited full chain is measured with BS.1770 integrated loudness,
+  compensated toward -18 LUFS, and peak-protected last.
+- SQLite v4 stores results by DI, NAM, IR, Full/Lite, target, and algorithm
+  identity; changing any component creates a new measurement.
+- Short or silent audio uses an identified NAM fallback when available and
+  otherwise stays at 0 dB. These outcomes are cached as well.
+- MIT-licensed `pyloudnorm` 0.2.0 is now a runtime dependency.
 
 The third increment design and acceptance criteria are documented in
 [fair level comparison](level-matching.md). Changes from the current release are

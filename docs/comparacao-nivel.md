@@ -18,28 +18,29 @@ Essa etapa melhora a comparação entre capturas com metadados compatíveis, mas
 não considera a mudança de volume provocada pelo IR nem o conteúdo específico da
 DI. Portanto, ela não é a normalização final.
 
-## Medição planejada para a próxima alpha
+## Medição implementada para a próxima alpha
 
-O próximo incremento medirá a saída real da cadeia selecionada:
+A aplicação agora mede a saída real da cadeia selecionada:
 
 ```text
 DI de referência → NAM opcional → IR opcional → medição → compensação → proteção de pico
 ```
 
-1. Processar a cadeia sem a compensação automática e antes da proteção final de
+1. Processa a cadeia sem a compensação automática e antes da proteção final de
    pico.
-2. Medir loudness integrado segundo a família ITU-R BS.1770/EBU R128, incluindo
+2. Mede loudness integrado com `pyloudnorm`, segundo ITU-R BS.1770, incluindo
    gating para que pausas da DI não reduzam artificialmente o valor.
-3. Calcular a diferença para o alvo de -18 LUFS.
-4. Limitar a correção entre -24 e +12 dB.
-5. Aplicar a correção, depois o ganho manual escolhido pelo usuário e, por fim,
+3. Calcula a diferença para o alvo de -18 LUFS.
+4. Limita a correção entre -24 e +12 dB.
+5. Aplica a correção, depois o ganho manual escolhido pelo usuário e, por fim,
    a proteção contra clipping.
-6. Mostrar método, loudness medido, correção calculada e eventual limitação.
+6. Mostra método, loudness medido e correção calculada.
 
-Pico não será usado como medida principal: sinais com o mesmo pico podem ter
-volumes percebidos muito diferentes. RMS poderá existir apenas como fallback
-explicitamente identificado se a medição integrada não for válida. Áudio vazio,
-silencioso, curto demais ou com resultado não finito não receberá compensação.
+Pico não é usado como medida principal: sinais com o mesmo pico podem ter
+volumes percebidos muito diferentes. Não há fallback RMS nesta versão. Áudio
+vazio, silencioso, curto demais ou com resultado não finito usa o metadado NAM
+quando disponível; caso contrário, recebe 0 dB. Os dois casos são identificados
+e armazenados para evitar repetição.
 
 ## Cache e SQLite
 

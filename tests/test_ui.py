@@ -13,13 +13,15 @@ qt_widgets = pytest.importorskip("PySide6.QtWidgets", exc_type=ImportError)
 QApplication = qt_widgets.QApplication
 
 from audition_manager.audio.files import AudioBuffer
+from audition_manager.audio.loudness import chain_measurement_key
 from audition_manager.audio.output import OutputDevice
+from audition_manager.audio.render_cache import RenderCache
 from audition_manager.audio.transport import PlaybackTransport, PlaybackState
 from audition_manager.config.preferences import PreferencesStore, UserPreferences
 from audition_manager.library.repository import ImpulseResponseRepository
 from audition_manager.library.models import ImpulseResponse
 from audition_manager.ui.main_window import (
-    ExportOptionsDialog, MainWindow, create_ir_directory_dialog,
+    ExportOptionsDialog, MainWindow, RenderWorker, create_ir_directory_dialog,
 )
 
 
@@ -416,7 +418,7 @@ def test_capture_and_ir_are_processed_as_one_chain(tmp_path: Path, monkeypatch) 
             app.processEvents()
             sleep(0.01)
         assert window.level_match_status.text() == (
-            "Compensação: -6.0 dB (alvo -18 dB)"
+            "Estimativa NAM: -6.0 dB; cadeia não mensurável"
         )
         assert output.audio.samples[:, 0] == pytest.approx([0.2, 0.4])
         window.capture_bypass.setChecked(True)
@@ -440,6 +442,52 @@ def test_capture_and_ir_are_processed_as_one_chain(tmp_path: Path, monkeypatch) 
             window.worker.wait()
             app.processEvents()
         window.close()
+
+
+def test_full_chain_measurement_is_persisted_and_displayed(tmp_path: Path) -> None:
+    app = QApplication.instance() or QApplication([])
+    repository = ImpulseResponseRepository(tmp_path / "library.sqlite3")
+    window = MainWindow(
+        FakeOutput(), repository, PreferencesStore(tmp_path / "preferences.json")
+    )
+    di, ir = tmp_path / "di.wav", tmp_path / "ir.wav"
+    rate = 48_000
+    time = np.arange(rate, dtype=np.float64) / rate
+    sf.write(di, 0.1 * np.sin(2 * np.pi * 440 * time), rate, subtype="FLOAT")
+    sf.write(ir, [1.0], rate, subtype="FLOAT")
+    window.di_path = di
+    window.ir_paths = [ir]
+    window.ir_list.addItem(ir.name)
+    try:
+        window.level_matching.setChecked(True)
+        window.ir_list.setCurrentRow(0)
+        deadline = monotonic() + 5
+        while window.worker is not None and monotonic() < deadline:
+            app.processEvents()
+            sleep(0.01)
+        key = chain_measurement_key(di, None, ir, "full")
+        measurement = repository.get_level_measurement(key)
+        assert measurement is not None
+        assert measurement.method == "bs1770-v1"
+        assert "LUFS; compensação" in window.level_match_status.text()
+    finally:
+        if window.worker is not None:
+            window.worker.wait()
+            app.processEvents()
+        window.close()
+
+
+def test_zero_db_metadata_fallback_is_not_reported_as_unavailable(tmp_path: Path) -> None:
+    app = QApplication.instance() or QApplication([])
+    parent = qt_widgets.QWidget()
+    worker = RenderWorker(
+        tmp_path / "di.wav", None, RenderCache(), parent,
+        level_matching_enabled=True, fallback_match_db=0.0,
+        fallback_available=True,
+    )
+    worker.finish_audio(AudioBuffer(np.array([[0.1]], dtype=np.float32), 48_000))
+    assert worker.match_source == "nam_metadata"
+    parent.close()
 
 
 def test_legacy_nam_is_listed_and_disables_a2_quality_selector(
@@ -486,7 +534,7 @@ def test_latest_selection_wins_and_stop_during_render_does_not_autoplay(monkeypa
     entered, release = Event(), Event()
     calls = []
 
-    def render(di, ir):
+    def render(di, ir, **_kwargs):
         calls.append(ir.name)
         if len(calls) == 1:
             entered.set()
@@ -544,9 +592,9 @@ def test_bypass_preserves_pause_and_shortcuts_control_player(tmp_path, monkeypat
     sf.write(ir, [0.5], 48000, subtype="FLOAT")
     calls = []
 
-    def tracked_render(di_path, ir_path):
+    def tracked_render(di_path, ir_path, **kwargs):
         calls.append(ir_path)
-        return render_files(di_path, ir_path)
+        return render_files(di_path, ir_path, **kwargs)
 
     monkeypatch.setattr("audition_manager.ui.main_window.render_files", tracked_render)
     window.di_path = di

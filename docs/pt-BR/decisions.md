@@ -39,3 +39,4 @@ antigas já foram resolvidas; consulte primeiro o [status atual](../status.md).
 | [0031](../decisions/0031-metadados-nivel-nam.md) | Ler e persistir metadados de nível NAM sem alterar o áudio |
 | [0032](../decisions/0032-equalizacao-loudness-nam.md) | Equalização opcional pelo loudness informado pela captura NAM |
 | [0033](../decisions/0033-medicao-cadeia-completa.md) | Medir loudness da cadeia completa para uma comparação mais justa |
+| [0034](../decisions/0034-loudness-bs1770-cache-sqlite.md) | Implementar BS.1770 e cache SQLite por cadeia completa |

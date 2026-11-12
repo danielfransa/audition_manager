@@ -53,7 +53,8 @@ hardware latency.
 - Mono/stereo WAV up to 192 kHz, DI up to 300 seconds, and IR up to 2 seconds.
 - DI, IR, capture output, and final render are held in memory during processing.
 - IRs are resampled to the signal; their complete tail is included in output.
-- Peaks above 0.95 are attenuated without perceptual loudness normalization.
+- With matching enabled, `pyloudnorm` measures the raw chain using BS.1770 and
+  calculates compensation toward -18 LUFS; peaks above 0.95 are limited afterward.
 - NAM gain is applied after the capture and before the IR. The meter measures
   processed peak before master output gain.
 - A2 Full passes `--slim 1.0`; A2 Lite passes `--slim 0.0`; legacy models do not

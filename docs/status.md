@@ -48,7 +48,7 @@ o histórico de cada incremento e podem mencionar limitações já resolvidas.
 
 ## Verificação atual
 
-- Suíte automatizada: **93 testes passando**.
+- Suíte automatizada: **101 testes passando**.
 - Compilação de bytecode e `git diff --check`: sem erros na última entrega.
 - Reprodução e interface: confirmadas no WSL/WSLg pelo usuário.
 - Saída PortAudio no WSLg: validada com a ponte ALSA/PulseAudio.
@@ -114,6 +114,17 @@ etapa final do instalador. Detalhes e critérios estão no `PLAN.md` e na decis�
 - O valor aplicado aparece ao lado do checkbox. Sem loudness, a interface informa
   que a compensação está indisponível e mantém o nível original.
 - O ganho NAM manual continua independente e a proteção de pico permanece ativa.
+
+### Próxima alpha — incremento 3 em auditoria
+
+- A cadeia completa é processada sem limite, medida por loudness integrado
+  BS.1770, compensada em direção a -18 LUFS e protegida contra pico ao final.
+- A migração SQLite v4 guarda medições por identidade de DI, NAM, IR, Full/Lite,
+  alvo e versão do algoritmo.
+- Alterar qualquer componente gera outra chave e uma nova medição.
+- Áudio curto ou silencioso usa fallback NAM identificado quando disponível; sem
+  fallback, mantém 0 dB. Esses resultados também são armazenados.
+- `pyloudnorm` 0.2.0, sob licença MIT, foi adicionada como dependência.
 
 O desenho do terceiro incremento e seus critérios de aceite estão em
 [`docs/comparacao-nivel.md`](comparacao-nivel.md). As mudanças entre a versão
