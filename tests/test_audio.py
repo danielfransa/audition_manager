@@ -28,6 +28,13 @@ def test_peak_attenuation_preserves_relative_amplitudes() -> None:
     np.testing.assert_allclose(result.samples, [[0.95], [0.475]], atol=1e-7)
 
 
+def test_convolution_can_return_unlimited_audio_for_loudness_measurement() -> None:
+    result = convolve_ir(
+        buffer([[0.8], [0.4]]), buffer([[2]]), protect_peak=False
+    )
+    np.testing.assert_allclose(result.samples, [[1.6], [0.8]], atol=1e-7)
+
+
 def test_resampling_uses_source_rate_and_expected_length() -> None:
     result = convolve_ir(buffer([[0.1]]), buffer([[1], [0]], rate=24000))
     assert result.sample_rate == 48000

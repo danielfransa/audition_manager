@@ -18,8 +18,10 @@ Já estão disponíveis:
 - interface em Português e Inglês;
 - duas DIs, quatro IRs e duas capturas NAM MIT para testes.
 
-Ainda estão pendentes o pacote portátil validado em Windows real, instalador,
-entrada de guitarra ao vivo e transferência direta para BlackBox/IR-Box.
+O pacote portátil já foi validado em Windows real. A próxima alpha terá
+comparação com volume equilibrado; depois virão entrada de guitarra ao vivo,
+comparação cega e, por último, o instalador Windows. A transferência direta para
+BlackBox/IR-Box continua como pesquisa futura.
 
 ## Começar
 

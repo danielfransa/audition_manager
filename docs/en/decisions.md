@@ -36,3 +36,8 @@ Portuguese, while this register provides their English titles and outcomes.
 | [0027](../decisions/0027-build-windows-automatizado.md) | Verifiable Windows build: smoke-test the frozen executable and generate a short-lived ZIP through a read-only manual workflow. |
 | [0028](../decisions/0028-polimento-windows.md) | Windows polish: balance capture/IR list space, hide the native renderer console, and package only Git-tracked samples. |
 | [0029](../decisions/0029-prerelease-windows.md) | First Windows prerelease: promote the validated portable package and rebuild permanent release assets from version tags. |
+| [0030](../decisions/0030-ordem-nivel-live-cega-instalador.md) | Next milestone order: level matching, live input, blind comparison, and Windows installer. |
+| [0031](../decisions/0031-metadados-nivel-nam.md) | Read and persist NAM level metadata without changing audio. |
+| [0032](../decisions/0032-equalizacao-loudness-nam.md) | Optional level matching from loudness reported by the NAM capture. |
+| [0033](../decisions/0033-medicao-cadeia-completa.md) | Measure full-chain loudness for a fairer comparison. |
+| [0034](../decisions/0034-loudness-bs1770-cache-sqlite.md) | Implement BS.1770 and a full-chain SQLite measurement cache. |

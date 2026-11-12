@@ -1,6 +1,6 @@
 # Status atual do projeto
 
-Atualizado em **29 de outubro de 2026**. Este arquivo é o resumo vigente; os
+Atualizado em **12 de novembro de 2026**. Este arquivo é o resumo vigente; os
 registros em `docs/decisions/` e as seções antigas de `docs/validacao.md` formam
 o histórico de cada incremento e podem mencionar limitações já resolvidas.
 
@@ -44,10 +44,11 @@ o histórico de cada incremento e podem mencionar limitações já resolvidas.
 - Ganho NAM independente, medidor de pico e proteção de pico em toda a cadeia.
 - Modos A2 Full/Lite e suporte estrutural a NAM legado WaveNet, LSTM, ConvNet,
   Linear e Sequential.
+- Pré-release `v0.1.0-alpha` publicada com ZIP portátil validado em Windows real.
 
 ## Verificação atual
 
-- Suíte automatizada: **89 testes passando**.
+- Suíte automatizada: **102 testes passando**.
 - Compilação de bytecode e `git diff --check`: sem erros na última entrega.
 - Reprodução e interface: confirmadas no WSL/WSLg pelo usuário.
 - Saída PortAudio no WSLg: validada com a ponte ALSA/PulseAudio.
@@ -62,7 +63,8 @@ o histórico de cada incremento e podem mencionar limitações já resolvidas.
   commit `0b3d3c9`. O renderer oficial carregou uma captura A2 real no WSL.
 - A interface aceita uma pasta de capturas, valida `SlimmableContainer`, converte
   a DI para mono/48 kHz e combina a saída com o IR selecionado.
-- A compilação e audição ainda precisam ser validadas em Windows e Linux nativo.
+- Compilação e audição foram validadas no Windows; Linux nativo permanece
+  pendente.
 - O pacote Python de treinamento, com PyTorch, não será adicionado sem necessidade.
 
 ## BlackBox e AM4DATA
@@ -80,6 +82,55 @@ o histórico de cada incremento e podem mencionar limitações já resolvidas.
   assinatura digital.
 - Validar auditivamente as estrelas clicáveis e o crossfade no uso cotidiano.
 - Revisar licenças e avisos das dependências antes de distribuir binários.
+
+## Próximos marcos aprovados
+
+1. Nova alpha de comparação equilibrada: leitura dos metadados de nível NAM,
+   equalização automática opcional e medição/cache para NAMs sem metadados e IRs.
+2. Entrada de guitarra ao vivo, com latência e estabilidade medidas.
+3. Comparação cega, ocultando identidade e avaliações até a nova classificação.
+4. Instalador Windows, depois da consolidação dos três marcos anteriores.
+
+O modo de comparação cega foi deliberadamente deixado para depois da entrada ao
+vivo. O ZIP portátil continua sendo a distribuição oficial para Windows até a
+etapa final do instalador. Detalhes e critérios estão no `PLAN.md` e na decisão
+0030.
+
+### Próxima alpha — incremento 1 em auditoria
+
+- O scan NAM agora lê `metadata.loudness`, `metadata.input_level_dbu` e
+  `metadata.output_level_dbu` quando forem números finitos.
+- A migração SQLite v3 persiste os três campos opcionais sem perder favoritos,
+  avaliações ou notas existentes.
+- A interface apresenta os valores da captura selecionada em Português e Inglês.
+- Metadados ausentes ou inválidos não invalidam a captura e aparecem como “não
+  informado”. Este incremento não aplica compensação nem altera o áudio.
+
+### Próxima alpha — incremento 2 em auditoria
+
+- O checkbox **Igualar volume automaticamente** ativa ou desativa a compensação
+  e tem sua escolha persistida nas preferências.
+- Capturas com `metadata.loudness` são ajustadas em direção ao alvo de -18 dB,
+  com compensação limitada entre -24 e +12 dB.
+- O valor aplicado aparece ao lado do checkbox. Sem loudness, a interface informa
+  que a compensação está indisponível e mantém o nível original.
+- O ganho NAM manual continua independente e a proteção de pico permanece ativa.
+
+### Próxima alpha — incremento 3 em auditoria
+
+- A cadeia completa é processada sem limite, medida por loudness integrado
+  BS.1770, compensada em direção a -18 LUFS e protegida contra pico ao final.
+- A migração SQLite v4 guarda medições por identidade de DI, NAM, IR, Full/Lite,
+  alvo e versão do algoritmo.
+- Alterar qualquer componente gera outra chave e uma nova medição.
+- Áudio curto ou silencioso usa fallback NAM identificado quando disponível; sem
+  fallback, mantém 0 dB. Esses resultados também são armazenados.
+- `pyloudnorm` 0.2.0, sob licença MIT, foi adicionada como dependência.
+
+O desenho do terceiro incremento e seus critérios de aceite estão em
+[`docs/comparacao-nivel.md`](comparacao-nivel.md). As mudanças entre a versão
+anterior e a nova alpha estão nas notas finais
+[`docs/releases/v0.2.0-alpha.md`](releases/v0.2.0-alpha.md).
 
 ## Referências de acompanhamento
 

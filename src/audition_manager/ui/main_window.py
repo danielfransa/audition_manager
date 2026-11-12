@@ -25,9 +25,14 @@ from PySide6.QtWidgets import (
 )
 
 from audition_manager.audio.files import AudioBuffer
-from audition_manager.audio.ir_processor import render_files
+from audition_manager.audio.ir_processor import limit_peak, render_files
+from audition_manager.audio.loudness import (
+    LoudnessMeasurement, chain_measurement_key, measure_integrated_loudness,
+)
 from audition_manager.audio.nam import (
-    NamRenderer, peak_dbfs, render_capture_chain, scan_nam_models,
+    NamRenderer, apply_gain_db, level_match_gain_db, peak_dbfs,
+    render_capture_chain,
+    scan_nam_models,
 )
 from audition_manager.audio.output import AudioOutput, OutputDevice
 from audition_manager.audio.render_cache import RenderCache
@@ -169,6 +174,12 @@ class RenderWorker(QThread):
         capture_path: Path | None = None, nam_renderer: NamRenderer | None = None,
         capture_gain_db: int = 0,
         nam_quality: str = "full",
+        level_matching_enabled: bool = False,
+        measurement_key: str | None = None,
+        cached_compensation_db: float | None = None,
+        cached_method: str | None = None,
+        fallback_match_db: float = 0,
+        fallback_available: bool = False,
     ) -> None:
         super().__init__(parent)
         self.di_path = di_path
@@ -178,24 +189,74 @@ class RenderWorker(QThread):
         self.nam_renderer = nam_renderer
         self.capture_gain_db = capture_gain_db
         self.nam_quality = nam_quality
+        self.level_matching_enabled = level_matching_enabled
+        self.measurement_key = measurement_key
+        self.cached_compensation_db = cached_compensation_db
+        self.cached_method = cached_method
+        self.fallback_match_db = fallback_match_db
+        self.fallback_available = fallback_available
+        self.measurement: LoudnessMeasurement | None = None
+        self.match_source = "disabled"
+        self.applied_compensation_db = 0.0
+        self.processed_for_matching = False
+
+    def finish_audio(self, raw: AudioBuffer) -> AudioBuffer:
+        self.processed_for_matching = True
+        compensation = 0.0
+        if self.level_matching_enabled:
+            if self.cached_compensation_db is not None:
+                compensation = self.cached_compensation_db
+                self.match_source = self.cached_method or "measured"
+            else:
+                try:
+                    self.measurement = measure_integrated_loudness(raw)
+                    compensation = self.measurement.compensation_db
+                    self.match_source = "measured"
+                except ValueError:
+                    compensation = self.fallback_match_db
+                    self.match_source = (
+                        "nam_metadata" if self.fallback_available else "unavailable"
+                    )
+        self.applied_compensation_db = compensation
+        audio = apply_gain_db(raw, compensation)
+        if self.capture_path is not None:
+            audio = apply_gain_db(audio, self.capture_gain_db)
+        return limit_peak(audio)
 
     def run(self) -> None:
         try:
             if self.capture_path is None:
-                audio = self.cache.render(self.di_path, self.ir_path, render_files)
+                if self.ir_path is None:
+                    audio = self.cache.render(self.di_path, None, render_files)
+                else:
+                    audio = self.cache.render(
+                        self.di_path,
+                        self.ir_path,
+                        lambda di, ir: self.finish_audio(
+                            render_files(di, ir, protect_peak=False)
+                        ),
+                        variant=(
+                            self.level_matching_enabled, self.measurement_key,
+                        ),
+                    )
             else:
                 if self.nam_renderer is None:
                     raise RuntimeError("Runtime NAM não configurado.")
                 audio = self.cache.render(
                     self.di_path,
                     self.ir_path,
-                    lambda di, ir: render_capture_chain(
+                    lambda di, ir: self.finish_audio(render_capture_chain(
                         di, self.capture_path, ir, self.nam_renderer,
-                        self.capture_gain_db,
+                        0,
                         self.nam_quality,
-                    ),
+                        0,
+                        protect_peak=False,
+                    )),
                     dependencies=(self.capture_path,),
-                    variant=(self.capture_gain_db, self.nam_quality),
+                    variant=(
+                        self.capture_gain_db, self.nam_quality,
+                        self.level_matching_enabled, self.measurement_key,
+                    ),
                 )
             self.rendered.emit(audio)
         except Exception as error:
@@ -296,6 +357,8 @@ class MainWindow(QMainWindow):
         self.capture_favorite.setEnabled(False)
         self.capture_rating = StarRating()
         self.capture_rating.setEnabled(False)
+        self.capture_level_metadata = QLabel()
+        self.capture_level_metadata.setWordWrap(True)
         self.capture_notes = QPlainTextEdit()
         self.capture_notes.setPlaceholderText("Notas sobre a captura selecionada…")
         self.capture_notes.setMaximumHeight(70)
@@ -337,6 +400,9 @@ class MainWindow(QMainWindow):
         self.nam_quality.addItem("A2 Lite — processamento mais rápido", "lite")
         quality_index = self.nam_quality.findData(self.preferences.nam_quality)
         self.nam_quality.setCurrentIndex(max(0, quality_index))
+        self.level_matching = QCheckBox("Igualar volume automaticamente")
+        self.level_matching.setChecked(self.preferences.level_matching_enabled)
+        self.level_match_status = QLabel()
         self.bypass = QCheckBox("Bypass IR (B)")
         self.capture_bypass = QCheckBox("Bypass captura NAM (N)")
         self.loop = QCheckBox("Loop")
@@ -395,6 +461,7 @@ class MainWindow(QMainWindow):
         capture_metadata.addWidget(self.capture_rating)
         capture_metadata.addStretch(1)
         layout.addLayout(capture_metadata)
+        layout.addWidget(self.capture_level_metadata)
         layout.addWidget(self.capture_notes)
         layout.addWidget(self.save_capture_notes_button)
         layout.addWidget(self.scan_progress)
@@ -408,6 +475,11 @@ class MainWindow(QMainWindow):
         capture_gain_row.addWidget(self.capture_gain, 1)
         capture_gain_row.addWidget(self.nam_quality)
         layout.addLayout(capture_gain_row)
+        level_match_row = QHBoxLayout()
+        level_match_row.addWidget(self.level_matching)
+        level_match_row.addWidget(self.level_match_status)
+        level_match_row.addStretch(1)
+        layout.addLayout(level_match_row)
         filters = QHBoxLayout()
         filters.addWidget(self.search, 1)
         filters.addWidget(self.favorites_only)
@@ -456,6 +528,7 @@ class MainWindow(QMainWindow):
         self.gain.valueChanged.connect(self.change_gain)
         self.capture_gain.valueChanged.connect(self.change_capture_gain)
         self.nam_quality.currentIndexChanged.connect(self.change_nam_quality)
+        self.level_matching.toggled.connect(self.change_level_matching)
         self.search.textChanged.connect(self.apply_filters)
         self.favorites_only.toggled.connect(self.apply_filters)
         self.minimum_rating.currentIndexChanged.connect(self.apply_filters)
@@ -542,7 +615,8 @@ class MainWindow(QMainWindow):
         models, errors = scan_nam_models(root)
         captures = [Capture(
             model.path, model.path.name, model.version, model.architecture,
-            model.sample_rate, model.submodel_count,
+            model.sample_rate, model.submodel_count, model.loudness,
+            model.input_level_dbu, model.output_level_dbu,
         ) for model in models]
         self.repository.upsert_captures(captures)
         self.capture_root = root
@@ -911,6 +985,14 @@ class MainWindow(QMainWindow):
             self.selection_changed()
 
     @Slot(bool)
+    def change_level_matching(self, enabled: bool) -> None:
+        self.preferences.level_matching_enabled = enabled
+        self.save_preferences()
+        self.refresh_capture_metadata()
+        if self.selected_capture_path() is not None and not self.capture_bypass.isChecked():
+            self.selection_changed()
+
+    @Slot(bool)
     def change_loop(self, enabled: bool) -> None:
         self.output.set_loop(enabled)
         self.preferences.loop_enabled = enabled
@@ -1006,6 +1088,7 @@ class MainWindow(QMainWindow):
         )
         self.nam_quality.setItemText(0, tr("A2 Full — maior qualidade"))
         self.nam_quality.setItemText(1, tr("A2 Lite — processamento mais rápido"))
+        self.level_matching.setText(tr("Igualar volume automaticamente"))
         self.bypass.setText(tr("Bypass IR (B)"))
         self.capture_bypass.setText(tr("Bypass captura NAM (N)"))
         self.play_button.setText(
@@ -1017,6 +1100,7 @@ class MainWindow(QMainWindow):
         self.favorite.setText(tr("Favorito (F)"))
         self.rating.retranslate()
         self.capture_rating.retranslate()
+        self.refresh_capture_metadata()
         self.notes.setPlaceholderText(tr("Notas sobre o IR selecionado…"))
         self.save_notes_button.setText(tr("Salvar notas"))
         self.peak_meter.setToolTip(
@@ -1074,6 +1158,8 @@ class MainWindow(QMainWindow):
         self.capture_favorite.setEnabled(item is not None)
         self.capture_rating.set_value(item.rating if item else 0)
         self.capture_rating.setEnabled(item is not None)
+        self.capture_level_metadata.setText(self.capture_level_text(item))
+        self.level_match_status.setText(self.level_match_text(item))
         notes_blocker = QSignalBlocker(self.capture_notes)
         self.capture_notes.setPlainText(item.notes if item else "")
         del notes_blocker
@@ -1082,6 +1168,68 @@ class MainWindow(QMainWindow):
         self.nam_quality.setEnabled(
             item is not None and item.architecture == "SlimmableContainer"
         )
+
+    @staticmethod
+    def capture_level_text(item: Capture | None) -> str:
+        if item is None:
+            return tr("Metadados de nível: nenhuma captura selecionada")
+
+        def value(number: float | None, unit: str) -> str:
+            return tr("não informado") if number is None else f"{number:+.1f} {unit}"
+
+        return tr(
+            "Metadados de nível: loudness {loudness}; entrada {input}; saída {output}",
+            loudness=value(item.loudness, "dB"),
+            input=value(item.input_level_dbu, "dBu"),
+            output=value(item.output_level_dbu, "dBu"),
+        )
+
+    def level_match_text(self, item: Capture | None) -> str:
+        if not self.level_matching.isChecked():
+            return tr("Compensação: desativada")
+        key = self.current_measurement_key()
+        measured = self.repository.get_level_measurement(key) if key else None
+        if measured is not None:
+            if measured.method == "unavailable":
+                return tr("Compensação indisponível: áudio curto ou silencioso")
+            if measured.method == "nam_metadata":
+                return tr(
+                    "Estimativa NAM: {value:+.1f} dB; cadeia não mensurável",
+                    value=measured.compensation_db,
+                )
+            return tr(
+                "Medição da cadeia: {loudness:.1f} LUFS; compensação {value:+.1f} dB",
+                loudness=measured.loudness_lufs,
+                value=measured.compensation_db,
+            )
+        if item is not None and item.loudness is not None:
+            return tr(
+                "Estimativa NAM: {value:+.1f} dB; medição da cadeia pendente",
+                value=level_match_gain_db(item.loudness),
+            )
+        if self.di_path is None:
+            return tr("Compensação: abra uma DI para medir")
+        if item is None and self.selected_ir_path() is None:
+            return tr("Compensação: selecione uma captura ou IR")
+        return tr("Compensação: medição da cadeia pendente")
+
+    def current_measurement_key(self) -> str | None:
+        if self.di_path is None:
+            return None
+        capture_path = (
+            None if self.capture_bypass.isChecked()
+            else self.selected_capture_path()
+        )
+        ir_path = None if self.bypass.isChecked() else self.selected_ir_path()
+        if capture_path is None and ir_path is None:
+            return None
+        try:
+            return chain_measurement_key(
+                self.di_path, capture_path, ir_path,
+                self.nam_quality.currentData() or "full",
+            )
+        except OSError:
+            return None
 
     @Slot(bool)
     def set_capture_favorite(self, favorite: bool) -> None:
@@ -1217,9 +1365,28 @@ class MainWindow(QMainWindow):
             None if self.capture_bypass.isChecked()
             else self.selected_capture_path()
         )
+        capture = self.repository.get_capture(capture_path) if capture_path else None
+        measurement_key = None
+        stored_measurement = None
+        if self.level_matching.isChecked() and (capture_path or ir_path):
+            measurement_key = chain_measurement_key(
+                self.di_path, capture_path, ir_path,
+                self.nam_quality.currentData() or "full",
+            )
+            stored_measurement = self.repository.get_level_measurement(measurement_key)
+        fallback_match_db = (
+            level_match_gain_db(capture.loudness)
+            if capture is not None and capture.loudness is not None
+            else 0.0
+        )
         self.worker = RenderWorker(
             self.di_path, ir_path, self.cache, self, capture_path, self.nam_renderer,
             self.capture_gain.value(), self.nam_quality.currentData() or "full",
+            self.level_matching.isChecked(), measurement_key,
+            stored_measurement.compensation_db if stored_measurement else None,
+            stored_measurement.method if stored_measurement else None,
+            fallback_match_db,
+            capture is not None and capture.loudness is not None,
         )
         self.worker.rendered.connect(self.play_rendered)
         self.worker.failed.connect(self.render_failed)
@@ -1235,6 +1402,17 @@ class MainWindow(QMainWindow):
 
     @Slot(object)
     def play_rendered(self, audio: AudioBuffer) -> None:
+        if (
+            self.worker.measurement_key is not None
+            and self.worker.processed_for_matching
+        ):
+            measurement = self.worker.measurement
+            self.repository.upsert_level_measurement(
+                self.worker.measurement_key,
+                measurement.loudness_lufs if measurement else None,
+                self.worker.applied_compensation_db,
+                measurement.method if measurement else self.worker.match_source,
+            )
         if self.worker_version != self.selection_version:
             return
         try:
@@ -1250,6 +1428,7 @@ class MainWindow(QMainWindow):
             self.show_error(str(error))
             return
         self.has_rendered_audio = True
+        self.refresh_capture_metadata()
         peak = peak_dbfs(audio)
         self.peak_meter.setValue(max(0, min(60, round(peak + 60))))
         self.peak_meter.setFormat(tr("Pico: {value:.1f} dBFS", value=peak))

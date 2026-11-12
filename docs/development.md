@@ -53,7 +53,8 @@ confirmam driver, som audível ou latência do hardware.
 - WAV mono/estéreo até 192 kHz, DI até 300 s e IR até 2 s.
 - Todo o DI, IR e resultado são mantidos em memória durante o processamento.
 - IRs são reamostrados para a DI; a cauda completa entra no resultado e no Loop.
-- Picos acima de 0,95 são atenuados, sem normalização perceptual.
+- Com o checkbox ativo, `pyloudnorm` mede a cadeia bruta por BS.1770 e calcula a
+  compensação para -18 LUFS; picos acima de 0,95 são atenuados somente depois.
 - O ganho NAM ocorre após a captura e antes do IR; o medidor mostra o pico do
   resultado antes do ganho geral de saída.
 - A2 Full envia `--slim 1.0`, A2 Lite envia `--slim 0.0`; modelos NAM legados

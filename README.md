@@ -24,7 +24,9 @@ Linux and Windows and is under active development.
 
 IR and NAM A1/A2 offline auditioning, metadata libraries, favorites, ratings,
 notes, gain controls, and organized export are available. The interface supports
-Português and English. Windows packaging and live guitar input remain pending.
+Português and English. A portable Windows alpha is available; level-matched
+comparison, live guitar input, blind comparison, and an installer remain on the
+roadmap in that order.
 
 Licensed under [MIT](LICENSE). Example audio and captures retain the licenses
 documented under [`samples/`](samples/README.md).

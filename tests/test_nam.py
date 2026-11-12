@@ -7,12 +7,16 @@ import soundfile as sf
 
 from audition_manager.audio.files import AudioBuffer
 from audition_manager.audio.nam import (
-    NamRenderer, apply_gain_db, inspect_nam, peak_dbfs, prepare_nam_input,
-    render_capture_chain, renderer_process_options, scan_nam_models,
+    NamRenderer, apply_gain_db, inspect_nam, level_match_gain_db, peak_dbfs,
+    prepare_nam_input, render_capture_chain, renderer_process_options,
+    scan_nam_models,
 )
 
 
-def write_model(path: Path, *, architecture: str = "SlimmableContainer") -> None:
+def write_model(
+    path: Path, *, architecture: str = "SlimmableContainer",
+    metadata: dict | None = None,
+) -> None:
     path.write_text(
         json.dumps(
             {
@@ -26,6 +30,7 @@ def write_model(path: Path, *, architecture: str = "SlimmableContainer") -> None
                     ]
                 },
                 "weights": [],
+                "metadata": metadata,
             }
         ),
         encoding="utf-8",
@@ -39,6 +44,31 @@ def test_inspects_a2_slimmable_container(tmp_path: Path) -> None:
     assert info.path == path.resolve()
     assert (info.version, info.architecture, info.sample_rate, info.submodel_count) == (
         "0.7.0", "SlimmableContainer", 48000, 2
+    )
+
+
+def test_inspects_optional_level_metadata(tmp_path: Path) -> None:
+    path = tmp_path / "amp.nam"
+    write_model(path, metadata={
+        "loudness": -10.0543,
+        "input_level_dbu": 13,
+        "output_level_dbu": 4.5,
+    })
+    info = inspect_nam(path)
+    assert info.loudness == pytest.approx(-10.0543)
+    assert info.input_level_dbu == 13.0
+    assert info.output_level_dbu == 4.5
+
+
+def test_ignores_absent_or_invalid_optional_level_metadata(tmp_path: Path) -> None:
+    path = tmp_path / "amp.nam"
+    write_model(path, metadata={
+        "loudness": "unknown", "input_level_dbu": True,
+        "output_level_dbu": float("inf"),
+    })
+    info = inspect_nam(path)
+    assert (info.loudness, info.input_level_dbu, info.output_level_dbu) == (
+        None, None, None,
     )
 
 
@@ -77,6 +107,14 @@ def test_capture_gain_and_peak_meter_math() -> None:
         apply_gain_db(source, 13)
 
 
+def test_level_match_targets_minus_18_db_and_is_bounded() -> None:
+    assert level_match_gain_db(-10.0) == -8.0
+    assert level_match_gain_db(-24.0) == 6.0
+    assert level_match_gain_db(-40.0) == 12.0
+    assert level_match_gain_db(20.0) == -24.0
+    assert level_match_gain_db(None) == 0.0
+
+
 def test_nam_only_chain_limits_peak_after_capture_gain(tmp_path: Path) -> None:
     di = tmp_path / "di.wav"
     sf.write(di, [0.1], 48000, subtype="FLOAT")
@@ -87,6 +125,21 @@ def test_nam_only_chain_limits_peak_after_capture_gain(tmp_path: Path) -> None:
 
     result = render_capture_chain(di, tmp_path / "amp.nam", None, Renderer(), 12)
     assert float(np.max(np.abs(result.samples))) == pytest.approx(0.95)
+
+
+def test_level_match_and_manual_gain_are_applied_separately(tmp_path: Path) -> None:
+    di = tmp_path / "di.wav"
+    sf.write(di, [0.1], 48000, subtype="FLOAT")
+
+    class Renderer:
+        def render(self, _source, _model, _quality="full"):
+            return AudioBuffer(np.array([[0.25]], dtype=np.float32), 48000)
+
+    result = render_capture_chain(
+        di, tmp_path / "amp.nam", None, Renderer(), gain_db=6,
+        level_match_db=-6,
+    )
+    assert result.samples[0, 0] == pytest.approx(0.25)
 
 
 def test_renderer_selects_a2_full_lite_and_omits_slim_for_legacy(tmp_path: Path) -> None:

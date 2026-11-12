@@ -4,7 +4,9 @@ import sqlite3
 from collections.abc import Iterable
 from pathlib import Path
 
-from audition_manager.library.models import Capture, ImpulseResponse
+from audition_manager.library.models import (
+    Capture, ImpulseResponse, StoredLevelMeasurement,
+)
 
 
 class ImpulseResponseRepository:
@@ -64,6 +66,31 @@ class ImpulseResponseRepository:
                     """
                 )
                 self._connection.execute("INSERT INTO schema_version(version) VALUES (2)")
+            if version < 3:
+                self._connection.execute(
+                    "ALTER TABLE capture ADD COLUMN loudness REAL"
+                )
+                self._connection.execute(
+                    "ALTER TABLE capture ADD COLUMN input_level_dbu REAL"
+                )
+                self._connection.execute(
+                    "ALTER TABLE capture ADD COLUMN output_level_dbu REAL"
+                )
+                self._connection.execute("INSERT INTO schema_version(version) VALUES (3)")
+            if version < 4:
+                self._connection.execute(
+                    """
+                    CREATE TABLE level_measurement (
+                        key TEXT PRIMARY KEY,
+                        loudness_lufs REAL,
+                        compensation_db REAL NOT NULL,
+                        method TEXT NOT NULL,
+                        created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                        updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+                    )
+                    """
+                )
+                self._connection.execute("INSERT INTO schema_version(version) VALUES (4)")
 
     def upsert_many(self, items: Iterable[ImpulseResponse]) -> None:
         values = [
@@ -114,20 +141,25 @@ class ImpulseResponseRepository:
     def upsert_captures(self, items: Iterable[Capture]) -> None:
         values = [(
             str(item.path.resolve()), item.name, item.version, item.architecture,
-            item.sample_rate, item.submodel_count,
+            item.sample_rate, item.submodel_count, item.loudness,
+            item.input_level_dbu, item.output_level_dbu,
         ) for item in items]
         with self._connection:
             self._connection.executemany(
                 """
                 INSERT INTO capture(
-                    path, name, version, architecture, sample_rate, submodel_count
-                ) VALUES (?, ?, ?, ?, ?, ?)
+                    path, name, version, architecture, sample_rate, submodel_count,
+                    loudness, input_level_dbu, output_level_dbu
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
                 ON CONFLICT(path) DO UPDATE SET
                     name = excluded.name,
                     version = excluded.version,
                     architecture = excluded.architecture,
                     sample_rate = excluded.sample_rate,
                     submodel_count = excluded.submodel_count,
+                    loudness = excluded.loudness,
+                    input_level_dbu = excluded.input_level_dbu,
+                    output_level_dbu = excluded.output_level_dbu,
                     updated_at = CURRENT_TIMESTAMP
                 """,
                 values,
@@ -137,7 +169,8 @@ class ImpulseResponseRepository:
         row = self._connection.execute(
             """
             SELECT path, name, version, architecture, sample_rate,
-                   submodel_count, favorite, rating, notes
+                   submodel_count, loudness, input_level_dbu, output_level_dbu,
+                   favorite, rating, notes
             FROM capture WHERE path = ?
             """,
             (str(path.resolve()),),
@@ -147,7 +180,10 @@ class ImpulseResponseRepository:
         return Capture(
             path=Path(row["path"]), name=row["name"], version=row["version"],
             architecture=row["architecture"], sample_rate=row["sample_rate"],
-            submodel_count=row["submodel_count"], favorite=bool(row["favorite"]),
+            submodel_count=row["submodel_count"], loudness=row["loudness"],
+            input_level_dbu=row["input_level_dbu"],
+            output_level_dbu=row["output_level_dbu"],
+            favorite=bool(row["favorite"]),
             rating=row["rating"], notes=row["notes"],
         )
 
@@ -161,6 +197,44 @@ class ImpulseResponseRepository:
 
     def set_capture_notes(self, path: Path, notes: str) -> None:
         self._update_capture(path, "notes", notes)
+
+    def get_level_measurement(self, key: str) -> StoredLevelMeasurement | None:
+        row = self._connection.execute(
+            """
+            SELECT key, loudness_lufs, compensation_db, method
+            FROM level_measurement WHERE key = ?
+            """,
+            (key,),
+        ).fetchone()
+        if row is None:
+            return None
+        if row["loudness_lufs"] is None and row["method"] not in {
+            "nam_metadata", "unavailable",
+        }:
+            return None
+        return StoredLevelMeasurement(
+            key=row["key"], loudness_lufs=row["loudness_lufs"],
+            compensation_db=row["compensation_db"], method=row["method"],
+        )
+
+    def upsert_level_measurement(
+        self, key: str, loudness_lufs: float | None,
+        compensation_db: float, method: str,
+    ) -> None:
+        with self._connection:
+            self._connection.execute(
+                """
+                INSERT INTO level_measurement(
+                    key, loudness_lufs, compensation_db, method
+                ) VALUES (?, ?, ?, ?)
+                ON CONFLICT(key) DO UPDATE SET
+                    loudness_lufs = excluded.loudness_lufs,
+                    compensation_db = excluded.compensation_db,
+                    method = excluded.method,
+                    updated_at = CURRENT_TIMESTAMP
+                """,
+                (key, loudness_lufs, compensation_db, method),
+            )
 
     def _update(self, path: Path, column: str, value: object) -> None:
         with self._connection:

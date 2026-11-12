@@ -1,6 +1,6 @@
 # Current project status
 
-Updated on **October 29, 2026**. This is the current summary. Decision records
+Updated on **November 12, 2026**. This is the current summary. Decision records
 and older sections of the validation log preserve the history and may describe
 limitations that have since been resolved.
 
@@ -33,10 +33,12 @@ limitations that have since been resolved.
 - Independent NAM gain, processed peak meter, and peak protection.
 - A2 Full/Lite modes and structural support for legacy WaveNet, LSTM, ConvNet,
   Linear, and Sequential NAM models.
+- Published `v0.1.0-alpha` prerelease with a portable ZIP validated on real
+  Windows hardware.
 
 ## Current verification
 
-- Automated suite: **89 tests passing**.
+- Automated suite: **102 tests passing**.
 - Bytecode compilation and `git diff --check`: clean in the latest delivery.
 - Interface, playback, and PortAudio output confirmed under WSL/WSLg.
 - Portable package, UI, NAM runtime, samples, and playback confirmed by the
@@ -50,8 +52,8 @@ limitations that have since been resolved.
   commit `0b3d3c9`; its official renderer loaded a real A2 capture under WSL.
 - The application validates `SlimmableContainer`, converts DI audio to mono at
   48 kHz, and combines the NAM result with the selected IR.
-- Compilation and listening still require validation on native Linux and a real
-  Windows machine. The PyTorch training package is intentionally not bundled.
+- Compilation and listening are validated on real Windows hardware; native Linux
+  remains open. The PyTorch training package is intentionally not bundled.
 
 ## BlackBox and AM4DATA
 
@@ -67,6 +69,52 @@ reliable format or protocol documentation and are not implemented.
   signing.
 - Evaluate clickable ratings and crossfade during regular listening.
 - Review third-party notices and redistributed licenses before binary releases.
+
+## Approved next milestones
+
+1. A new level-matching alpha: NAM level metadata, optional automatic matching,
+   and measured/cached compensation for NAMs without metadata and for IRs.
+2. Live guitar input, with measured latency and stability.
+3. Blind comparison, hiding identity and previous ratings until a new rating.
+4. A Windows installer after the previous three milestones are consolidated.
+
+Blind comparison is intentionally scheduled after live input. The portable ZIP
+remains the official Windows distribution until the final installer stage. See
+`PLAN.md` and decision 0030 for the detailed scope and acceptance criteria.
+
+### Next alpha — increment 1 under review
+
+- NAM scanning now reads `metadata.loudness`, `metadata.input_level_dbu`, and
+  `metadata.output_level_dbu` when they are finite numbers.
+- SQLite migration v3 persists all three optional fields without losing existing
+  favorites, ratings, or notes.
+- The selected capture's values are displayed in Portuguese and English.
+- Missing or invalid metadata does not reject a capture and is shown as “not
+  provided.” This increment applies no compensation and does not change audio.
+
+### Next alpha — increment 2 under review
+
+- **Match volume automatically** toggles compensation and persists the choice in
+  preferences.
+- Captures with `metadata.loudness` are moved toward a -18 dB target, with the
+  compensation bounded between -24 and +12 dB.
+- The applied value is shown beside the checkbox. Without loudness metadata, the
+  UI reports that matching is unavailable and preserves the original level.
+- Manual NAM gain remains independent and peak protection stays active.
+
+### Next alpha — increment 3 under review
+
+- The unlimited full chain is measured with BS.1770 integrated loudness,
+  compensated toward -18 LUFS, and peak-protected last.
+- SQLite v4 stores results by DI, NAM, IR, Full/Lite, target, and algorithm
+  identity; changing any component creates a new measurement.
+- Short or silent audio uses an identified NAM fallback when available and
+  otherwise stays at 0 dB. These outcomes are cached as well.
+- MIT-licensed `pyloudnorm` 0.2.0 is now a runtime dependency.
+
+The third increment design and acceptance criteria are documented in
+[fair level comparison](level-matching.md). Changes from the current release are
+documented in the final [`v0.2.0-alpha` notes](../releases/v0.2.0-alpha.md).
 
 ## Tracking references
 

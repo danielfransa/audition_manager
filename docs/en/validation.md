@@ -15,7 +15,35 @@ python -m compileall -q src tests
 git diff --check
 ```
 
-Current baseline: **89 tests passing**.
+Current baseline: **102 tests passing**.
+
+## NAM level metadata — 2026-11-12
+
+- Tests cover complete, absent, malformed, boolean, and non-finite optional
+  metadata.
+- Repository tests confirm SQLite v3 persistence while preserving user fields.
+- The Qt test confirms the selected capture displays loudness, input level, and
+  output level. No automatic gain is applied in this increment.
+
+## Automatic matching from NAM metadata — 2026-11-12
+
+- Tests cover the -18 dB target, -24/+12 dB bounds, interaction with manual NAM
+  gain, preference persistence, and distinct cache variants.
+- Compensation is opt-in and is not applied when loudness metadata is absent.
+- The UI displays the applied compensation or explains why it is unavailable.
+
+## Full-chain measurement — 2026-11-12
+
+- Tests cover BS.1770, a 6 dB difference, silence, short audio, pre-limiter raw
+  output, SQLite v4, cache reuse, and file/mode invalidation.
+- An offscreen Qt test measures `DI → IR`, persists the result, and verifies the
+  LUFS and compensation display.
+- The maintainer validated the `develop` ZIP on real Windows hardware. Native
+  Linux validation remains open and does not block this alpha prerelease.
+
+An audio-cache hit previously could overwrite a valid measurement with a null
+LUFS value and trigger a formatting `TypeError` in either language. Cache hits no
+longer write empty worker state; invalid legacy rows are ignored and recalculated.
 
 ## Common functional checklist
 

@@ -79,7 +79,7 @@ Set-ExecutionPolicy -Scope Process Bypass
 ```
 
 The result is `dist\AuditionManager-Windows-x64.zip`. It must be built on
-Windows and still requires validation on a real Windows machine.
+Windows. The portable package has been validated on a real Windows machine.
 
 On `develop`, package-related changes trigger the workflow automatically. The
 **Run workflow** button becomes available once the workflow exists on the

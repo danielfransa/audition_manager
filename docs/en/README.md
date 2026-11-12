@@ -18,8 +18,10 @@ Available now:
 - Portuguese and English interface;
 - two DIs, four IRs, and two MIT-licensed NAM captures for testing.
 
-A Windows-validated portable package, installer, live guitar input, and direct
-BlackBox/IR-Box transfer are still pending.
+The portable package is validated on real Windows hardware. The next alpha will
+focus on level-matched comparison, followed by live guitar input, blind
+comparison, and finally the Windows installer. Direct BlackBox/IR-Box transfer
+remains future research.
 
 ## Getting started
 
@@ -48,6 +50,8 @@ BlackBox/IR-Box transfer are still pending.
 - [Roadmap](roadmap.md)
 - [Development and architecture](development.md)
 - [Validation](validation.md)
+- [Fair level-comparison design](level-matching.md)
+- [v0.2.0-alpha release notes](../releases/v0.2.0-alpha.md)
 - [Decision register](decisions.md)
 
 ## License

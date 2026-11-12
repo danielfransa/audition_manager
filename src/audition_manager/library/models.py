@@ -21,7 +21,18 @@ class Capture:
     architecture: str
     sample_rate: int
     submodel_count: int
+    loudness: float | None = None
+    input_level_dbu: float | None = None
+    output_level_dbu: float | None = None
     favorite: bool = False
     rating: int = 0
     notes: str = ""
+
+
+@dataclass(frozen=True)
+class StoredLevelMeasurement:
+    key: str
+    loudness_lufs: float | None
+    compensation_db: float
+    method: str
 

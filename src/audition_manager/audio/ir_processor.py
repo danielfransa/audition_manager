@@ -9,7 +9,9 @@ from scipy.signal import fftconvolve, resample_poly
 from audition_manager.audio.files import AudioBuffer, load_wav
 
 
-def convolve_ir(source: AudioBuffer, impulse: AudioBuffer) -> AudioBuffer:
+def convolve_ir(
+    source: AudioBuffer, impulse: AudioBuffer, *, protect_peak: bool = True,
+) -> AudioBuffer:
     kernel = impulse.samples
     if impulse.sample_rate != source.sample_rate:
         divisor = gcd(impulse.sample_rate, source.sample_rate)
@@ -26,7 +28,8 @@ def convolve_ir(source: AudioBuffer, impulse: AudioBuffer) -> AudioBuffer:
     result = fftconvolve(signal, kernel, mode="full", axes=0)
     if not np.isfinite(result).all():
         raise ValueError("O processamento produziu amostras inválidas.")
-    return limit_peak(AudioBuffer(np.ascontiguousarray(result, dtype=np.float32), source.sample_rate))
+    audio = AudioBuffer(np.ascontiguousarray(result, dtype=np.float32), source.sample_rate)
+    return limit_peak(audio) if protect_peak else audio
 
 
 def limit_peak(audio: AudioBuffer) -> AudioBuffer:
@@ -40,7 +43,9 @@ def limit_peak(audio: AudioBuffer) -> AudioBuffer:
     )
 
 
-def render_files(di_path: Path, ir_path: Path) -> AudioBuffer:
+def render_files(
+    di_path: Path, ir_path: Path, *, protect_peak: bool = True,
+) -> AudioBuffer:
     source = load_wav(di_path)
     impulse = load_wav(ir_path, max_seconds=2)
-    return convolve_ir(source, impulse)
+    return convolve_ir(source, impulse, protect_peak=protect_peak)

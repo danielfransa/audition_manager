@@ -390,3 +390,76 @@ Roteiro prático:
    escolhendo a pasta inteira.
 3. Navegue por subpastas, volte à raiz desejada e clique em **Escolher esta
    pasta**. Confirme que o scan recursivo mantém o comportamento anterior.
+
+## Metadados de nível NAM — 2026-11-12
+
+- A suíte completa passa com **91 testes**.
+- Os testes cobrem metadados completos, ausentes, com tipo inválido, booleanos e
+  valores não finitos.
+- O teste do repositório confirma a persistência na migração SQLite v3 sem perder
+  favoritos, avaliação ou notas.
+- O teste Qt confirma a exibição de loudness, nível de entrada e nível de saída
+  da captura selecionada.
+- Nenhuma compensação é aplicada neste incremento; o áudio permanece idêntico.
+
+Roteiro prático:
+
+1. Abra `samples/captures` ou outra pasta que contenha capturas NAM.
+2. Selecione uma captura com metadados e confirme a linha de loudness, entrada e
+   saída abaixo das estrelas.
+3. Selecione uma captura sem esses campos e confirme “não informado”.
+4. Troque o idioma e confirme a tradução da linha.
+5. Confirme auditivamente que o volume não mudou nesta etapa.
+
+## Equalização automática com metadado NAM — 2026-11-12
+
+- A suíte completa passa com **93 testes**.
+- Os testes confirmam o alvo de -18 dB, limites de -24/+12 dB, interação com o
+  ganho manual, persistência da preferência e separação das variantes no cache.
+- A compensação permanece opt-in e não é aplicada quando `loudness` está ausente.
+
+Roteiro prático:
+
+1. Selecione uma captura que mostre loudness e anote o volume com o checkbox
+   desmarcado.
+2. Marque **Igualar volume automaticamente** e confirme o valor de compensação.
+3. Alterne entre capturas com loudness e verifique se a comparação fica mais
+   equilibrada sem alterar o ganho NAM manual.
+4. Selecione uma captura sem loudness e confirme “indisponível sem loudness”.
+5. Reinicie o aplicativo e confirme que o estado do checkbox foi restaurado.
+
+## Medição da cadeia completa — 2026-11-12
+
+- A suíte completa passa com **102 testes**.
+- Testes verificam BS.1770, diferença de 6 dB, silêncio, áudio curto, saída bruta
+  antes do limitador, SQLite v4, cache e invalidação por arquivo/modo.
+- Um teste Qt mede `DI → IR`, persiste o resultado e confirma LUFS e compensação
+  na interface.
+
+Roteiro auditivo antes da `v0.2.0-alpha`:
+
+1. Zere o ganho NAM manual e marque **Igualar volume automaticamente**.
+2. Alterne entre pelo menos três capturas e três IRs; na primeira reprodução deve
+   aparecer “medição pendente” e depois o valor em LUFS.
+3. Volte a uma combinação anterior e confirme que o valor reaparece sem nova
+   demora de medição.
+4. Compare checkbox ligado e desligado. O timbre deve permanecer igual; somente
+   o nível deve mudar.
+5. Teste NAM + IR, NAM com bypass de IR, apenas IR e captura sem loudness.
+6. Reinicie a aplicação e confirme que as medições continuam disponíveis.
+7. Repita no ZIP Windows antes de publicar a nova alpha.
+
+### Correção do cache antes do ZIP develop
+
+Um segundo acesso ao cache de áudio podia substituir uma medição válida por um
+registro sem LUFS. Ao formatar esse valor, a interface gerava `TypeError` tanto
+em Português quanto em Inglês. O worker agora só grava quando realmente executa
+a medição/fallback, e registros antigos inválidos são ignorados e recalculados.
+Testes reproduzem o ciclo de cache e a recuperação do banco contaminado.
+
+### Aceite do ZIP de nivelamento — 2026-11-12
+
+O usuário validou no Windows o ZIP da branch `develop` produzido pelo workflow
+7, revisão `1dcedd7`. A medição LUFS, cache, traduções e fluxo com capturas/IRs
+foram aprovados. O incremento está liberado para merge em `main`, tag
+`v0.2.0-alpha` e publicação como pré-release.

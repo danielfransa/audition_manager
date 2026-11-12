@@ -35,3 +35,8 @@ antigas já foram resolvidas; consulte primeiro o [status atual](../status.md).
 | [0027](../decisions/0027-build-windows-automatizado.md) | Build Windows automatizado e verificável |
 | [0028](../decisions/0028-polimento-windows.md) | Polimento da interface e execução no Windows |
 | [0029](../decisions/0029-prerelease-windows.md) | Primeira pré-release Windows |
+| [0030](../decisions/0030-ordem-nivel-live-cega-instalador.md) | Ordem dos próximos marcos: nivelamento, entrada ao vivo, comparação cega e instalador Windows |
+| [0031](../decisions/0031-metadados-nivel-nam.md) | Ler e persistir metadados de nível NAM sem alterar o áudio |
+| [0032](../decisions/0032-equalizacao-loudness-nam.md) | Equalização opcional pelo loudness informado pela captura NAM |
+| [0033](../decisions/0033-medicao-cadeia-completa.md) | Medir loudness da cadeia completa para uma comparação mais justa |
+| [0034](../decisions/0034-loudness-bs1770-cache-sqlite.md) | Implementar BS.1770 e cache SQLite por cadeia completa |

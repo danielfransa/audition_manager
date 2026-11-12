@@ -36,6 +36,6 @@ jobs:
           "dist\AuditionManager-Windows-x64.zip"
           --repo $env:GITHUB_REPOSITORY
           --title "Audition Manager $env:GITHUB_REF_NAME"
-          --notes-file "docs\releases\v0.1.0-alpha.md"
+          --notes-file "docs\releases\$env:GITHUB_REF_NAME.md"
           --prerelease
           --verify-tag

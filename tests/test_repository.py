@@ -59,7 +59,10 @@ def test_rating_validation_and_unknown_path(tmp_path: Path) -> None:
 def test_capture_metadata_survives_rescan_and_reopen(tmp_path: Path) -> None:
     database = tmp_path / "library.sqlite3"
     path = tmp_path / "amp.nam"
-    capture = Capture(path, path.name, "0.7.0", "SlimmableContainer", 48000, 2)
+    capture = Capture(
+        path, path.name, "0.7.0", "SlimmableContainer", 48000, 2,
+        loudness=-10.25, input_level_dbu=13.0, output_level_dbu=4.0,
+    )
     repository = ImpulseResponseRepository(database)
     repository.upsert_captures([capture])
     repository.set_capture_favorite(path, True)
@@ -71,6 +74,9 @@ def test_capture_metadata_survives_rescan_and_reopen(tmp_path: Path) -> None:
     item = reopened.get_capture(path)
     assert item is not None
     assert (item.version, item.sample_rate, item.submodel_count) == ("0.7.0", 48000, 2)
+    assert (item.loudness, item.input_level_dbu, item.output_level_dbu) == (
+        -10.25, 13.0, 4.0,
+    )
     assert (item.favorite, item.rating, item.notes) == (
         True, 5, "Clean pedal platform"
     )
@@ -90,4 +96,30 @@ def test_existing_version_one_database_migrates_capture_library(tmp_path: Path) 
         Capture(path, path.name, "0.7.0", "SlimmableContainer", 48000, 2)
     ])
     assert repository.get_capture(path) is not None
+    repository.close()
+
+
+def test_level_measurement_survives_reopen_and_can_be_updated(tmp_path: Path) -> None:
+    database = tmp_path / "library.sqlite3"
+    repository = ImpulseResponseRepository(database)
+    assert repository.get_level_measurement("chain-key") is None
+    repository.upsert_level_measurement("chain-key", -21.5, 3.5, "bs1770-v1")
+    repository.upsert_level_measurement("chain-key", -20.0, 2.0, "bs1770-v1")
+    repository.close()
+
+    reopened = ImpulseResponseRepository(database)
+    measurement = reopened.get_level_measurement("chain-key")
+    assert measurement is not None
+    assert (
+        measurement.loudness_lufs,
+        measurement.compensation_db,
+        measurement.method,
+    ) == (-20.0, 2.0, "bs1770-v1")
+    reopened.close()
+
+
+def test_invalid_null_measurement_from_old_cache_is_ignored(tmp_path: Path) -> None:
+    repository = ImpulseResponseRepository(tmp_path / "library.sqlite3")
+    repository.upsert_level_measurement("broken", None, 0.0, "disabled")
+    assert repository.get_level_measurement("broken") is None
     repository.close()

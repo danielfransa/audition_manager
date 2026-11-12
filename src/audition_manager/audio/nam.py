@@ -6,7 +6,7 @@ import subprocess
 import sys
 import tempfile
 from dataclasses import dataclass
-from math import gcd
+from math import gcd, isfinite
 from pathlib import Path
 
 import numpy as np
@@ -15,6 +15,7 @@ from scipy.signal import resample_poly
 
 from audition_manager.audio.files import AudioBuffer, load_wav
 from audition_manager.audio.ir_processor import convolve_ir, limit_peak
+from audition_manager.audio.loudness import compensation_db
 
 
 @dataclass(frozen=True)
@@ -24,6 +25,9 @@ class NamModelInfo:
     architecture: str
     sample_rate: int
     submodel_count: int
+    loudness: float | None = None
+    input_level_dbu: float | None = None
+    output_level_dbu: float | None = None
 
     @property
     def is_a2(self) -> bool:
@@ -33,8 +37,6 @@ class NamModelInfo:
 SUPPORTED_ARCHITECTURES = {
     "ConvNet", "LSTM", "Linear", "Sequential", "SlimmableContainer", "WaveNet",
 }
-
-
 def inspect_nam(path: Path) -> NamModelInfo:
     if path.suffix.lower() != ".nam":
         raise ValueError("A captura deve usar a extensão .nam.")
@@ -75,9 +77,21 @@ def inspect_nam(path: Path) -> NamModelInfo:
         submodel_count = len(submodels)
     elif not isinstance(payload.get("weights"), list):
         raise ValueError("A captura NAM legada não contém pesos válidos.")
+    metadata = payload.get("metadata")
+    metadata = metadata if isinstance(metadata, dict) else {}
     return NamModelInfo(
-        path.resolve(), version, architecture, rounded_rate, submodel_count
+        path.resolve(), version, architecture, rounded_rate, submodel_count,
+        _optional_finite_number(metadata.get("loudness")),
+        _optional_finite_number(metadata.get("input_level_dbu")),
+        _optional_finite_number(metadata.get("output_level_dbu")),
     )
+
+
+def _optional_finite_number(value: object) -> float | None:
+    if isinstance(value, bool) or not isinstance(value, (int, float)):
+        return None
+    result = float(value)
+    return result if isfinite(result) else None
 
 
 def scan_nam_models(root: Path) -> tuple[list[NamModelInfo], list[tuple[Path, str]]]:
@@ -176,14 +190,17 @@ def prepare_nam_input(source: AudioBuffer, sample_rate: int) -> AudioBuffer:
 
 def render_capture_chain(
     di_path: Path, capture_path: Path, ir_path: Path | None, renderer: NamRenderer,
-    gain_db: float = 0, quality: str = "full",
+    gain_db: float = 0, quality: str = "full", level_match_db: float = 0,
+    *, protect_peak: bool = True,
 ) -> AudioBuffer:
     source = load_wav(di_path)
-    captured = apply_gain_db(renderer.render(source, capture_path, quality), gain_db)
+    captured = renderer.render(source, capture_path, quality)
+    captured = apply_gain_db(captured, level_match_db)
+    captured = apply_gain_db(captured, gain_db)
     if ir_path is None:
-        return limit_peak(captured)
+        return limit_peak(captured) if protect_peak else captured
     impulse = load_wav(ir_path, max_seconds=2)
-    return convolve_ir(captured, impulse)
+    return convolve_ir(captured, impulse, protect_peak=protect_peak)
 
 
 def apply_gain_db(audio: AudioBuffer, gain_db: float) -> AudioBuffer:
@@ -194,6 +211,11 @@ def apply_gain_db(audio: AudioBuffer, gain_db: float) -> AudioBuffer:
         np.ascontiguousarray(audio.samples * factor, dtype=np.float32),
         audio.sample_rate,
     )
+
+
+def level_match_gain_db(loudness: float | None) -> float:
+    """Return a bounded gain that moves NAM metadata loudness toward -18 dB."""
+    return compensation_db(loudness)
 
 
 def peak_dbfs(audio: AudioBuffer) -> float:

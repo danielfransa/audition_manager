@@ -80,7 +80,7 @@ Set-ExecutionPolicy -Scope Process Bypass
 ```
 
 O resultado fica em `dist\AuditionManager-Windows-x64.zip`. A geração precisa
-ser feita no Windows; o pacote ainda aguarda validação em uma máquina Windows real.
+ser feita no Windows. O pacote portátil foi validado em uma máquina Windows real.
 
 Na `develop`, alterações relacionadas ao pacote iniciam o workflow
 automaticamente. O botão **Run workflow** fica disponível quando o workflow está
