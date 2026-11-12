@@ -191,6 +191,10 @@ def test_restores_and_updates_application_preferences(tmp_path: Path) -> None:
         "version": "0.7.0", "architecture": "SlimmableContainer",
         "sample_rate": 48000,
         "config": {"submodels": [{"model": {"architecture": "WaveNet"}}]},
+        "metadata": {
+            "loudness": -10.25, "input_level_dbu": 13,
+            "output_level_dbu": 4,
+        },
     }), encoding="utf-8")
     store = PreferencesStore(tmp_path / "preferences.json")
     store.save(
@@ -217,6 +221,10 @@ def test_restores_and_updates_application_preferences(tmp_path: Path) -> None:
         assert window.ir_list.count() == 1
         assert window.capture_list.count() == 1
         assert window.selected_capture_path() == capture.resolve()
+        assert window.capture_level_metadata.text() == (
+            "Metadados de nível: loudness -10.2 dB; entrada +13.0 dBu; "
+            "saída +4.0 dBu"
+        )
         assert window.device.currentIndex() == 1
         assert output.device == 3
         assert window.gain.value() == -9

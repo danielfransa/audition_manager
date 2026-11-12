@@ -64,6 +64,17 @@ class ImpulseResponseRepository:
                     """
                 )
                 self._connection.execute("INSERT INTO schema_version(version) VALUES (2)")
+            if version < 3:
+                self._connection.execute(
+                    "ALTER TABLE capture ADD COLUMN loudness REAL"
+                )
+                self._connection.execute(
+                    "ALTER TABLE capture ADD COLUMN input_level_dbu REAL"
+                )
+                self._connection.execute(
+                    "ALTER TABLE capture ADD COLUMN output_level_dbu REAL"
+                )
+                self._connection.execute("INSERT INTO schema_version(version) VALUES (3)")
 
     def upsert_many(self, items: Iterable[ImpulseResponse]) -> None:
         values = [
@@ -114,20 +125,25 @@ class ImpulseResponseRepository:
     def upsert_captures(self, items: Iterable[Capture]) -> None:
         values = [(
             str(item.path.resolve()), item.name, item.version, item.architecture,
-            item.sample_rate, item.submodel_count,
+            item.sample_rate, item.submodel_count, item.loudness,
+            item.input_level_dbu, item.output_level_dbu,
         ) for item in items]
         with self._connection:
             self._connection.executemany(
                 """
                 INSERT INTO capture(
-                    path, name, version, architecture, sample_rate, submodel_count
-                ) VALUES (?, ?, ?, ?, ?, ?)
+                    path, name, version, architecture, sample_rate, submodel_count,
+                    loudness, input_level_dbu, output_level_dbu
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
                 ON CONFLICT(path) DO UPDATE SET
                     name = excluded.name,
                     version = excluded.version,
                     architecture = excluded.architecture,
                     sample_rate = excluded.sample_rate,
                     submodel_count = excluded.submodel_count,
+                    loudness = excluded.loudness,
+                    input_level_dbu = excluded.input_level_dbu,
+                    output_level_dbu = excluded.output_level_dbu,
                     updated_at = CURRENT_TIMESTAMP
                 """,
                 values,
@@ -137,7 +153,8 @@ class ImpulseResponseRepository:
         row = self._connection.execute(
             """
             SELECT path, name, version, architecture, sample_rate,
-                   submodel_count, favorite, rating, notes
+                   submodel_count, loudness, input_level_dbu, output_level_dbu,
+                   favorite, rating, notes
             FROM capture WHERE path = ?
             """,
             (str(path.resolve()),),
@@ -147,7 +164,10 @@ class ImpulseResponseRepository:
         return Capture(
             path=Path(row["path"]), name=row["name"], version=row["version"],
             architecture=row["architecture"], sample_rate=row["sample_rate"],
-            submodel_count=row["submodel_count"], favorite=bool(row["favorite"]),
+            submodel_count=row["submodel_count"], loudness=row["loudness"],
+            input_level_dbu=row["input_level_dbu"],
+            output_level_dbu=row["output_level_dbu"],
+            favorite=bool(row["favorite"]),
             rating=row["rating"], notes=row["notes"],
         )
 

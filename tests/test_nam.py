@@ -12,7 +12,10 @@ from audition_manager.audio.nam import (
 )
 
 
-def write_model(path: Path, *, architecture: str = "SlimmableContainer") -> None:
+def write_model(
+    path: Path, *, architecture: str = "SlimmableContainer",
+    metadata: dict | None = None,
+) -> None:
     path.write_text(
         json.dumps(
             {
@@ -26,6 +29,7 @@ def write_model(path: Path, *, architecture: str = "SlimmableContainer") -> None
                     ]
                 },
                 "weights": [],
+                "metadata": metadata,
             }
         ),
         encoding="utf-8",
@@ -39,6 +43,31 @@ def test_inspects_a2_slimmable_container(tmp_path: Path) -> None:
     assert info.path == path.resolve()
     assert (info.version, info.architecture, info.sample_rate, info.submodel_count) == (
         "0.7.0", "SlimmableContainer", 48000, 2
+    )
+
+
+def test_inspects_optional_level_metadata(tmp_path: Path) -> None:
+    path = tmp_path / "amp.nam"
+    write_model(path, metadata={
+        "loudness": -10.0543,
+        "input_level_dbu": 13,
+        "output_level_dbu": 4.5,
+    })
+    info = inspect_nam(path)
+    assert info.loudness == pytest.approx(-10.0543)
+    assert info.input_level_dbu == 13.0
+    assert info.output_level_dbu == 4.5
+
+
+def test_ignores_absent_or_invalid_optional_level_metadata(tmp_path: Path) -> None:
+    path = tmp_path / "amp.nam"
+    write_model(path, metadata={
+        "loudness": "unknown", "input_level_dbu": True,
+        "output_level_dbu": float("inf"),
+    })
+    info = inspect_nam(path)
+    assert (info.loudness, info.input_level_dbu, info.output_level_dbu) == (
+        None, None, None,
     )
 
 

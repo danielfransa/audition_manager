@@ -6,7 +6,7 @@ import subprocess
 import sys
 import tempfile
 from dataclasses import dataclass
-from math import gcd
+from math import gcd, isfinite
 from pathlib import Path
 
 import numpy as np
@@ -24,6 +24,9 @@ class NamModelInfo:
     architecture: str
     sample_rate: int
     submodel_count: int
+    loudness: float | None = None
+    input_level_dbu: float | None = None
+    output_level_dbu: float | None = None
 
     @property
     def is_a2(self) -> bool:
@@ -75,9 +78,21 @@ def inspect_nam(path: Path) -> NamModelInfo:
         submodel_count = len(submodels)
     elif not isinstance(payload.get("weights"), list):
         raise ValueError("A captura NAM legada não contém pesos válidos.")
+    metadata = payload.get("metadata")
+    metadata = metadata if isinstance(metadata, dict) else {}
     return NamModelInfo(
-        path.resolve(), version, architecture, rounded_rate, submodel_count
+        path.resolve(), version, architecture, rounded_rate, submodel_count,
+        _optional_finite_number(metadata.get("loudness")),
+        _optional_finite_number(metadata.get("input_level_dbu")),
+        _optional_finite_number(metadata.get("output_level_dbu")),
     )
+
+
+def _optional_finite_number(value: object) -> float | None:
+    if isinstance(value, bool) or not isinstance(value, (int, float)):
+        return None
+    result = float(value)
+    return result if isfinite(result) else None
 
 
 def scan_nam_models(root: Path) -> tuple[list[NamModelInfo], list[tuple[Path, str]]]:

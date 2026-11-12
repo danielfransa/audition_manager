@@ -390,3 +390,23 @@ Roteiro prático:
    escolhendo a pasta inteira.
 3. Navegue por subpastas, volte à raiz desejada e clique em **Escolher esta
    pasta**. Confirme que o scan recursivo mantém o comportamento anterior.
+
+## Metadados de nível NAM — 2026-11-12
+
+- A suíte completa passa com **91 testes**.
+- Os testes cobrem metadados completos, ausentes, com tipo inválido, booleanos e
+  valores não finitos.
+- O teste do repositório confirma a persistência na migração SQLite v3 sem perder
+  favoritos, avaliação ou notas.
+- O teste Qt confirma a exibição de loudness, nível de entrada e nível de saída
+  da captura selecionada.
+- Nenhuma compensação é aplicada neste incremento; o áudio permanece idêntico.
+
+Roteiro prático:
+
+1. Abra `samples/captures` ou outra pasta que contenha capturas NAM.
+2. Selecione uma captura com metadados e confirme a linha de loudness, entrada e
+   saída abaixo das estrelas.
+3. Selecione uma captura sem esses campos e confirme “não informado”.
+4. Troque o idioma e confirme a tradução da linha.
+5. Confirme auditivamente que o volume não mudou nesta etapa.

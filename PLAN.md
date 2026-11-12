@@ -133,6 +133,8 @@ em uma nova versão alpha somente após a validação prática do conjunto:
 1. Ler dos arquivos NAM os metadados disponíveis de `loudness`,
    `input_level_dbu` e `output_level_dbu`; persistir no SQLite e apresentar os
    valores sem alterar o áudio. Arquivos sem esses campos continuam válidos.
+   **Implementado para auditoria:** migração SQLite v3, leitura tolerante e
+   apresentação bilíngue na área da captura; nenhuma mudança no áudio.
 2. Adicionar equalização automática de volume como opção desativável. Quando
    ligada, a comparação usa o metadado confiável disponível; quando desligada,
    preserva o nível original e o ganho manual existente.

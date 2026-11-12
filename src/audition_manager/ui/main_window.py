@@ -296,6 +296,8 @@ class MainWindow(QMainWindow):
         self.capture_favorite.setEnabled(False)
         self.capture_rating = StarRating()
         self.capture_rating.setEnabled(False)
+        self.capture_level_metadata = QLabel()
+        self.capture_level_metadata.setWordWrap(True)
         self.capture_notes = QPlainTextEdit()
         self.capture_notes.setPlaceholderText("Notas sobre a captura selecionada…")
         self.capture_notes.setMaximumHeight(70)
@@ -395,6 +397,7 @@ class MainWindow(QMainWindow):
         capture_metadata.addWidget(self.capture_rating)
         capture_metadata.addStretch(1)
         layout.addLayout(capture_metadata)
+        layout.addWidget(self.capture_level_metadata)
         layout.addWidget(self.capture_notes)
         layout.addWidget(self.save_capture_notes_button)
         layout.addWidget(self.scan_progress)
@@ -542,7 +545,8 @@ class MainWindow(QMainWindow):
         models, errors = scan_nam_models(root)
         captures = [Capture(
             model.path, model.path.name, model.version, model.architecture,
-            model.sample_rate, model.submodel_count,
+            model.sample_rate, model.submodel_count, model.loudness,
+            model.input_level_dbu, model.output_level_dbu,
         ) for model in models]
         self.repository.upsert_captures(captures)
         self.capture_root = root
@@ -1017,6 +1021,7 @@ class MainWindow(QMainWindow):
         self.favorite.setText(tr("Favorito (F)"))
         self.rating.retranslate()
         self.capture_rating.retranslate()
+        self.refresh_capture_metadata()
         self.notes.setPlaceholderText(tr("Notas sobre o IR selecionado…"))
         self.save_notes_button.setText(tr("Salvar notas"))
         self.peak_meter.setToolTip(
@@ -1074,6 +1079,7 @@ class MainWindow(QMainWindow):
         self.capture_favorite.setEnabled(item is not None)
         self.capture_rating.set_value(item.rating if item else 0)
         self.capture_rating.setEnabled(item is not None)
+        self.capture_level_metadata.setText(self.capture_level_text(item))
         notes_blocker = QSignalBlocker(self.capture_notes)
         self.capture_notes.setPlainText(item.notes if item else "")
         del notes_blocker
@@ -1081,6 +1087,21 @@ class MainWindow(QMainWindow):
         self.save_capture_notes_button.setEnabled(item is not None)
         self.nam_quality.setEnabled(
             item is not None and item.architecture == "SlimmableContainer"
+        )
+
+    @staticmethod
+    def capture_level_text(item: Capture | None) -> str:
+        if item is None:
+            return tr("Metadados de nível: nenhuma captura selecionada")
+
+        def value(number: float | None, unit: str) -> str:
+            return tr("não informado") if number is None else f"{number:+.1f} {unit}"
+
+        return tr(
+            "Metadados de nível: loudness {loudness}; entrada {input}; saída {output}",
+            loudness=value(item.loudness, "dB"),
+            input=value(item.input_level_dbu, "dBu"),
+            output=value(item.output_level_dbu, "dBu"),
         )
 
     @Slot(bool)

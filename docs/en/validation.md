@@ -15,7 +15,15 @@ python -m compileall -q src tests
 git diff --check
 ```
 
-Current baseline: **89 tests passing**.
+Current baseline: **91 tests passing**.
+
+## NAM level metadata — 2026-11-12
+
+- Tests cover complete, absent, malformed, boolean, and non-finite optional
+  metadata.
+- Repository tests confirm SQLite v3 persistence while preserving user fields.
+- The Qt test confirms the selected capture displays loudness, input level, and
+  output level. No automatic gain is applied in this increment.
 
 ## Common functional checklist
 

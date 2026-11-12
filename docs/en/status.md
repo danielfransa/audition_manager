@@ -38,7 +38,7 @@ limitations that have since been resolved.
 
 ## Current verification
 
-- Automated suite: **89 tests passing**.
+- Automated suite: **91 tests passing**.
 - Bytecode compilation and `git diff --check`: clean in the latest delivery.
 - Interface, playback, and PortAudio output confirmed under WSL/WSLg.
 - Portable package, UI, NAM runtime, samples, and playback confirmed by the
@@ -81,6 +81,16 @@ reliable format or protocol documentation and are not implemented.
 Blind comparison is intentionally scheduled after live input. The portable ZIP
 remains the official Windows distribution until the final installer stage. See
 `PLAN.md` and decision 0030 for the detailed scope and acceptance criteria.
+
+### Next alpha — increment 1 under review
+
+- NAM scanning now reads `metadata.loudness`, `metadata.input_level_dbu`, and
+  `metadata.output_level_dbu` when they are finite numbers.
+- SQLite migration v3 persists all three optional fields without losing existing
+  favorites, ratings, or notes.
+- The selected capture's values are displayed in Portuguese and English.
+- Missing or invalid metadata does not reject a capture and is shown as “not
+  provided.” This increment applies no compensation and does not change audio.
 
 ## Tracking references
 

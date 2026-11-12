@@ -48,7 +48,7 @@ o histórico de cada incremento e podem mencionar limitações já resolvidas.
 
 ## Verificação atual
 
-- Suíte automatizada: **89 testes passando**.
+- Suíte automatizada: **91 testes passando**.
 - Compilação de bytecode e `git diff --check`: sem erros na última entrega.
 - Reprodução e interface: confirmadas no WSL/WSLg pelo usuário.
 - Saída PortAudio no WSLg: validada com a ponte ALSA/PulseAudio.
@@ -94,6 +94,16 @@ O modo de comparação cega foi deliberadamente deixado para depois da entrada a
 vivo. O ZIP portátil continua sendo a distribuição oficial para Windows até a
 etapa final do instalador. Detalhes e critérios estão no `PLAN.md` e na decisão
 0030.
+
+### Próxima alpha — incremento 1 em auditoria
+
+- O scan NAM agora lê `metadata.loudness`, `metadata.input_level_dbu` e
+  `metadata.output_level_dbu` quando forem números finitos.
+- A migração SQLite v3 persiste os três campos opcionais sem perder favoritos,
+  avaliações ou notas existentes.
+- A interface apresenta os valores da captura selecionada em Português e Inglês.
+- Metadados ausentes ou inválidos não invalidam a captura e aparecem como “não
+  informado”. Este incremento não aplica compensação nem altera o áudio.
 
 ## Referências de acompanhamento
 

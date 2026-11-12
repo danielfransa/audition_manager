@@ -37,3 +37,4 @@ Portuguese, while this register provides their English titles and outcomes.
 | [0028](../decisions/0028-polimento-windows.md) | Windows polish: balance capture/IR list space, hide the native renderer console, and package only Git-tracked samples. |
 | [0029](../decisions/0029-prerelease-windows.md) | First Windows prerelease: promote the validated portable package and rebuild permanent release assets from version tags. |
 | [0030](../decisions/0030-ordem-nivel-live-cega-instalador.md) | Next milestone order: level matching, live input, blind comparison, and Windows installer. |
+| [0031](../decisions/0031-metadados-nivel-nam.md) | Read and persist NAM level metadata without changing audio. |
