@@ -15,7 +15,10 @@
 - Click or use `Ctrl+←/→` to switch captures.
 - Click or use `←/→` to switch IRs.
 - Use **A2 Full** for higher fidelity or **A2 Lite** for faster processing.
-- Adjust NAM gain to compare captures at similar levels.
+- Adjust NAM gain manually or enable **Match volume automatically**. Automatic
+  matching uses loudness reported by the NAM capture, displays the applied
+  compensation, and can be disabled at any time. Captures without that metadata
+  remain at their original level for now.
 - Press `N` to bypass the capture and `B` to bypass the IR.
 - The meter shows the processed peak before master output gain.
 

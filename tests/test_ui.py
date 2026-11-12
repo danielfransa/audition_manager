@@ -359,6 +359,7 @@ def test_capture_and_ir_are_processed_as_one_chain(tmp_path: Path, monkeypatch) 
         "version": "0.7.0", "architecture": "SlimmableContainer",
         "sample_rate": 48000,
         "config": {"submodels": [{"model": {"architecture": "WaveNet"}}]},
+        "metadata": {"loudness": -12.0},
     }), encoding="utf-8")
     monkeypatch.setattr(
         "audition_manager.ui.main_window.choose_ir_directory",
@@ -409,12 +410,21 @@ def test_capture_and_ir_are_processed_as_one_chain(tmp_path: Path, monkeypatch) 
         assert output.audio.samples[:, 0] == pytest.approx(
             [0.2 * (10 ** (6 / 20)), 0.4 * (10 ** (6 / 20))]
         )
+        window.level_matching.setChecked(True)
+        deadline = monotonic() + 5
+        while window.worker is not None and monotonic() < deadline:
+            app.processEvents()
+            sleep(0.01)
+        assert window.level_match_status.text() == (
+            "Compensação: -6.0 dB (alvo -18 dB)"
+        )
+        assert output.audio.samples[:, 0] == pytest.approx([0.2, 0.4])
         window.capture_bypass.setChecked(True)
         deadline = monotonic() + 5
         while window.worker is not None and monotonic() < deadline:
             app.processEvents()
             sleep(0.01)
-        assert renderer.models == [model.resolve(), model.resolve(), model.resolve()]
+        assert renderer.models == [model.resolve()] * 4
         assert output.audio.samples[:, 0] == pytest.approx([0.1, 0.2])
         assert window.active_ir.text() == (
             "Cadeia ativa: DI → IR (cab.wav) — Bypass ativo: NAM"

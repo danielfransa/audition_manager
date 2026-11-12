@@ -48,7 +48,7 @@ o histórico de cada incremento e podem mencionar limitações já resolvidas.
 
 ## Verificação atual
 
-- Suíte automatizada: **91 testes passando**.
+- Suíte automatizada: **93 testes passando**.
 - Compilação de bytecode e `git diff --check`: sem erros na última entrega.
 - Reprodução e interface: confirmadas no WSL/WSLg pelo usuário.
 - Saída PortAudio no WSLg: validada com a ponte ALSA/PulseAudio.
@@ -104,6 +104,16 @@ etapa final do instalador. Detalhes e critérios estão no `PLAN.md` e na decis�
 - A interface apresenta os valores da captura selecionada em Português e Inglês.
 - Metadados ausentes ou inválidos não invalidam a captura e aparecem como “não
   informado”. Este incremento não aplica compensação nem altera o áudio.
+
+### Próxima alpha — incremento 2 em auditoria
+
+- O checkbox **Igualar volume automaticamente** ativa ou desativa a compensação
+  e tem sua escolha persistida nas preferências.
+- Capturas com `metadata.loudness` são ajustadas em direção ao alvo de -18 dB,
+  com compensação limitada entre -24 e +12 dB.
+- O valor aplicado aparece ao lado do checkbox. Sem loudness, a interface informa
+  que a compensação está indisponível e mantém o nível original.
+- O ganho NAM manual continua independente e a proteção de pico permanece ativa.
 
 ## Referências de acompanhamento
 

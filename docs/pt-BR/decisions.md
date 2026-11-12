@@ -37,3 +37,4 @@ antigas já foram resolvidas; consulte primeiro o [status atual](../status.md).
 | [0029](../decisions/0029-prerelease-windows.md) | Primeira pré-release Windows |
 | [0030](../decisions/0030-ordem-nivel-live-cega-instalador.md) | Ordem dos próximos marcos: nivelamento, entrada ao vivo, comparação cega e instalador Windows |
 | [0031](../decisions/0031-metadados-nivel-nam.md) | Ler e persistir metadados de nível NAM sem alterar o áudio |
+| [0032](../decisions/0032-equalizacao-loudness-nam.md) | Equalização opcional pelo loudness informado pela captura NAM |

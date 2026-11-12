@@ -18,6 +18,7 @@ class UserPreferences:
     output_gain_db: int = 0
     capture_gain_db: int = 0
     nam_quality: str = "full"
+    level_matching_enabled: bool = False
     loop_enabled: bool = True
     language: str = "pt_BR"
 
@@ -58,6 +59,11 @@ class PreferencesStore:
             output_gain_db=max(-24, min(0, gain)),
             capture_gain_db=max(-24, min(12, capture_gain)),
             nam_quality=nam_quality,
+            level_matching_enabled=(
+                payload["level_matching_enabled"]
+                if isinstance(payload.get("level_matching_enabled"), bool)
+                else False
+            ),
             language=language,
             loop_enabled=(
                 payload["loop_enabled"]

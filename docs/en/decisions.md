@@ -38,3 +38,4 @@ Portuguese, while this register provides their English titles and outcomes.
 | [0029](../decisions/0029-prerelease-windows.md) | First Windows prerelease: promote the validated portable package and rebuild permanent release assets from version tags. |
 | [0030](../decisions/0030-ordem-nivel-live-cega-instalador.md) | Next milestone order: level matching, live input, blind comparison, and Windows installer. |
 | [0031](../decisions/0031-metadados-nivel-nam.md) | Read and persist NAM level metadata without changing audio. |
+| [0032](../decisions/0032-equalizacao-loudness-nam.md) | Optional level matching from loudness reported by the NAM capture. |

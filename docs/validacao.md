@@ -410,3 +410,20 @@ Roteiro prático:
 3. Selecione uma captura sem esses campos e confirme “não informado”.
 4. Troque o idioma e confirme a tradução da linha.
 5. Confirme auditivamente que o volume não mudou nesta etapa.
+
+## Equalização automática com metadado NAM — 2026-11-12
+
+- A suíte completa passa com **93 testes**.
+- Os testes confirmam o alvo de -18 dB, limites de -24/+12 dB, interação com o
+  ganho manual, persistência da preferência e separação das variantes no cache.
+- A compensação permanece opt-in e não é aplicada quando `loudness` está ausente.
+
+Roteiro prático:
+
+1. Selecione uma captura que mostre loudness e anote o volume com o checkbox
+   desmarcado.
+2. Marque **Igualar volume automaticamente** e confirme o valor de compensação.
+3. Alterne entre capturas com loudness e verifique se a comparação fica mais
+   equilibrada sem alterar o ganho NAM manual.
+4. Selecione uma captura sem loudness e confirme “indisponível sem loudness”.
+5. Reinicie o aplicativo e confirme que o estado do checkbox foi restaurado.

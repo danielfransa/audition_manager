@@ -38,7 +38,7 @@ limitations that have since been resolved.
 
 ## Current verification
 
-- Automated suite: **91 tests passing**.
+- Automated suite: **93 tests passing**.
 - Bytecode compilation and `git diff --check`: clean in the latest delivery.
 - Interface, playback, and PortAudio output confirmed under WSL/WSLg.
 - Portable package, UI, NAM runtime, samples, and playback confirmed by the
@@ -91,6 +91,16 @@ remains the official Windows distribution until the final installer stage. See
 - The selected capture's values are displayed in Portuguese and English.
 - Missing or invalid metadata does not reject a capture and is shown as “not
   provided.” This increment applies no compensation and does not change audio.
+
+### Next alpha — increment 2 under review
+
+- **Match volume automatically** toggles compensation and persists the choice in
+  preferences.
+- Captures with `metadata.loudness` are moved toward a -18 dB target, with the
+  compensation bounded between -24 and +12 dB.
+- The applied value is shown beside the checkbox. Without loudness metadata, the
+  UI reports that matching is unavailable and preserves the original level.
+- Manual NAM gain remains independent and peak protection stays active.
 
 ## Tracking references
 

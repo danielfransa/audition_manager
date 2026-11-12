@@ -138,6 +138,9 @@ em uma nova versão alpha somente após a validação prática do conjunto:
 2. Adicionar equalização automática de volume como opção desativável. Quando
    ligada, a comparação usa o metadado confiável disponível; quando desligada,
    preserva o nível original e o ganho manual existente.
+   **Implementado para auditoria:** checkbox persistente, alvo de -18 dB,
+   compensação limitada de -24 a +12 dB e indicação do valor aplicado. Nesta
+   rodada, somente capturas com `metadata.loudness` recebem compensação.
 3. Para capturas sem metadado e para IRs, medir o nível usando a DI de referência,
    calcular a compensação e armazená-la no SQLite. A medição não deve ser refeita
    enquanto o arquivo e a referência não mudarem.

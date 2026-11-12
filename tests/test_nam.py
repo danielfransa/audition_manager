@@ -7,8 +7,9 @@ import soundfile as sf
 
 from audition_manager.audio.files import AudioBuffer
 from audition_manager.audio.nam import (
-    NamRenderer, apply_gain_db, inspect_nam, peak_dbfs, prepare_nam_input,
-    render_capture_chain, renderer_process_options, scan_nam_models,
+    NamRenderer, apply_gain_db, inspect_nam, level_match_gain_db, peak_dbfs,
+    prepare_nam_input, render_capture_chain, renderer_process_options,
+    scan_nam_models,
 )
 
 
@@ -106,6 +107,14 @@ def test_capture_gain_and_peak_meter_math() -> None:
         apply_gain_db(source, 13)
 
 
+def test_level_match_targets_minus_18_db_and_is_bounded() -> None:
+    assert level_match_gain_db(-10.0) == -8.0
+    assert level_match_gain_db(-24.0) == 6.0
+    assert level_match_gain_db(-40.0) == 12.0
+    assert level_match_gain_db(20.0) == -24.0
+    assert level_match_gain_db(None) == 0.0
+
+
 def test_nam_only_chain_limits_peak_after_capture_gain(tmp_path: Path) -> None:
     di = tmp_path / "di.wav"
     sf.write(di, [0.1], 48000, subtype="FLOAT")
@@ -116,6 +125,21 @@ def test_nam_only_chain_limits_peak_after_capture_gain(tmp_path: Path) -> None:
 
     result = render_capture_chain(di, tmp_path / "amp.nam", None, Renderer(), 12)
     assert float(np.max(np.abs(result.samples))) == pytest.approx(0.95)
+
+
+def test_level_match_and_manual_gain_are_applied_separately(tmp_path: Path) -> None:
+    di = tmp_path / "di.wav"
+    sf.write(di, [0.1], 48000, subtype="FLOAT")
+
+    class Renderer:
+        def render(self, _source, _model, _quality="full"):
+            return AudioBuffer(np.array([[0.25]], dtype=np.float32), 48000)
+
+    result = render_capture_chain(
+        di, tmp_path / "amp.nam", None, Renderer(), gain_db=6,
+        level_match_db=-6,
+    )
+    assert result.samples[0, 0] == pytest.approx(0.25)
 
 
 def test_renderer_selects_a2_full_lite_and_omits_slim_for_legacy(tmp_path: Path) -> None:

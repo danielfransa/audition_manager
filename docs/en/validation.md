@@ -15,7 +15,7 @@ python -m compileall -q src tests
 git diff --check
 ```
 
-Current baseline: **91 tests passing**.
+Current baseline: **93 tests passing**.
 
 ## NAM level metadata — 2026-11-12
 
@@ -24,6 +24,13 @@ Current baseline: **91 tests passing**.
 - Repository tests confirm SQLite v3 persistence while preserving user fields.
 - The Qt test confirms the selected capture displays loudness, input level, and
   output level. No automatic gain is applied in this increment.
+
+## Automatic matching from NAM metadata — 2026-11-12
+
+- Tests cover the -18 dB target, -24/+12 dB bounds, interaction with manual NAM
+  gain, preference persistence, and distinct cache variants.
+- Compensation is opt-in and is not applied when loudness metadata is absent.
+- The UI displays the applied compensation or explains why it is unavailable.
 
 ## Common functional checklist
 

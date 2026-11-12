@@ -27,7 +27,8 @@ from PySide6.QtWidgets import (
 from audition_manager.audio.files import AudioBuffer
 from audition_manager.audio.ir_processor import render_files
 from audition_manager.audio.nam import (
-    NamRenderer, peak_dbfs, render_capture_chain, scan_nam_models,
+    NamRenderer, level_match_gain_db, peak_dbfs, render_capture_chain,
+    scan_nam_models,
 )
 from audition_manager.audio.output import AudioOutput, OutputDevice
 from audition_manager.audio.render_cache import RenderCache
@@ -169,6 +170,7 @@ class RenderWorker(QThread):
         capture_path: Path | None = None, nam_renderer: NamRenderer | None = None,
         capture_gain_db: int = 0,
         nam_quality: str = "full",
+        level_match_db: float = 0,
     ) -> None:
         super().__init__(parent)
         self.di_path = di_path
@@ -178,6 +180,7 @@ class RenderWorker(QThread):
         self.nam_renderer = nam_renderer
         self.capture_gain_db = capture_gain_db
         self.nam_quality = nam_quality
+        self.level_match_db = level_match_db
 
     def run(self) -> None:
         try:
@@ -193,9 +196,12 @@ class RenderWorker(QThread):
                         di, self.capture_path, ir, self.nam_renderer,
                         self.capture_gain_db,
                         self.nam_quality,
+                        self.level_match_db,
                     ),
                     dependencies=(self.capture_path,),
-                    variant=(self.capture_gain_db, self.nam_quality),
+                    variant=(
+                        self.capture_gain_db, self.nam_quality, self.level_match_db,
+                    ),
                 )
             self.rendered.emit(audio)
         except Exception as error:
@@ -339,6 +345,9 @@ class MainWindow(QMainWindow):
         self.nam_quality.addItem("A2 Lite — processamento mais rápido", "lite")
         quality_index = self.nam_quality.findData(self.preferences.nam_quality)
         self.nam_quality.setCurrentIndex(max(0, quality_index))
+        self.level_matching = QCheckBox("Igualar volume automaticamente")
+        self.level_matching.setChecked(self.preferences.level_matching_enabled)
+        self.level_match_status = QLabel()
         self.bypass = QCheckBox("Bypass IR (B)")
         self.capture_bypass = QCheckBox("Bypass captura NAM (N)")
         self.loop = QCheckBox("Loop")
@@ -411,6 +420,11 @@ class MainWindow(QMainWindow):
         capture_gain_row.addWidget(self.capture_gain, 1)
         capture_gain_row.addWidget(self.nam_quality)
         layout.addLayout(capture_gain_row)
+        level_match_row = QHBoxLayout()
+        level_match_row.addWidget(self.level_matching)
+        level_match_row.addWidget(self.level_match_status)
+        level_match_row.addStretch(1)
+        layout.addLayout(level_match_row)
         filters = QHBoxLayout()
         filters.addWidget(self.search, 1)
         filters.addWidget(self.favorites_only)
@@ -459,6 +473,7 @@ class MainWindow(QMainWindow):
         self.gain.valueChanged.connect(self.change_gain)
         self.capture_gain.valueChanged.connect(self.change_capture_gain)
         self.nam_quality.currentIndexChanged.connect(self.change_nam_quality)
+        self.level_matching.toggled.connect(self.change_level_matching)
         self.search.textChanged.connect(self.apply_filters)
         self.favorites_only.toggled.connect(self.apply_filters)
         self.minimum_rating.currentIndexChanged.connect(self.apply_filters)
@@ -915,6 +930,14 @@ class MainWindow(QMainWindow):
             self.selection_changed()
 
     @Slot(bool)
+    def change_level_matching(self, enabled: bool) -> None:
+        self.preferences.level_matching_enabled = enabled
+        self.save_preferences()
+        self.refresh_capture_metadata()
+        if self.selected_capture_path() is not None and not self.capture_bypass.isChecked():
+            self.selection_changed()
+
+    @Slot(bool)
     def change_loop(self, enabled: bool) -> None:
         self.output.set_loop(enabled)
         self.preferences.loop_enabled = enabled
@@ -1010,6 +1033,7 @@ class MainWindow(QMainWindow):
         )
         self.nam_quality.setItemText(0, tr("A2 Full — maior qualidade"))
         self.nam_quality.setItemText(1, tr("A2 Lite — processamento mais rápido"))
+        self.level_matching.setText(tr("Igualar volume automaticamente"))
         self.bypass.setText(tr("Bypass IR (B)"))
         self.capture_bypass.setText(tr("Bypass captura NAM (N)"))
         self.play_button.setText(
@@ -1080,6 +1104,7 @@ class MainWindow(QMainWindow):
         self.capture_rating.set_value(item.rating if item else 0)
         self.capture_rating.setEnabled(item is not None)
         self.capture_level_metadata.setText(self.capture_level_text(item))
+        self.level_match_status.setText(self.level_match_text(item))
         notes_blocker = QSignalBlocker(self.capture_notes)
         self.capture_notes.setPlainText(item.notes if item else "")
         del notes_blocker
@@ -1102,6 +1127,18 @@ class MainWindow(QMainWindow):
             loudness=value(item.loudness, "dB"),
             input=value(item.input_level_dbu, "dBu"),
             output=value(item.output_level_dbu, "dBu"),
+        )
+
+    def level_match_text(self, item: Capture | None) -> str:
+        if not self.level_matching.isChecked():
+            return tr("Compensação: desativada")
+        if item is None:
+            return tr("Compensação: selecione uma captura")
+        if item.loudness is None:
+            return tr("Compensação: indisponível sem loudness")
+        return tr(
+            "Compensação: {value:+.1f} dB (alvo -18 dB)",
+            value=level_match_gain_db(item.loudness),
         )
 
     @Slot(bool)
@@ -1238,9 +1275,16 @@ class MainWindow(QMainWindow):
             None if self.capture_bypass.isChecked()
             else self.selected_capture_path()
         )
+        capture = self.repository.get_capture(capture_path) if capture_path else None
+        level_match_db = (
+            level_match_gain_db(capture.loudness)
+            if self.level_matching.isChecked() and capture is not None
+            else 0.0
+        )
         self.worker = RenderWorker(
             self.di_path, ir_path, self.cache, self, capture_path, self.nam_renderer,
             self.capture_gain.value(), self.nam_quality.currentData() or "full",
+            level_match_db,
         )
         self.worker.rendered.connect(self.play_rendered)
         self.worker.failed.connect(self.render_failed)

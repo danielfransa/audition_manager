@@ -15,7 +15,10 @@
 - Clique ou use `Ctrl+←/→` para trocar a captura.
 - Clique ou use `←/→` para trocar o IR.
 - Use **A2 Full** para maior fidelidade ou **A2 Lite** para maior velocidade.
-- Ajuste o ganho NAM para comparar capturas em níveis próximos.
+- Ajuste o ganho NAM manualmente ou marque **Igualar volume automaticamente**.
+  A opção automática usa o loudness informado pela captura NAM, mostra a
+  compensação aplicada e pode ser desligada a qualquer momento. Capturas sem
+  esse metadado continuam no nível original por enquanto.
 - Use `N` para ignorar a captura e `B` para ignorar o IR.
 - O medidor mostra o pico antes do ganho geral de saída.
 
